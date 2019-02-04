@@ -21,6 +21,7 @@ require_once __DIR__."/ffxivData.inc";
 require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
 require_once __DIR__."/apiData.inc";
+require_once __DIR__."/craft.inc";
 
 /*  Archive using xivapi data */
 
@@ -28,107 +29,6 @@ $marketboard = new Ffxivmb($server, $ffxivmbGuid);
 $xiv = new Xivapi($server, $xivapiKey, $marketboard);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
-
-function priceRecipe(&$input) 
-{
-    global $fullHistory, $xiv;
-    $marketCost = 0;
-    $optimalCost = 0;
-    foreach ($input as &$bit) {
-        $market = $xiv->getMarket($bit['id']);
-        if ($fullHistory) {
-            $xiv->getHistory($bit['id']);
-        }
-        $cheap = $xiv->currentCheapest($market);
-        if ($cheap !== null) {
-            $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
-            $bit['marketHQ'] = $cheap->IsHQ;
-        }
-        if ($bit['marketCost'] == 0) {
-            $marketCost = -1;
-            $bitOptimal = -1;
-        } else {
-            if ($marketCost != -1) {
-                $marketCost += $bit['marketCost'];
-            }
-            $bitOptimal =  $bit['marketCost'];
-        }
-        if ($bit['bits']) {
-            $partCost = priceRecipe($bit['bits']);
-            $bit['craftCost'] = $partCost[0];
-            if ($bitOptimal <= 0) {
-                $bitOptimal = $bit['craftCost'];
-            } else {
-                $bitOptimal = min($bit['craftCost'], $bitOptimal);
-            }
-        }
-        if ($optimalCost >= 0 && $bitOptimal > 0) {
-            $optimalCost += $bitOptimal;
-        } else {
-            $optimalCost = -1;
-        }
-    }
-    return [$marketCost, $optimalCost];
-}
-
-function doRecipie($itemID, $profitOnly=false) 
-{
-    global $xiv, $dataset;
-    $output = $dataset->getFullRecipe($itemID);
-    if ($output == null) {
-        print ("Failed to find recipe for $itemID\n");
-        exit();
-    }
-    print "Processing ".$dataset->item[$itemID]['Singular']." .";
-    $cost = priceRecipe($output);
-    $history = $xiv->getHistory($itemID);
-    $recent = $xiv->mostRecent($history);
-    $market = $xiv->getMarket($itemID);
-    $cheap = $xiv->currentCheapest($market);
-    print "\n";
-
-    print "===>   ".$dataset->item[$itemID]['Singular']."(".$itemID.")\n";
-    if (!$profitOnly) {
-        if ($recent) {
-            print "recent: ";
-            if ($recent->IsHQ) {
-                print "(*) ";
-            }
-            print number_format($recent->PricePerUnit)." gil \n";
-        } else {
-            print "recent: NONE\n";
-        }
-        if ($cheap) {
-            print "current: ";
-            if ($recent->IsHQ) {
-                print "(*) ";
-            }
-            print number_format($cheap->PricePerUnit)." gil \n";
-        } else {
-            print "current: NONE\n";
-        }
-
-        print "Market Cost: ";
-        if ($cost[0] > 0) {
-            print number_format($cost[0])." gil \n";
-        } else {
-            print "UNAVLIABLE\n";
-        }
-        print "Optimal Cost: ".number_format($cost[1])." gil \n";
-    }
-
-    $price = $recent->PricePerUnit;
-    if ($cheap) {
-        $price = min($price, $cheap->PricePerUnit);
-    }
-
-    if ($cost[1] < $price) {
-        print "** Possible Profit: ".number_format($price - $cost[1])." gil\n";
-    }
-
-    return $output;
-}
-
 
 if (count($argv) > 1) {
     if ($argv[1] == '-c') {
@@ -140,7 +40,8 @@ if (count($argv) > 1) {
         if (count($a) > 0) {
             $xiv->verbose = false;
             foreach ($a as $i) {
-                doRecipie($i, true);
+                $output = doRecipie($i, $dataset, $xiv);
+                printRecipe($output, true);
             }
         }
         exit();
@@ -160,5 +61,5 @@ if (!is_numeric($itemID)) {
     $itemID = $result;
 }
 
-$output = doRecipie($itemID);
-$dataset->printRecipe($output);
+$output = doRecipie($itemID, $dataset, $xiv);
+printRecipe($output);

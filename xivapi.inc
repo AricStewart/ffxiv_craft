@@ -16,6 +16,7 @@
     require_module 'standard';
     require_module 'curl';
     require_module 'json';
+    require_module 'file';
 .*/
 
 class Xivapi
@@ -23,24 +24,28 @@ class Xivapi
     private $_server;
     private $_xivapiKey;
     private $_ffxivmb;
+    private $_base;
 
     public $verbose;
+    public $silent;
     public $timeout;
 
-    function __construct($server, $xivapiKey, $ffxivmb=null) 
+    function __construct($server, $xivapiKey, $ffxivmb=null, $base='.') 
     {
         $this->_server = $server;
         $this->_xivapiKey = $xivapiKey;
         $this->_ffxivmb = $ffxivmb;
         $this->verbose = true;
+        $this->silent = false;
         $this->timeout = 3600;
+        $this->_base = $base;
     }
 
     private function _getXIVdata($file, $url) 
     {
         $cached = true;
         if (!file_exists($file) || (time()-filemtime($file) > $this->timeout)) {
-            if ($this->verbose) {
+            if ($this->verbose && !$this->silent) {
                 print "From $url...\n";
             }
             $ch = curl_init();
@@ -49,8 +54,9 @@ class Xivapi
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             $content = curl_exec($ch);
             curl_close($ch);
-            file_put_contents($file, $content);
+            @file_put_contents($file, $content);
             $cached = false;
+            @chmod($file, 0666);
         }
         $contents = file_get_contents($file);
         $data = json_decode($contents);
@@ -63,7 +69,7 @@ class Xivapi
     function getHistory($ID) 
     {
         $history = $this->_getXIVdata(
-            "data/history.$ID.json",
+            $this->_base."/data/history.$ID.json",
             "market/$this->_server/items/$ID/history"
         );
         if ($history == null) {
@@ -71,34 +77,38 @@ class Xivapi
         } elseif (!$history->cached && $this->_ffxivmb) {
             $this->_ffxivmb->sendHistory($ID, $history);
         }
-        print ".";
+        if (!$this->silent) {
+            print ".";
+        }
         return $history;
     }
 
     function getMarket($ID) 
     {
         $market = $this->_getXIVdata(
-            "data/market.$ID.json",
+            $this->_base."/data/market.$ID.json",
             "market/$this->_server/items/$ID"
         );
-        if ($market == null) {
-            print ("Failed to aquire market for $ID\n");
+        if ($market == null && !$this->silent) {
+              print ("Failed to aquire market for $ID\n");
         } elseif (!$market->cached && $this->_ffxivmb) {
-            $time = filemtime("data/market.$ID.json");
+            $time = filemtime($this->_base."/data/market.$ID.json");
             $this->_ffxivmb->sendPrices($market, $time);
         }
-        print ".";
+        if (!$this->silent) {
+            print ".";
+        }
         return $market;
     }
 
     function getItem($ID) 
     {
-        return $this->_getXIVdata("data/item.$ID.json", "item/$ID");
+        return $this->_getXIVdata($this->_base."/data/item.$ID.json", "item/$ID");
     }
 
     function getRecipie($ID) 
     {
-        return $this->_getXIVdata("data/recipe.$ID.json", "recipe/$ID");
+        return $this->_getXIVdata($this->_base."/data/recipe.$ID.json", "recipe/$ID");
     }
 
     function mostRecent($history) 

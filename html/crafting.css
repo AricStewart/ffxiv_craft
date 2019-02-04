@@ -1,0 +1,16 @@
+.modal{z-index:3;display:none;padding-top:100px;position:fixed;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgb(0,0,0);background-color:rgba(0,0,0,0.4)}
+.modal-content{margin:auto;background-color:#fff;position:relative;padding:0;outline:0;width:600px}
+.xlarge{font-size:24px!important}
+.xxlarge{font-size:36px!important}
+.xxxlarge{font-size:48px!important}
+.jumbo{font-size:64px!important}
+.left-align{text-align:left!important}
+.right-align{text-align:right!important}
+.justify{text-align:justify!important}
+.center{text-align:center!important}
+.round-small{border-radius:2px}
+.round,.round-medium{border-radius:4px}
+.round-large{border-radius:8px}
+.round-xlarge{border-radius:16px}
+.round-xxlarge{border-radius:32px}
+.spin{animation:spin 2s infinite linear}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(359deg)}}

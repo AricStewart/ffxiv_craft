@@ -29,10 +29,10 @@ class FfxivDataSet
     public $gather = array();
     public $master = array();
 
-    public $recipData = "./data/Recipe.csv";
-    public $itemData = "./data/Item.csv";
-    public $gatherData = "./data/GatheringItem.csv";
-    public $masterData = "./data/SecretRecipeBook.csv";
+    public $recipData = "/data/Recipe.csv";
+    public $itemData = "/data/Item.csv";
+    public $gatherData = "/data/GatheringItem.csv";
+    public $masterData = "/data/SecretRecipeBook.csv";
 
     private static function _isTrue($val)
     {
@@ -61,6 +61,7 @@ class FfxivDataSet
         $content = curl_exec($ch);
         curl_close($ch);
         file_put_contents($file, $content);
+        chmod($file, 0666);
     }
 
     function updateData() 
@@ -73,15 +74,16 @@ class FfxivDataSet
                     "master/csv/GatheringItem.csv";
         $masterURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
                     "master/csv/SecretRecipeBook.csv";
-        $this->getData($this->recipData, $recipURL);
-        $this->getData($this->itemData, $itemURL);
-        $this->getData($this->gatherData, $gatherURL);
-        $this->getData($this->masterData, $masterURL);
+        $this->getData($this->baseData.$this->recipData, $recipURL);
+        $this->getData($this->baseData.$this->itemData, $itemURL);
+        $this->getData($this->baseData.$this->gatherData, $gatherURL);
+        $this->getData($this->baseData.$this->masterData, $masterURL);
     }
 
-    function __construct() 
+    function __construct($baseData='.') 
     {
-        if (!file_exists($this->recipData)) {
+        $this->baseData = $baseData;
+        if (!file_exists($this->baseData.$this->recipData)) {
             print "Updating Data...\n";
             $this->updateData();
         }
@@ -92,7 +94,7 @@ class FfxivDataSet
         if (count($this->recipe) > 0) {
             return;
         }
-        $handle = fopen($this->recipData, "r");
+        $handle = fopen($this->baseData.$this->recipData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -163,7 +165,7 @@ class FfxivDataSet
         if (count($this->item) > 0) {
             return;
         }
-        $handle = fopen($this->itemData, "r");
+        $handle = fopen($this->baseData.$this->itemData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 2000, ",")) !== false) {
@@ -284,7 +286,7 @@ var_dump($data);
         if (count($this->gather) > 0) {
             return;
         }
-        $handle = fopen($this->gatherData, "r");
+        $handle = fopen($this->baseData.$this->gatherData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -313,7 +315,7 @@ var_dump($data);
         if (count($this->master) > 0) {
             return;
         }
-        $handle = fopen($this->masterData, "r");
+        $handle = fopen($this->baseData.$this->masterData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -355,7 +357,7 @@ var_dump($data);
             }
             $output[] = [
                          'id' => $i['Item'],
-                         'name' => $this->item[$i['Item']]['Singular'],
+                         'name' => $this->item[$i['Item']]['Name'],
                          'count' => $i['Amount'] * $count,
                          'marketCost' => 0,
                          'marketHQ' => 0,
@@ -366,42 +368,6 @@ var_dump($data);
         return $output;
     }
 
-    function line($line, $tab) 
-    {
-        foreach ($line as $bit) {
-            for ($i = 0; $i < $tab; $i++) {
-                print "\t";
-            }
-            print $bit['name']."(".$bit['id'].") (x".$bit['count'].") -> ";
-            if ($bit['marketCost'] > 0) {
-                print number_format($bit['marketCost']);
-                if ($bit['marketHQ']) {
-                    print "(*)";
-                }
-                print " gil ";
-            } else {
-                print "UNAVALIABLE ";
-            }
-            if ($bit['craftCost']) {
-                print "/ crafted ".number_format($bit['craftCost'])." gil";
-            }
-            print "\n";
-            $this->line($bit['bits'], $tab+1);
-        }
-    }
-
-    function printRecipe($recp) 
-    {
-        print "====================================\n";
-        $this->line($recp, 0);
-        print "====================================\n";
-    }
-
-    function test() 
-    {
-        $o = $this->getFullRecipe(23815);
-        $this->printRecipe($o);
-    }
 
     function lookupMasterBook($name) 
     {
@@ -445,7 +411,7 @@ var_dump($data);
     {
         $this->loadItems();
         foreach ($this->item as $key => $val) {
-            if (strcasecmp($val['Singular'], $name) == 0) {
+            if (strcasecmp($val['Name'], $name) == 0) {
                 return $key;
             }
         }

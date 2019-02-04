@@ -73,7 +73,7 @@ foreach ($stuff as $item) {
             }
         }
         $added = false;
-        print "($count/$limit): ".$idb['Singular'].'('.$item['Item'].') ';
+        print "($count/$limit): ".$idb['Name'].'('.$item['Item'].') ';
 
         $profitLQ = $xiv->itemProfit($item['Item'], false);
         $xiv->printProfit($profitLQ);
@@ -99,7 +99,7 @@ function _sortByOrder($a, $b)
 
 usort($profit, '_sortByOrder');
 foreach ($profit as $p) {
-    print "! ".$data->item[$p['ID']]['Singular'];
+    print "! ".$data->item[$p['ID']]['Name'];
     $xiv->printProfit($p);
     print "\n";
 }
