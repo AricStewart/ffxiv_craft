@@ -83,7 +83,7 @@ class Xivapi
         );
         if ($market == null) {
             print ("Failed to aquire market for $ID\n");
-        } elseif (!$market->cached && $this->market) {
+        } elseif (!$market->cached && $this->_ffxivmb) {
             $time = filemtime("data/market.$ID.json");
             $this->_ffxivmb->sendPrices($market, $time);
         }

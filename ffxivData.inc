@@ -65,14 +65,14 @@ class FfxivDataSet
 
     function updateData() 
     {
-        $itemURL = "https://github.com/viion/ffxiv-datamining/raw/master/".
-                    "csv/Item.csv";
-        $recipURL = "https://github.com/viion/ffxiv-datamining/raw/master/".
-                    "csv/Recipe.csv";
-        $gatherURL = "https://github.com/viion/ffxiv-datamining/raw/master/".
-                    "csv/GatheringItem.csv";
-        $masterURL = "https://github.com/viion/ffxiv-datamining/raw/master/".
-                    "csv/SecretRecipeBook.csv";
+        $itemURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
+                    "master/csv/Item.csv";
+        $recipURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
+                    "master/csv/Recipe.csv";
+        $gatherURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
+                    "master/csv/GatheringItem.csv";
+        $masterURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
+                    "master/csv/SecretRecipeBook.csv";
         $this->getData($this->recipData, $recipURL);
         $this->getData($this->itemData, $itemURL);
         $this->getData($this->gatherData, $gatherURL);
@@ -166,7 +166,7 @@ class FfxivDataSet
         $handle = fopen($this->itemData, "r");
         $skip = 3;
         if (empty($handle) === false) {
-            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+            while (($data = fgetcsv($handle, 2000, ",")) !== false) {
                 if ($skip) {
                     $skip--;
                     continue;
@@ -174,6 +174,9 @@ class FfxivDataSet
                 if ($data[1] === "") {
                     continue;
                 }
+if (count($data) < 90) {
+var_dump($data);
+}
                 $entry = [
                     'Index' => intval($data[0]),
                     'Singular' => $data[1],
@@ -342,7 +345,8 @@ class FfxivDataSet
         $tgt = $this->recipe[$id];
         foreach ($tgt['Ingredients'] as $i) {
             $bits = [];
-            if ($this->recipe[$i['Item']] !== null) {
+            if (array_key_exists($i['Item'], $this->recipe) &&
+                $this->recipe[$i['Item']] !== null) {
                 $result = $this->recipe[$i['Item']]['Result']['Amount'];
                 $this->getFullRecipe(
                     $i['Item'],

@@ -40,8 +40,10 @@ function priceRecipe(&$input)
             $xiv->getHistory($bit['id']);
         }
         $cheap = $xiv->currentCheapest($market);
-        $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
-        $bit['marketHQ'] = $cheap->IsHQ;
+        if ($cheap !== null) {
+            $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
+            $bit['marketHQ'] = $cheap->IsHQ;
+        }
         if ($bit['marketCost'] == 0) {
             $marketCost = -1;
             $bitOptimal = -1;
@@ -128,7 +130,7 @@ function doRecipie($itemID, $profitOnly=false)
 }
 
 
-if ($argv[1]) {
+if (count($argv) > 1) {
     if ($argv[1] == '-c') {
         array_map('unlink', glob("data/*.json"));
         $itemID = $argv[2];
