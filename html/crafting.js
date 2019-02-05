@@ -56,16 +56,6 @@ function printLine(line, tab)
 
 function fillCraftFrame(data)
 {
-    var PriceHQ = null;
-    var PriceLQ = null;
-
-    if (data.Recent.LQ) {
-        PriceLQ = data.Recent.LQ.PricePerUnit;
-    }
-    if (data.Recent.HQ) {
-        PriceHQ = data.Recent.HQ.PricePerUnit;
-    }
-
     if (data.Cost.Market <= 0) {
         marketCost =  'UNAVLAIBLE';
     } else {
@@ -98,13 +88,6 @@ function fillCraftFrame(data)
         recent += data.Recent.HQ.PricePerUnit.toLocaleString()+" gil";
     }
 
-    if (data.Cheap.LQ !== null) {
-        PriceLQ = Math.min(PriceLQ, data.Cheap.LQ.PricePerUnit);
-    }
-    if (data.Cheap.HQ !== null) {
-        PriceHQ = Math.min(PriceHQ, data.Cheap.HQ.PricePerUnit);
-    }
-
     document.getElementById('output').innerHTML = 
     '<h2 style="text-align:center;">'+data.Name+'</h2><hr>' +
     '<div>' +
@@ -112,13 +95,13 @@ function fillCraftFrame(data)
     'Current: '+cheap+"<br>"+
     'Market Cost: '+marketCost+'<br>'+
     'Optimal Cost: '+optimalCost+"<br>";
-    if (data.Cost.Optimal < PriceLQ || data.Cost.Optimal < PriceHQ) {
+    if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
         var block = '<hr>';
-        if (data.Cost.Optimal < PriceLQ) {
-            block += '<b>Possible Profit</b>: '+(PriceLQ - data.Cost.Optimal).toLocaleString()+" gil<br>";
+        if (data.Profit.LQ > 0) {
+            block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil<br>";
         }
-        if (data.Cost.Optimal < PriceHQ) {
-            block += "<b>Possible Profit</b>: <img src='hq.png'>"+(PriceHQ - data.Cost.Optimal).toLocaleString()+" gil<br>";
+        if (data.Profit.HQ > 0) {
+            block += "<b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil<br>";
         }
         block += "<hr>";
         document.getElementById('output').innerHTML += block;

@@ -30,6 +30,13 @@ $xiv = new Xivapi($server, $xivapiKey, $marketboard);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
 
+function _sortByProfit($a, $b) 
+{
+    $p = max($a['Profit']['HQ'], $a['Profit']['LQ']);
+    $p2 = max($b['Profit']['HQ'], $b['Profit']['LQ']);
+    return $p - $p2;
+}
+
 if (count($argv) > 1) {
     if ($argv[1] == '-c') {
         array_map('unlink', glob("data/*.json"));
@@ -39,9 +46,14 @@ if (count($argv) > 1) {
         print count($a)."\n";
         if (count($a) > 0) {
             $xiv->verbose = false;
-            foreach ($a as $i) {
-                $output = doRecipie($i, $dataset, $xiv);
-                printRecipe($output, true);
+            $output = [];
+            foreach ($a as $key => $i) {
+                print " $i (".($key+1)."|".count($a).") ";
+                $output[] = doRecipie($i, $dataset, $xiv);
+            }
+            usort($output, '_sortByProfit');
+            foreach($output as $recipe) {
+                printRecipe($recipe, true);
             }
         }
         exit();
