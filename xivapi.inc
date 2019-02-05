@@ -111,10 +111,13 @@ class Xivapi
         return $this->_getXIVdata($this->_base."/data/recipe.$ID.json", "recipe/$ID");
     }
 
-    function mostRecent($history) 
+    function mostRecent($history, $HQ=null) 
     {
         $winner = null;
         foreach ($history->History as $entry) {
+            if ($HQ !== null && $HQ != $entry->IsHQ) {
+                continue;
+            }
             if ($winner === null) {
                 $winner = $entry;
             } elseif ($entry->PurchaseDate > $winner->PurchaseDate) {

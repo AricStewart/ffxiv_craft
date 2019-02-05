@@ -56,46 +56,72 @@ function printLine(line, tab)
 
 function fillCraftFrame(data)
 {
-    var marketCost = "";
-    var cheap = "";
+    var PriceHQ = null;
+    var PriceLQ = null;
+
+    if (data.Recent.LQ) {
+        PriceLQ = data.Recent.LQ.PricePerUnit;
+    }
+    if (data.Recent.HQ) {
+        PriceHQ = data.Recent.HQ.PricePerUnit;
+    }
+
     if (data.Cost.Market <= 0) {
         marketCost =  'UNAVLAIBLE';
     } else {
         marketCost = data.Cost.Market.toLocaleString() + " gil";
     }
-    if (data.Cheap <= 0) {
+
+    if (data.Cost.Optimal <= 0) {
+        optimalCost =  'UNAVLAIBLE';
+    } else {
+        optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
+    }
+
+    if (data.Cheap.LQ === null) {
         cheap =  'UNAVLAIBLE';
     } else {
-        cheap = data.Cheap.PricePerUnit.toLocaleString()+" gil";
-        if (data.Cheap.IsHQ) {
-            cheap += "<img src='hq.png'>";
-        }
+        cheap = data.Cheap.LQ.PricePerUnit.toLocaleString()+" gil";
     }
-    if (data.Recent <= 0) {
+    if (data.Cheap.HQ !== null) {
+        cheap += " / <img src='hq.png'>";
+        cheap += data.Cheap.HQ.PricePerUnit.toLocaleString()+" gil";
+    }
+
+    if (data.Recent.LQ === null) {
         recent =  'UNAVLAIBLE';
     } else {
-        recent = data.Recent.PricePerUnit.toLocaleString()+" gil";
-        if (data.Recent.IsHQ > 0) {
-            recent += "<img src='hq.png'>";
-        }
+        recent = data.Recent.LQ.PricePerUnit.toLocaleString()+" gil";
     }
+    if (data.Recent.HQ !== null) {
+        recent += " / <img src='hq.png'>";
+        recent += data.Recent.HQ.PricePerUnit.toLocaleString()+" gil";
+    }
+
+    if (data.Cheap.LQ !== null) {
+        PriceLQ = Math.min(PriceLQ, data.Cheap.LQ.PricePerUnit);
+    }
+    if (data.Cheap.HQ !== null) {
+        PriceHQ = Math.min(PriceHQ, data.Cheap.HQ.PricePerUnit);
+    }
+
     document.getElementById('output').innerHTML = 
     '<h2 style="text-align:center;">'+data.Name+'</h2><hr>' +
     '<div>' +
     'Recent: '+recent+'<br>'+
     'Current: '+cheap+"<br>"+
     'Market Cost: '+marketCost+'<br>'+
-    'Optimal Cost: '+data.Cost.Optimal.toLocaleString()+" gil<br>";
-    var Price = 0;
-    if (data.Recent) {
-        Price = data.Recent.PricePerUnit;
-        if (data.Cheap > 0) {
-            Price = Math.min(data.Cheap.PricePerUnit, Price);
+    'Optimal Cost: '+optimalCost+"<br>";
+    if (data.Cost.Optimal < PriceLQ || data.Cost.Optimal < PriceHQ) {
+        var block = '<hr>';
+        if (data.Cost.Optimal < PriceLQ) {
+            block += '<b>Possible Profit</b>: '+(PriceLQ - data.Cost.Optimal).toLocaleString()+" gil<br>";
         }
-    }
-    if (data.Cost.Optimal < Price) {
-        document.getElementById('output').innerHTML += '<hr>' +
-        '<b>Possible Profit</b>: '+(Price - data.Cost.Optimal).toLocaleString()+" gil<br><hr>";
+        if (data.Cost.Optimal < PriceHQ) {
+            block += "<b>Possible Profit</b>: <img src='hq.png'>"+(PriceHQ - data.Cost.Optimal).toLocaleString()+" gil<br>";
+        }
+        block += "<hr>";
+        document.getElementById('output').innerHTML += block;
     }
     document.getElementById('output').innerHTML += "</div>\n";
     document.getElementById('output').innerHTML += "<div>\n";

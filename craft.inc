@@ -53,7 +53,7 @@ function priceRecipe(&$input, $xiv)
             $bit['craftCost'] = $partCost['Market'];
             if ($bitOptimal <= 0) {
                 $bitOptimal = $bit['craftCost'];
-            } else {
+            } elseif ($bit['craftCost'] > 0) {
                 $bitOptimal = min($bit['craftCost'], $bitOptimal);
             }
         }
@@ -77,9 +77,11 @@ function doRecipie($itemID, $dataset, $xiv)
     }
     $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv);
     $history = $xiv->getHistory($itemID);
-    $recipe['Recent'] = $xiv->mostRecent($history);
+    $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history, false),
+                         'HQ' => $xiv->mostRecent($history, true)];
     $market = $xiv->getMarket($itemID);
-    $recipe['Cheap'] = $xiv->currentCheapest($market);
+    $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
+                        'HQ' => $xiv->currentCheapest($market, true)];
     $recipe['Name'] = $dataset->item[$itemID]['Name'];
     $recipe['ID'] = $itemID;
 
@@ -103,7 +105,11 @@ function line($line, $tab)
             print "UNAVALIABLE ";
         }
         if ($bit['craftCost']) {
-            print "/ crafted ".number_format($bit['craftCost'])." gil";
+            if ($bit['craftCost'] > 0) {
+                print "/ crafted ".number_format($bit['craftCost'])." gil";
+            } else {
+                print "/ crafted UNAVALIABLE";
+            }
         }
         print "\n";
         line($bit['bits'], $tab+1);
@@ -119,27 +125,37 @@ function printRecipe($recipe, $profitOnly=false)
     }
 
     print "\n===>   ".$recipe['Name']."(".$recipe['ID'].")\n";
-    $recent = $recipe['Recent'];
-    $Price = $recent->PricePerUnit;
+    $Price = ['HQ'=> null, 'LQ' => null];
+    if ($recipe['Recent']['LQ']) {
+        $Price['LQ'] = $recipe['Recent']['LQ']->PricePerUnit;
+    }
+    if ($recipe['Recent']['HQ']) {
+        $Price['HQ'] = $recipe['Recent']['HQ']->PricePerUnit;
+    }
     if (!$profitOnly) {
-        if ($recent) {
-            print "recent: ";
-            if ($recent->IsHQ) {
-                print "(*) ";
-            }
-            print number_format($recent->PricePerUnit)." gil \n";
+        print "recent: ";
+        if ($recipe['Recent']['LQ']) {
+            print number_format($recipe['Recent']['LQ']->PricePerUnit)." gil";
         } else {
-            print "recent: NONE\n";
+            print " NONE";
         }
-        if ($recipe['Cheap'] !== null) {
-            print "current: ";
-            if ($recent->IsHQ) {
-                print "(*) ";
-            }
-            print number_format($recipe['Cheap']->PricePerUnit)." gil \n";
+        if ($recipe['Recent']['HQ']) {
+            print " / (*) ";
+            print number_format($recipe['Recent']['HQ']->PricePerUnit)." gil";
+        }
+        print "\n";
+
+        print "current: ";
+        if ($recipe['Cheap']['LQ']) {
+            print number_format($recipe['Cheap']['LQ']->PricePerUnit)." gil";
         } else {
-            print "current: NONE\n";
+            print " NONE";
         }
+        if ($recipe['Cheap']['HQ']) {
+            print " / (*) ";
+            print number_format($recipe['Cheap']['HQ']->PricePerUnit)." gil";
+        }
+        print "\n";
 
         print "Market Cost: ";
         if ($recipe['Cost']['Market'] > 0) {
@@ -149,13 +165,19 @@ function printRecipe($recipe, $profitOnly=false)
         }
         print "Optimal Cost: ".number_format($recipe['Cost']['Optimal'])." gil \n";
     }
-
-    if ($recipe['Cheap']) {
-        $Price = min(Price, $recipe['Cheap']->PricePerUnit);
+    if ($recipe['Cheap']['LQ']) {
+        $Price['LQ'] = min($Price, $recipe['Cheap']['LQ']->PricePerUnit);
+    }
+    if ($recipe['Cheap']['HQ']) {
+        $Price['HQ'] = min($Price, $recipe['Cheap']['HQ']->PricePerUnit);
     }
 
-    if ($recipe['Cost']['Optimal'] < $Price) {
-        print "** Possible Profit: ".number_format($Price - $recipe['Cost']['Optimal'])." gil\n";
+    if ($recipe['Cost']['Optimal'] < $Price['LQ']) {
+        print "** Possible Profit: ".number_format($Price['LQ'] - $recipe['Cost']['Optimal'])." gil\n";
+    }
+
+    if ($recipe['Cost']['Optimal'] < $Price['HQ']) {
+        print "** Possible Profit: ".number_format($Price['HQ'] - $recipe['Cost']['Optimal'])." (*) gil\n";
     }
 
     if (!$profitOnly) {
