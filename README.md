@@ -11,6 +11,11 @@ First of all I have to give thanks to the various projects being made use of her
 
 The idea is to make use of all three of these projects to bring together a useful tool for crafters to figure out what to make in the most economical way possible.
 
+**If you use this** ***PLEASE*** **consider donating to these free API projects. They are providing a great service to tools like this one.**
+* [FFXIV Market (Patreon)](https://www.patreon.com/bePatron?u=10361611)
+* [XIVAPI (Patreon)](https://www.patreon.com/bePatron?u=13230932)
+* [Me](https://www.patreon.com/join/aricstewart)
+
 ### Why PHP?
 The initial vision of this project was to have it be a back end for a web page. However because of the time latency involved in the various API calls it very quickly became a command line tool. But the web vision lives as a Proof Of Concept. You can load it yourself from the html directory or see it functioning at <https://www.anergyst.org/~aric/ffxiv/html/> Be kind! I do not have increased request to any of the APIs at this time so if several people are attempting requests at the same time then thing will get very slow.
 
