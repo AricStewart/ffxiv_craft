@@ -81,6 +81,12 @@ function calculateProfit(&$recipe)
     if ($recipe['Cheap']['HQ']) {
         $Price['HQ'] = min($Price['HQ'], $recipe['Cheap']['HQ']->PricePerUnit);
     }
+    if ($recipe['Week']['LQ']['Average']) {
+        $Price['LQ'] = min($Price['LQ'], $recipe['Week']['LQ']['Average']);
+    }
+    if ($recipe['Week']['HQ']['Average']) {
+        $Price['HQ'] = min($Price['HQ'], $recipe['Week']['HQ']['Average']);
+    }
 
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
@@ -103,6 +109,9 @@ function doRecipie($itemID, $dataset, $xiv)
     $history = $xiv->getHistory($itemID);
     $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history, false),
                          'HQ' => $xiv->mostRecent($history, true)];
+    $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
+                       'HQ' => $xiv->weekAverage($history, true)];
+    $market = $xiv->getMarket($itemID);
     $market = $xiv->getMarket($itemID);
     $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
                         'HQ' => $xiv->currentCheapest($market, true)];
@@ -161,6 +170,18 @@ function printRecipe($recipe, $profitOnly=false)
         if ($recipe['Recent']['HQ']) {
             print " / (*) ";
             print number_format($recipe['Recent']['HQ']->PricePerUnit)." gil";
+        }
+        print "\n";
+
+        print "Weekly Average: ";
+        if ($recipe['Week']['LQ']) {
+            print number_format($recipe['Week']['LQ']['Average'])." gil";
+        } else {
+            print " NONE";
+        }
+        if ($recipe['Week']['HQ']) {
+            print " / (*) ";
+            print number_format($recipe['Week']['HQ']['Average'])." gil";
         }
         print "\n";
 
