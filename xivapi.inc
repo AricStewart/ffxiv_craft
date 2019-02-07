@@ -130,14 +130,16 @@ class Xivapi
     function currentCheapest($market, $HQ=null) 
     {
         $winner = null;
-        foreach ($market->Prices as $entry) {
-            if ($HQ !== null && $HQ != $entry->IsHQ) {
-                continue;
-            }
-            if ($winner === null) {
-                $winner = $entry;
-            } elseif ($entry->PricePerUnit < $winner->PricePerUnit) {
-                $winner = $entry;
+        if ($market->Prices !== null) {
+            foreach ($market->Prices as $entry) {
+                if ($HQ !== null && $HQ != $entry->IsHQ) {
+                    continue;
+                }
+                if ($winner === null) {
+                    $winner = $entry;
+                } elseif ($entry->PricePerUnit < $winner->PricePerUnit) {
+                    $winner = $entry;
+                }
             }
         }
         return $winner;

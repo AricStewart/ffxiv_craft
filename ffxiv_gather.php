@@ -43,8 +43,7 @@ if ($argv[1]) {
     }
     if ($argv[$i]) {
         if (!is_numeric($argv[$i])) {
-            $dataset = new FfxivDataSet();
-            $result = $dataset->getItemByName($argv[$i]);
+            $result = $data->getItemByName($argv[$i]);
             if ($result === null) {
                 print 'Could not find item \''.$argv[$i]."'\n";
                 exit();
