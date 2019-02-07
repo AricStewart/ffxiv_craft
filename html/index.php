@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__."/../apiData.inc";
+require_once __DIR__."/../ffxivData.inc";
 ?>
 <html>
 <head>
@@ -11,7 +12,20 @@ require_once __DIR__."/../apiData.inc";
 <body>
 <div style="text-align:center;">
 <h2>Demonstrating Final Fantasy XIV Crafting Companion</h2>
-<input id='server' value='<?php echo $server;?>' readonly>
+<select id='server'>
+<?php
+    $dataset = new FfxivDataSet('..');
+    $dataset->loadWorld();
+    foreach($dataset->world as $entry) {
+        if (strcasecmp($entry['Name'], $server) == 0) {
+            echo "<option selected>";
+        } else {
+            echo "<option>";
+        }
+        echo $entry['Name']."</option>";
+    }
+?>
+</select>
 <input id='item' value='rakshasa dogi of healing'>
 <input type='button' onclick='getData()' value='Get Data'>
 <progress id='progress' style='display: none;'></progress>

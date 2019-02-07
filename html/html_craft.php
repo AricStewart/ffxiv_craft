@@ -47,7 +47,7 @@ function decode_item($itemID)
     return $itemID;
 }
 
-function get_arguments($method, &$server, &$itemID, &$event)
+function get_arguments($method, &$ffxiv_server, &$itemID, &$event)
 {
     $arguments = [
         'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
@@ -60,9 +60,10 @@ function get_arguments($method, &$server, &$itemID, &$event)
     $event = isset($data['event']);
 
     if (!isset($data['server'])) {
-        $server = "Coeurl";
+        header(404);
+        exit();
     } else {
-        $server = $data['server'];
+        $ffxiv_server = $data['server'];
     }
     if (!isset($data['item'])) {
         $itemID = '23815';
@@ -74,12 +75,11 @@ function get_arguments($method, &$server, &$itemID, &$event)
 
 if (!empty($_POST))
 {
-    $marketboard = new Ffxivmb($server, $ffxivmbGuid);
+    get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event);
+
+    $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
     $dataset = new FfxivDataSet('..');
-
-    get_arguments(INPUT_POST, $server, $itemID, $event);
-
-    $xiv = new Xivapi($server, $xivapiKey, $marketboard, "..");
+    $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
     $itemID = decode_item($itemID);
@@ -94,10 +94,7 @@ if (!empty($_POST))
 } else {
     header('Content-Type: text/event-stream');
 
-    $marketboard = new Ffxivmb($server, $ffxivmbGuid);
-    $dataset = new FfxivDataSet('..');
-
-    get_arguments(INPUT_GET, $server, $itemID, $event);
+    get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event);
     if (!$event) {
         $data = array( "type" => "done",
                        "data" => json_encode([]));
@@ -108,7 +105,9 @@ if (!empty($_POST))
         exit();
     }
 
-    $xiv = new Xivapi($server, $xivapiKey, $marketboard, "..");
+    $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    $dataset = new FfxivDataSet('..');
+    $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
     $itemID = decode_item($itemID);

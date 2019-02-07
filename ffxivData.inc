@@ -22,17 +22,24 @@
 
 ini_set('memory_limit', '5000M');
 
+function _worldSort($a, $b) 
+{
+    return strnatcmp($a['Name'], $b['Name']);
+}
+
 class FfxivDataSet
 {
     public $recipe = array();
     public $item = array();
     public $gather = array();
     public $master = array();
+    public $world = array();
 
     public $recipData = "/data/Recipe.csv";
     public $itemData = "/data/Item.csv";
     public $gatherData = "/data/GatheringItem.csv";
     public $masterData = "/data/SecretRecipeBook.csv";
+    public $worldData = "/data/World.csv";
 
     private static function _isTrue($val)
     {
@@ -333,6 +340,40 @@ var_dump($data);
                 ];
                 $this->master[] = $entry;
             }
+            fclose($handle);
+        }
+    }
+
+    function loadWorld() 
+    {
+        if (count($this->world) > 0) {
+            return;
+        }
+        if (!file_exists($this->baseData.$this->worldData)) {
+            $worldURL = "https://raw.githubusercontent.com/viion/".
+                        "ffxiv-datamining/master/csv/World.csv";
+            $this->getData($this->baseData.$this->worldData, $worldURL);
+        }
+        $handle = fopen($this->baseData.$this->worldData, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if (!$this->_isTrue($data[4])) {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'Name' => $data[1],
+                    'DataCenter' => intval($data[3]),
+                    'Public' => $this->_isTrue($data[3]),
+                ];
+                $this->world[] = $entry;
+            }
+            usort($this->world, "_worldSort");
             fclose($handle);
         }
     }

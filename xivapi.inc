@@ -66,10 +66,15 @@ class Xivapi
         return $data;
     }
 
+    function buildPath($type, $ID) 
+    {
+        return $this->_base."/data/".$this->_server.".$type.$ID.json";
+    }
+
     function getHistory($ID) 
     {
         $history = $this->_getXIVdata(
-            $this->_base."/data/history.$ID.json",
+            $this->buildPath('history', $ID),
             "market/$this->_server/items/$ID/history"
         );
         if ($history == null) {
@@ -86,13 +91,13 @@ class Xivapi
     function getMarket($ID) 
     {
         $market = $this->_getXIVdata(
-            $this->_base."/data/market.$ID.json",
+            $this->buildPath('market', $ID),
             "market/$this->_server/items/$ID"
         );
         if ($market == null && !$this->silent) {
               print ("Failed to aquire market for $ID\n");
         } elseif (!$market->cached && $this->_ffxivmb) {
-            $time = filemtime($this->_base."/data/market.$ID.json");
+            $time = filemtime($this->buildPath('market', $ID));
             $this->_ffxivmb->sendPrices($market, $time);
         }
         if (!$this->silent) {
@@ -103,12 +108,12 @@ class Xivapi
 
     function getItem($ID) 
     {
-        return $this->_getXIVdata($this->_base."/data/item.$ID.json", "item/$ID");
+        return $this->_getXIVdata($this->buildPath('item',$ID), "item/$ID");
     }
 
     function getRecipie($ID) 
     {
-        return $this->_getXIVdata($this->_base."/data/recipe.$ID.json", "recipe/$ID");
+        return $this->_getXIVdata($this->buildPath('recipe',$ID), "recipe/$ID");
     }
 
     function mostRecent($history, $HQ=null) 
