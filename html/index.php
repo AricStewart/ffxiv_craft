@@ -35,7 +35,7 @@ require_once __DIR__."/../ffxivData.inc";
 </div>
 
 <div style="text-align:center;">
-<span>©︎ 2019 Aric Stewart
+<span>&copy; 2019 Aric Stewart
 &nbsp;&nbsp;&nbsp;&nbsp;
 <a href="https://github.com/AricStewart/ffxiv_craft"><img src="GitHub-Mark-32px.png"> Check the project out on GitHub</a></span>
 </div>
