@@ -25,13 +25,16 @@ require_once __DIR__."/apiData.inc";
 
 $fullHistory = true;
 
-function priceRecipe(&$input, $xiv) 
+function priceRecipe(&$input, $xiv, $progress)
 {
     global $fullHistory;
 
     $marketCost = 0;
     $optimalCost = 0;
     foreach ($input as &$bit) {
+        if ($progress !== null) {
+            $progress('progress');
+        }
         $market = $xiv->getMarket($bit['id']);
         if ($fullHistory) {
             $xiv->getHistory($bit['id']);
@@ -49,7 +52,7 @@ function priceRecipe(&$input, $xiv)
             $bitOptimal =  $bit['marketCost'];
         }
         if ($bit['bits']) {
-            $partCost = priceRecipe($bit['bits'], $xiv);
+            $partCost = priceRecipe($bit['bits'], $xiv, $progress);
             $bit['craftCost'] = $partCost['Market'];
             if ($bitOptimal <= 0) {
                 $bitOptimal = $bit['craftCost'];
@@ -96,7 +99,15 @@ function calculateProfit(&$recipe)
     return $Price;
 }
 
-function doRecipie($itemID, $dataset, $xiv) 
+function countItems($recipe, &$i)
+{
+    $i += count($recipe);
+    foreach ($recipe as $bit) {
+        countItems($bit['bits'], $i);
+    }
+}
+
+function doRecipie($itemID, $dataset, $xiv, $progress=null)
 {
     $recipe = [];
 
@@ -105,14 +116,31 @@ function doRecipie($itemID, $dataset, $xiv)
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
     }
-    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv);
+    if ($progress !== null) {
+        $i = 0;
+        countItems($recipe['Recipe'], $i);
+        $progress("start", $i + 4);
+    }
+    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $progress);
+    if ($progress !== null) {
+        $progress('progress');
+    }
     $history = $xiv->getHistory($itemID);
     $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history, false),
                          'HQ' => $xiv->mostRecent($history, true)];
     $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
                        'HQ' => $xiv->weekAverage($history, true)];
+    if ($progress !== null) {
+        $progress('progress');
+    }
     $market = $xiv->getMarket($itemID);
+    if ($progress !== null) {
+        $progress('progress');
+    }
     $market = $xiv->getMarket($itemID);
+    if ($progress !== null) {
+        $progress('progress');
+    }
     $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
                         'HQ' => $xiv->currentCheapest($market, true)];
     $recipe['Name'] = $dataset->item[$itemID]['Name'];
@@ -150,7 +178,6 @@ function line($line, $tab)
         line($bit['bits'], $tab+1);
     }
 }
-
 
 function printRecipe($recipe, $profitOnly=false) 
 {

@@ -112,7 +112,7 @@ function fillCraftFrame(data)
     document.getElementById('output').innerHTML += "</div>\n";
 }
 
-function getData() {
+function getDataBlock() {
   document.getElementById('output').innerHTML = "";
   var xhttp = new XMLHttpRequest();
   var server = encodeURI(document.getElementById('server').value);
@@ -128,5 +128,36 @@ function getData() {
   xhttp.open('POST', 'html_craft.php', true);
   xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   xhttp.send('item=' + item +'&server=' + server);
+}
 
+function getDataEvent() {
+  showSpinner();
+  document.getElementById('progress').value = 0;
+  document.getElementById('progress').style.display = "block";
+  var server = encodeURI(document.getElementById('server').value);
+  var item = encodeURI(document.getElementById('item').value);
+  var source = new EventSource("html_craft.php?event=1&item=" + item +
+        "&server=" + server);
+  source.onmessage = function(event) {
+      var data = JSON.parse(event.data);
+      if (data.type == "start") {
+        document.getElementById('progress').max = data.data;
+      } else if (data.type == "progress") {
+        document.getElementById('progress').value += 1;
+      } else if (data.type == "done") {
+        source.close();
+        hideSpinner();
+        document.getElementById('progress').style.display = "none";
+        var item = JSON.parse(data.data);
+        fillCraftFrame(item);
+      }
+  };
+}
+
+function getData() {
+    if(typeof(EventSource) !== "undefined") {
+      getDataEvent();
+    } else {
+      getDataBlock();
+    }
 }

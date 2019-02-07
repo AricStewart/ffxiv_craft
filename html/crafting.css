@@ -14,3 +14,16 @@
 .round-xlarge{border-radius:16px}
 .round-xxlarge{border-radius:32px}
 .spin{animation:spin 2s infinite linear}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(359deg)}}
+
+progress {
+  -webkit-appearance:progress-bar;
+  width: 100%;
+  display: inline-block;
+  box-sizing: border-box;
+  height: 1em;
+  vertical-align: -0.2em;
+}
+
+progress {
+    -webkit-writing-mode: horizontal-tb;
+}

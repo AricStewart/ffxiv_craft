@@ -14,6 +14,7 @@ require_once __DIR__."/../apiData.inc";
 <input id='server' value='<?php echo $server;?>' readonly>
 <input id='item' value='rakshasa dogi of healing'>
 <input type='button' onclick='getData()' value='Get Data'>
+<progress id='progress' style='display: none;'></progress>
 </div>
 <hr>
 <div id="output">
