@@ -88,10 +88,21 @@ function fillCraftFrame(data)
         recent += data.Recent.HQ.PricePerUnit.toLocaleString()+" gil";
     }
 
+    if (data.Week.LQ.Average === 0) {
+        week =  'UNAVLAIBLE';
+    } else {
+        week = data.Week.LQ.Average.toLocaleString()+" gil";
+    }
+    if (data.Week.HQ.Average !== 0) {
+        week += " / <img src='hq.png'>";
+        week += data.Week.HQ.Average.toLocaleString()+" gil";
+    }
+
     document.getElementById('output').innerHTML = 
     '<h2 style="text-align:center;">'+data.Name+'</h2><hr>' +
     '<div>' +
     'Recent: '+recent+'<br>'+
+    'Weekly Average: '+week+'<br>'+
     'Current: '+cheap+"<br>"+
     'Market Cost: '+marketCost+'<br>'+
     'Optimal Cost: '+optimalCost+"<br>";
