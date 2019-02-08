@@ -14,16 +14,16 @@ require_once __DIR__."/../ffxivData.inc";
 <h2>Demonstrating Final Fantasy XIV Crafting Companion</h2>
 <select id='server'>
 <?php
-    $dataset = new FfxivDataSet('..');
-    $dataset->loadWorld();
-    foreach($dataset->world as $entry) {
-        if (strcasecmp($entry['Name'], $server) == 0) {
-            echo "<option selected>";
-        } else {
-            echo "<option>";
-        }
-        echo $entry['Name']."</option>";
+$dataset = new FfxivDataSet('..');
+$dataset->loadWorld();
+foreach ($dataset->world as $entry) {
+    if (strcasecmp($entry['Name'], $server) == 0) {
+        echo "<option selected>";
+    } else {
+        echo "<option>";
     }
+    echo $entry['Name']."</option>";
+}
 ?>
 </select>
 <input id='item' value='rakshasa dogi of healing'>

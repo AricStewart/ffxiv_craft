@@ -427,8 +427,9 @@ class FfxivDataSet
         $tgt = $this->recipe[$id];
         foreach ($tgt['Ingredients'] as $i) {
             $bits = [];
-            if (array_key_exists($i['Item'], $this->recipe) &&
-                $this->recipe[$i['Item']] !== null) {
+            if (array_key_exists($i['Item'], $this->recipe) 
+                && $this->recipe[$i['Item']] !== null
+            ) {
                 $result = $this->recipe[$i['Item']]['Result']['Amount'];
                 $this->getFullRecipe(
                     $i['Item'],

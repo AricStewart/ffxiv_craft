@@ -16,11 +16,6 @@
     require_module 'standard';
 .*/
 
-require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/ffxivmb.inc";
-require_once __DIR__."/xivapi.inc";
-require_once __DIR__."/apiData.inc";
-
 /*  Archive using xivapi data */
 
 $fullHistory = true;

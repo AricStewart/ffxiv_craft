@@ -73,8 +73,7 @@ function get_arguments($method, &$ffxiv_server, &$itemID, &$event)
 
 }
 
-if (!empty($_POST))
-{
+if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event);
 
     if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
@@ -87,8 +86,7 @@ if (!empty($_POST))
     $xiv->silent = true;
 
     $itemID = decode_item($itemID);
-    if ($itemID === null)
-    {
+    if ($itemID === null) {
         echo "[]";
         exit();
     }

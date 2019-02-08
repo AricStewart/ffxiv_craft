@@ -108,12 +108,12 @@ class Xivapi
 
     function getItem($ID) 
     {
-        return $this->_getXIVdata($this->buildPath('item',$ID), "item/$ID");
+        return $this->_getXIVdata($this->buildPath('item', $ID), "item/$ID");
     }
 
     function getRecipie($ID) 
     {
-        return $this->_getXIVdata($this->buildPath('recipe',$ID), "recipe/$ID");
+        return $this->_getXIVdata($this->buildPath('recipe', $ID), "recipe/$ID");
     }
 
     function mostRecent($history, $HQ=null) 
