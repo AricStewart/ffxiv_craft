@@ -22,7 +22,11 @@ require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
 require_once __DIR__."/apiData.inc";
 
-$marketboard = new Ffxivmb($server, $ffxivmbGuid);
+if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
+    $marketboard = new Ffxivmb($server, $ffxivmbGuid);
+} else {
+    $marketboard = null;
+}
 $xiv = new Xivapi($server, $xivapiKey, $marketboard);
 $xiv->verbose = false;
 

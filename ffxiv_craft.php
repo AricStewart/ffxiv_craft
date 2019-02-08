@@ -25,7 +25,11 @@ require_once __DIR__."/craft.inc";
 
 /*  Archive using xivapi data */
 
-$marketboard = new Ffxivmb($server, $ffxivmbGuid);
+if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
+    $marketboard = new Ffxivmb($server, $ffxivmbGuid);
+} else {
+    $marketboard = null;
+}
 $xiv = new Xivapi($server, $xivapiKey, $marketboard);
 $dataset = new FfxivDataSet();
 $fullHistory = true;

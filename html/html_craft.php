@@ -77,7 +77,11 @@ if (!empty($_POST))
 {
     get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event);
 
-    $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
+        $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    } else {
+        $marketboard = null;
+    }
     $dataset = new FfxivDataSet('..');
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
@@ -105,7 +109,11 @@ if (!empty($_POST))
         exit();
     }
 
-    $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
+        $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    } else {
+        $marketboard = null;
+    }
     $dataset = new FfxivDataSet('..');
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
