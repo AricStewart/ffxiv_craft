@@ -382,7 +382,7 @@ class FfxivDataSet
         if (count($this->gilShop) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->gilShop)) {
+        if (!file_exists($this->baseData.$this->gilShopData)) {
             $gilShopURL = "https://raw.githubusercontent.com/viion/".
                         "ffxiv-datamining/master/csv/GilShopItem.csv";
             $this->getData($this->baseData.$this->gilShopData, $gilShopURL);
