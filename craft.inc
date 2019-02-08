@@ -25,7 +25,7 @@ require_once __DIR__."/apiData.inc";
 
 $fullHistory = true;
 
-function priceRecipe(&$input, $xiv, $progress)
+function priceRecipe(&$input, $xiv, $dataset, $progress)
 {
     global $fullHistory;
 
@@ -42,6 +42,13 @@ function priceRecipe(&$input, $xiv, $progress)
         $cheap = $xiv->currentCheapest($market);
         $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
         $bit['marketHQ'] = $cheap->IsHQ;
+
+        if (count($dataset->findItemInShop($bit['id'])) > 0) {
+            $bit['shopCost'] *= $bit['count'];
+        } else {
+            $bit['shopCost'] = 0;
+        }
+
         if ($bit['marketCost'] == 0) {
             $marketCost = -1;
             $bitOptimal = -1;
@@ -52,12 +59,19 @@ function priceRecipe(&$input, $xiv, $progress)
             $bitOptimal =  $bit['marketCost'];
         }
         if ($bit['bits']) {
-            $partCost = priceRecipe($bit['bits'], $xiv, $progress);
-            $bit['craftCost'] = $partCost['Market'];
+            $partCost = priceRecipe($bit['bits'], $xiv, $dataset, $progress);
+            $bit['craftCost'] = $partCost['Optimal'];
             if ($bitOptimal <= 0) {
                 $bitOptimal = $bit['craftCost'];
             } elseif ($bit['craftCost'] > 0) {
                 $bitOptimal = min($bit['craftCost'], $bitOptimal);
+            }
+        }
+        if ($bit['shopCost'] > 0) {
+            if ($bitOptimal <= 0) {
+                $bitOptimal = $bit['shopCost'];
+            } else {
+                $bitOptimal = min($bit['shopCost'], $bitOptimal);
             }
         }
         if ($optimalCost >= 0 && $bitOptimal > 0) {
@@ -121,7 +135,12 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
         countItems($recipe['Recipe'], $i);
         $progress("start", $i + 4);
     }
-    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $progress);
+    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
+    if (count($dataset->findItemInShop($itemID)) > 0) {
+        $recipe['Cost']['Shop'] = $dataset->item[$itemID]['Price{Mid}'];
+    } else {
+        $recipe['Cost']['Shop'] = 0;
+    }
     if ($progress !== null) {
         $progress('progress');
     }
@@ -174,6 +193,9 @@ function line($line, $tab)
                 print "/ crafted UNAVALIABLE";
             }
         }
+        if ($bit['shopCost'] > 0) {
+            print "/ vendor ".number_format($bit['shopCost'])." gil";
+        }
         print "\n";
         line($bit['bits'], $tab+1);
     }
@@ -224,13 +246,25 @@ function printRecipe($recipe, $profitOnly=false)
         }
         print "\n";
 
-        print "Market Cost: ";
+        print "------------------------------------\n";
+
+        print "Shop Cost: ";
+        if ($recipe['Cost']['Shop'] > 0) {
+            print number_format($recipe['Cost']['Shop'])." gil \n";
+        } else {
+            print "None\n";
+        }
+
+        print "Craft at Market Cost: ";
         if ($recipe['Cost']['Market'] > 0) {
             print number_format($recipe['Cost']['Market'])." gil \n";
         } else {
             print "UNAVLIABLE\n";
         }
-        print "Optimal Cost: ".number_format($recipe['Cost']['Optimal'])." gil \n";
+        print "Craft at Optimal Cost: ".number_format($recipe['Cost']['Optimal'])." gil \n";
+    }
+    if ($recipe['Profit']['LQ'] > 0 || $recipe['Profit']['HQ'] > 0) {
+        print "------------------------------------\n";
     }
     if ($recipe['Profit']['LQ'] > 0) {
         print "** Possible Profit: ".number_format($recipe['Profit']['LQ'])." gil\n";

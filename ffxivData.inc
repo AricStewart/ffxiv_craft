@@ -34,12 +34,14 @@ class FfxivDataSet
     public $gather = array();
     public $master = array();
     public $world = array();
+    public $gilShop = array();
 
     public $recipData = "/data/Recipe.csv";
     public $itemData = "/data/Item.csv";
     public $gatherData = "/data/GatheringItem.csv";
     public $masterData = "/data/SecretRecipeBook.csv";
     public $worldData = "/data/World.csv";
+    public $gilShopData = "/data/GilShopItem.csv";
 
     private static function _isTrue($val)
     {
@@ -183,9 +185,6 @@ class FfxivDataSet
                 if ($data[1] === "") {
                     continue;
                 }
-if (count($data) < 90) {
-var_dump($data);
-}
                 $entry = [
                     'Index' => intval($data[0]),
                     'Singular' => $data[1],
@@ -378,6 +377,46 @@ var_dump($data);
         }
     }
 
+    function loadGilShop() 
+    {
+        if (count($this->gilShop) > 0) {
+            return;
+        }
+        if (!file_exists($this->baseData.$this->gilShop)) {
+            $gilShopURL = "https://raw.githubusercontent.com/viion/".
+                        "ffxiv-datamining/master/csv/GilShopItem.csv";
+            $this->getData($this->baseData.$this->gilShopData, $gilShopURL);
+        }
+        $handle = fopen($this->baseData.$this->gilShopData, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                $entry = [
+                    'Index' => $data[0],
+                    'Item' => intval($data[1]),
+                ];
+                $this->gilShop[] = $entry;
+            }
+            fclose($handle);
+        }
+    }
+
+    function findItemInShop($itemID) 
+    {
+        $this->loadGilShop();
+        $result = [];
+        foreach ($this->gilShop as $val) {
+            if ($val['Item'] === $itemID) {
+                $result[] = $val;
+            }
+        }
+        return $result;
+    }
+
     function getFullRecipe($id, $count=1, &$output=null) 
     {
         $this->loadRecipies();
@@ -403,6 +442,7 @@ var_dump($data);
                          'marketCost' => 0,
                          'marketHQ' => 0,
                          'craftCost' => 0,
+                         'shopCost' => $this->item[$i['Item']]['Price{Mid}'],
                          'bits' => $bits
                         ];
         }

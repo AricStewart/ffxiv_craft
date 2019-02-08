@@ -45,6 +45,11 @@ function printLine(line, tab)
         if (l.craftCost > 0) {
             output += '/ crafted ' + l.craftCost.toLocaleString() + " gil";
         }
+        if (l.shopCost > 0) {
+            output += '/ <a href="http://www.garlandtools.org/db/#item/' +
+                    l.id + '" target="_blank">vendor</a> ' +
+                    l.shopCost.toLocaleString() + " gil";
+        }
         if (l.bits.length > 0) {
             output += printLine(l.bits, tab+1);
         }
@@ -66,6 +71,12 @@ function fillCraftFrame(data)
         optimalCost =  'UNAVLAIBLE';
     } else {
         optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
+    }
+
+    if (data.Cost.Shop <= 0) {
+        shopCost =  'UNAVLAIBLE';
+    } else {
+        shopCost = data.Cost.Shop.toLocaleString() + " gil";
     }
 
     if (data.Cheap.LQ === null) {
@@ -104,8 +115,10 @@ function fillCraftFrame(data)
     'Recent: '+recent+'<br>'+
     'Weekly Average: '+week+'<br>'+
     'Current: '+cheap+"<br>"+
-    'Market Cost: '+marketCost+'<br>'+
-    'Optimal Cost: '+optimalCost+"<br>";
+    "<hr>" +
+    'Vendor Cost: '+shopCost+"<br>" +
+    'Craft at Market Cost: '+marketCost+'<br>'+
+    'Craft at Optimal Cost: '+optimalCost+"<br>";
     if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
         var block = '<hr>';
         if (data.Profit.LQ > 0) {
