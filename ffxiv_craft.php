@@ -41,6 +41,23 @@ function _sortByProfit($a, $b)
     return $p - $p2;
 }
 
+$i = 0; 
+function tick($stage, $data=null)
+{
+    global $i;
+    if ($stage != 'progress') {
+        return;
+    }
+    $i++;
+    if ($i%10 == 0) {
+        print '|';
+    } else if ($i%5 == 0) {
+        print '-';
+    } else {
+        print '.';
+    }
+}
+
 if (count($argv) > 1) {
     if ($argv[1] == '-c') {
         array_map('unlink', glob("data/*.json"));
@@ -49,14 +66,13 @@ if (count($argv) > 1) {
         $a = $dataset->getMastercraft($argv[2]);
         print count($a)."\n";
         if (count($a) > 0) {
-            $xiv->verbose = false;
             $output = [];
             foreach ($a as $key => $i) {
                 print " $i (".($key+1)."|".count($a).") ";
-                $output[] = doRecipie($i, $dataset, $xiv);
+                $output[] = doRecipie($i, $dataset, $xiv, 'tick');
             }
             usort($output, '_sortByProfit');
-            foreach($output as $recipe) {
+            foreach ($output as $recipe) {
                 printRecipe($recipe, true);
             }
         }
@@ -77,5 +93,5 @@ if (!is_numeric($itemID)) {
     $itemID = $result;
 }
 
-$output = doRecipie($itemID, $dataset, $xiv);
+$output = doRecipie($itemID, $dataset, $xiv, 'tick');
 printRecipe($output);

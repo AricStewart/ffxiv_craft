@@ -16,24 +16,33 @@
     require_module 'standard';
 .*/
 
-/*  Archive using xivapi data */
+function countItems($recipe, &$i)
+{
+    $i += (count($recipe) * 2);
+    foreach ($recipe as $bit) {
+        countItems($bit['bits'], $i);
+    }
+}
 
-$fullHistory = true;
+function preDownloadData($input, $xiv, $progress)
+{
+    foreach ($input as $bit) {
+        $xiv->getMarket($bit['id'], true, $progress);
+        $xiv->getHistory($bit['id'], true, $progress);
+        if ($bit['bits']) {
+            preDownloadData($bit['bits'], $xiv, $progress);
+        }
+    }
+}
 
 function priceRecipe(&$input, $xiv, $dataset, $progress)
 {
-    global $fullHistory;
-
     $marketCost = 0;
     $optimalCost = 0;
     foreach ($input as &$bit) {
-        if ($progress !== null) {
-            $progress('progress');
-        }
         $market = $xiv->getMarket($bit['id']);
-        if ($fullHistory) {
-            $xiv->getHistory($bit['id']);
-        }
+        $xiv->getHistory($bit['id']);
+
         $cheap = $xiv->currentCheapest($market);
         $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
         $bit['marketHQ'] = $cheap->IsHQ;
@@ -108,14 +117,6 @@ function calculateProfit(&$recipe)
     return $Price;
 }
 
-function countItems($recipe, &$i)
-{
-    $i += count($recipe);
-    foreach ($recipe as $bit) {
-        countItems($bit['bits'], $i);
-    }
-}
-
 function doRecipie($itemID, $dataset, $xiv, $progress=null)
 {
     $recipe = [];
@@ -125,11 +126,19 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
     }
+    $count = 0;
+    countItems($recipe['Recipe'], $count);
     if ($progress !== null) {
-        $i = 0;
-        countItems($recipe['Recipe'], $i);
-        $progress("start", $i + 4);
+        $progress("start", $count + 4);
     }
+    preDownloadData($recipe['Recipe'], $xiv, $progress);
+
+    /* Pre Download */
+    $xiv->getHistory($itemID, true, $progress);
+    $xiv->getMarket($itemID, true, $progress);
+    $xiv->flushPool();
+
+    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
     $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
     if (count($dataset->findItemInShop($itemID)) > 0) {
         $recipe['Cost']['Shop'] = $dataset->item[$itemID]['Price{Mid}'];
@@ -144,17 +153,7 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
                          'HQ' => $xiv->mostRecent($history, true)];
     $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
                        'HQ' => $xiv->weekAverage($history, true)];
-    if ($progress !== null) {
-        $progress('progress');
-    }
     $market = $xiv->getMarket($itemID);
-    if ($progress !== null) {
-        $progress('progress');
-    }
-    $market = $xiv->getMarket($itemID);
-    if ($progress !== null) {
-        $progress('progress');
-    }
     $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
                         'HQ' => $xiv->currentCheapest($market, true)];
     $recipe['Name'] = $dataset->item[$itemID]['Name'];
@@ -256,7 +255,8 @@ function printRecipe($recipe, $profitOnly=false)
         } else {
             print "UNAVLIABLE\n";
         }
-        print "Craft at Optimal Cost: ".number_format($recipe['Cost']['Optimal'])." gil \n";
+        print "Craft at Optimal Cost: ".
+              number_format($recipe['Cost']['Optimal'])." gil \n";
     }
     if ($recipe['Profit']['LQ'] > 0 || $recipe['Profit']['HQ'] > 0) {
         print "------------------------------------\n";
@@ -266,7 +266,8 @@ function printRecipe($recipe, $profitOnly=false)
     }
 
     if ($recipe['Profit']['HQ'] > 0) {
-        print "** Possible Profit: ".number_format($recipe['Profit']['HQ'])." (*) gil\n";
+        print "** Possible Profit: ".number_format($recipe['Profit']['HQ']).
+              " (*) gil\n";
     }
 
     if (!$profitOnly) {

@@ -13,12 +13,14 @@
  **/
 
 /*.
-    require_module 'curl';
     require_module 'array';
     require_module 'core';
     require_module 'file';
     require_module 'phpinfo';
 .*/
+
+require __DIR__.'/vendor/autoload.php';
+use GuzzleHttp\Client;
 
 ini_set('memory_limit', '5000M');
 
@@ -36,12 +38,26 @@ class FfxivDataSet
     public $world = array();
     public $gilShop = array();
 
-    public $recipData = "/data/Recipe.csv";
-    public $itemData = "/data/Item.csv";
-    public $gatherData = "/data/GatheringItem.csv";
-    public $masterData = "/data/SecretRecipeBook.csv";
-    public $worldData = "/data/World.csv";
-    public $gilShopData = "/data/GilShopItem.csv";
+    private $_recipData = "/data/Recipe.csv";
+    private $_recipURL = "Recipe.csv";
+
+    private $_itemData = "/data/Item.csv";
+    private $_itemURL =  "Item.csv";
+
+    private $_gatherData = "/data/GatheringItem.csv";
+    private $_gatherURL = "GatheringItem.csv";
+
+    private $_masterData = "/data/SecretRecipeBook.csv";
+    private $_masterURL = "SecretRecipeBook.csv";
+
+    private $_worldData = "/data/World.csv";
+    private $_worldURL = "World.csv";
+
+    private $_gilShopData = "/data/GilShopItem.csv";
+    private $_gilShopURL = "GilShopItem.csv";
+
+    private $_client;
+    public $baseData;
 
     private static function _isTrue($val)
     {
@@ -64,46 +80,29 @@ class FfxivDataSet
 
     function getData($file, $url) 
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $content = curl_exec($ch);
-        curl_close($ch);
-        file_put_contents($file, $content);
-        chmod($file, 0666);
-    }
-
-    function updateData() 
-    {
-        $itemURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
-                    "master/csv/Item.csv";
-        $recipURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
-                    "master/csv/Recipe.csv";
-        $gatherURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
-                    "master/csv/GatheringItem.csv";
-        $masterURL = "https://raw.githubusercontent.com/viion/ffxiv-datamining/".
-                    "master/csv/SecretRecipeBook.csv";
-        $this->getData($this->baseData.$this->recipData, $recipURL);
-        $this->getData($this->baseData.$this->itemData, $itemURL);
-        $this->getData($this->baseData.$this->gatherData, $gatherURL);
-        $this->getData($this->baseData.$this->masterData, $masterURL);
+        $response = $this->_client->request('GET', $url);
+        @file_put_contents($file, $response->getBody());
+        @chmod($file, 0666);
     }
 
     function __construct($baseData='.') 
     {
         $this->baseData = $baseData;
-        if (!file_exists($this->baseData.$this->recipData)) {
-            print "Updating Data...\n";
-            $this->updateData();
-        }
+        $this->_client = new Client(
+            ['base_uri' =>
+            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
+        );
     }
 
-    function loadRecipies()
+    function loadRecipes()
     {
         if (count($this->recipe) > 0) {
             return;
         }
-        $handle = fopen($this->baseData.$this->recipData, "r");
+        if (!file_exists($this->baseData.$this->_recipData)) {
+            $this->getData($this->baseData.$this->_recipData, $this->_recipURL);
+        }
+        $handle = fopen($this->baseData.$this->_recipData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -174,7 +173,10 @@ class FfxivDataSet
         if (count($this->item) > 0) {
             return;
         }
-        $handle = fopen($this->baseData.$this->itemData, "r");
+        if (!file_exists($this->baseData.$this->_itemData)) {
+            $this->getData($this->baseData.$this->_itemData, $this->_itemURL);
+        }
+        $handle = fopen($this->baseData.$this->_itemData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 2000, ",")) !== false) {
@@ -292,7 +294,10 @@ class FfxivDataSet
         if (count($this->gather) > 0) {
             return;
         }
-        $handle = fopen($this->baseData.$this->gatherData, "r");
+        if (!file_exists($this->baseData.$this->_gatherData)) {
+            $this->getData($this->baseData.$this->_gatherData, $this->_gatherURL);
+        }
+        $handle = fopen($this->baseData.$this->_gatherData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -321,7 +326,10 @@ class FfxivDataSet
         if (count($this->master) > 0) {
             return;
         }
-        $handle = fopen($this->baseData.$this->masterData, "r");
+        if (!file_exists($this->baseData.$this->_masterData)) {
+            $this->getData($this->baseData.$this->_masterData, $this->_masterURL);
+        }
+        $handle = fopen($this->baseData.$this->_masterData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -348,12 +356,10 @@ class FfxivDataSet
         if (count($this->world) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->worldData)) {
-            $worldURL = "https://raw.githubusercontent.com/viion/".
-                        "ffxiv-datamining/master/csv/World.csv";
-            $this->getData($this->baseData.$this->worldData, $worldURL);
+        if (!file_exists($this->baseData.$this->_worldData)) {
+            $this->getData($this->baseData.$this->_worldData, $this->_worldURL);
         }
-        $handle = fopen($this->baseData.$this->worldData, "r");
+        $handle = fopen($this->baseData.$this->_worldData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -382,12 +388,10 @@ class FfxivDataSet
         if (count($this->gilShop) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->gilShopData)) {
-            $gilShopURL = "https://raw.githubusercontent.com/viion/".
-                        "ffxiv-datamining/master/csv/GilShopItem.csv";
-            $this->getData($this->baseData.$this->gilShopData, $gilShopURL);
+        if (!file_exists($this->baseData.$this->_gilShopData)) {
+            $this->getData($this->baseData.$this->_gilShopData, $this->_gilShopURL);
         }
-        $handle = fopen($this->baseData.$this->gilShopData, "r");
+        $handle = fopen($this->baseData.$this->_gilShopData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -419,7 +423,7 @@ class FfxivDataSet
 
     function getFullRecipe($id, $count=1, &$output=null) 
     {
-        $this->loadRecipies();
+        $this->loadRecipes();
         $this->loadItems();
         if ($output == null) {
             $output = array();
@@ -467,7 +471,7 @@ class FfxivDataSet
 
     function getMasterCraft($book=null) 
     {
-        $this->loadRecipies();
+        $this->loadRecipes();
         $output = [];
         if ($book !== null) {
             $theBook = $this->lookupMasterBook($book);

@@ -22,6 +22,23 @@ require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
 require_once __DIR__."/apiData.inc";
 
+function printProfit($profit)
+{
+    if ($profit['Profit'] > 0) {
+        $hq = '  ';
+        if ($profit['HQ']) {
+            $hq = '(*)';
+        }
+        print "\n\t$hq cheapest ".$profit['Cheapest']->PricePerUnit." gil\n";
+        print "\t$hq Profit:".$profit['Profit']." gil\n";
+        print "\t$hq week (".$profit['Week']['Minimum'].' <- '.
+            $profit['Week']['Average'].' -> '.
+            $profit['Week']['Maximum'].' gil)';
+
+        $profit[] = $profit;
+    }
+}
+
 if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
     $marketboard = new Ffxivmb($server, $ffxivmbGuid);
 } else {
@@ -79,13 +96,13 @@ foreach ($stuff as $item) {
         print "($count/$limit): ".$idb['Name'].'('.$item['Item'].') ';
 
         $profitLQ = $xiv->itemProfit($item['Item'], false);
-        $xiv->printProfit($profitLQ);
+        printProfit($profitLQ);
         if ($profitLQ['Profit'] > 0) {
             $profit[] = $profitLQ;
         }
 
         $profitHQ = $xiv->itemProfit($item['Item'], true);
-        $xiv->printProfit($profitHQ);
+        printProfit($profitHQ);
         if ($profitHQ['Profit'] > 0) {
             $profit[] = $profitHQ;
         }
@@ -103,6 +120,6 @@ function _sortByOrder($a, $b)
 usort($profit, '_sortByOrder');
 foreach ($profit as $p) {
     print "! ".$data->item[$p['ID']]['Name'];
-    $xiv->printProfit($p);
+    printProfit($p);
     print "\n";
 }

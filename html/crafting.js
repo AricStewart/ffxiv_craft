@@ -168,6 +168,8 @@ function getDataEvent() {
         document.getElementById('progress').max = data.data;
       } else if (data.type == "progress") {
         document.getElementById('progress').value += 1;
+      } else if (data.type == "info") {
+        console.log(data.data);
       } else if (data.type == "done") {
         source.close();
         hideSpinner();

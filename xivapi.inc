@@ -14,10 +14,14 @@
 
 /*.
     require_module 'standard';
-    require_module 'curl';
     require_module 'json';
     require_module 'file';
 .*/
+
+
+require __DIR__.'/vendor/autoload.php';
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 
 class Xivapi
 {
@@ -25,9 +29,11 @@ class Xivapi
     private $_xivapiKey;
     private $_ffxivmb;
     private $_base;
+    private $_client;
+    private $_promises;
+    private $_poolSize;
+    private $_cache;
 
-    public $verbose;
-    public $silent;
     public $timeout;
 
     function __construct($server, $xivapiKey, $ffxivmb=null, $base='.') 
@@ -35,35 +41,32 @@ class Xivapi
         $this->_server = $server;
         $this->_xivapiKey = $xivapiKey;
         $this->_ffxivmb = $ffxivmb;
-        $this->verbose = true;
-        $this->silent = false;
-        $this->timeout = 3600;
+        $this->timeout = 3600; /*  1 hour */
         $this->_base = $base;
+
+        $this->_poolSize = 5;
+        $this->_client = new Client(['base_uri' => "https://xivapi.com/"]);
+        $this->_promises = [];
+
+        $this->_cache = [];
     }
 
-    private function _getXIVdata($file, $url) 
+    function flushPool($cnt=-1)
     {
-        $cached = true;
-        if (!file_exists($file) || (time()-filemtime($file) > $this->timeout)) {
-            if ($this->verbose && !$this->silent) {
-                print "From $url...\n";
+        foreach ($this->_promises as $key => $promise) {
+            try {
+                $promise->wait();
+                $i++;
+                unset($this->_promises[$key]);
+                if ($cnt > 0 && $i > $cnt) {
+                    break;
+                }
+            } catch (ClientException $e) {
+                unset($this->_promises[$key]);
+            } catch (Exception $e) {
+                unset($this->_promises[$key]);
             }
-            $ch = curl_init();
-            $url =  "https://xivapi.com/$url?key=$this->_xivapiKey";
-            curl_setopt($ch, CURLOPT_URL,  $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $content = curl_exec($ch);
-            curl_close($ch);
-            @file_put_contents($file, $content);
-            $cached = false;
-            @chmod($file, 0666);
         }
-        $contents = file_get_contents($file);
-        $data = json_decode($contents);
-        if ($data) {
-            $data->cached = $cached;
-        }
-        return $data;
     }
 
     function buildPath($type, $ID) 
@@ -71,49 +74,112 @@ class Xivapi
         return $this->_base."/data/".$this->_server.".$type.$ID.json";
     }
 
-    function getHistory($ID) 
+    private function _getXIVdata($method, $ID, $url, $async, $progress,
+        $report=null
+    ) { 
+        $file = $this->buildPath($method, $ID);
+        if (array_key_exists($file, $this->_cache)) {
+            if ($progress != null) {
+                $progress('progress');
+            }
+            return $this->_cache[$file];
+        }
+        if (!file_exists($file) || (time()-filemtime($file) > $this->timeout)) {
+            if ($progress !== null) {
+                $progress('info', "From $url...");
+            }
+
+            if (count($this->_promises) > $this->_poolSize) {
+                $this->flushPool($this->_poolSize/2);
+            }
+
+            try {
+                $promise = $this->_client->requestAsync(
+                    'GET',
+                    "/$url?key=".$this->_xivapiKey
+                );
+                $promise->then(
+                    function ($response) use ( $file, $progress, $ID, $report ) {
+                        $contents = $response->getBody();
+                        @file_put_contents($file, $contents);
+                        @chmod($file, 0666);
+                        if ($progress != null) {
+                            $progress('progress');
+                        }
+                        $data = json_decode($contents);
+                        $this->_cache[$file] = $data;
+                        if ($report !== null && $this->_ffxivmb !== null) {
+                            $time = filemtime($file);
+                            $this->_ffxivmb->$report($ID, $data, $time);
+                        }
+                    },
+                    function (ClientException $e) {
+                        return;
+                    }
+                );
+            } catch (Exception $e) {
+                return;
+            }
+
+            $this->_promises[] = $promise;
+
+            if ($async) {
+                return null;
+            }
+            $this->flushPool();
+        } else {
+            if ($progress != null) {
+                $progress('progress');
+            }
+        }
+
+        if ($async) {
+            return null;
+        }
+
+        if (!file_exists($file)) {
+            sleep(1);
+            return $this->_getXIVdata(
+                $method, $ID, $url, false, $progress,
+                $report
+            );
+        }
+        $contents = file_get_contents($file);
+        $data = json_decode($contents);
+        $this->_cache[$file] = $data;
+        return $data;
+    }
+
+    function getHistory($ID, $async=false, $progress=null) 
     {
         $history = $this->_getXIVdata(
-            $this->buildPath('history', $ID),
-            "market/$this->_server/items/$ID/history"
+            'history', $ID,
+            "market/$this->_server/items/$ID/history",
+            $async, $progress, 'sendHistory'
         );
-        if ($history == null) {
-            print ("Failed to aquire history for $ID\n");
-        } elseif (!$history->cached && $this->_ffxivmb) {
-            $this->_ffxivmb->sendHistory($ID, $history);
+        if ($async) {
+            return;
         }
-        if (!$this->silent) {
-            print ".";
+        if ($progress != null) {
+            $progress('progress');
         }
         return $history;
     }
 
-    function getMarket($ID) 
+    function getMarket($ID, $async=false, $progress=null) 
     {
         $market = $this->_getXIVdata(
-            $this->buildPath('market', $ID),
-            "market/$this->_server/items/$ID"
+            'market', $ID,
+            "market/$this->_server/items/$ID",
+            $async, $progress, 'sendPrices'
         );
-        if ($market == null && !$this->silent) {
-              print ("Failed to aquire market for $ID\n");
-        } elseif (!$market->cached && $this->_ffxivmb) {
-            $time = filemtime($this->buildPath('market', $ID));
-            $this->_ffxivmb->sendPrices($market, $time);
+        if ($async) {
+            return;
         }
-        if (!$this->silent) {
-            print ".";
+        if ($progress != null) {
+            $progress('progress');
         }
         return $market;
-    }
-
-    function getItem($ID) 
-    {
-        return $this->_getXIVdata($this->buildPath('item', $ID), "item/$ID");
-    }
-
-    function getRecipie($ID) 
-    {
-        return $this->_getXIVdata($this->buildPath('recipe', $ID), "recipe/$ID");
     }
 
     function mostRecent($history, $HQ=null) 
@@ -206,22 +272,5 @@ class Xivapi
             }
         }
         return $result;
-    }
-
-    function printProfit($profit)
-    {
-        if ($profit['Profit'] > 0) {
-            $hq = '  ';
-            if ($profit['HQ']) {
-                $hq = '(*)';
-            }
-            print "\n\t$hq cheapest ".$profit['Cheapest']->PricePerUnit." gil\n";
-            print "\t$hq Profit:".$profit['Profit']." gil\n";
-            print "\t$hq week (".$profit['Week']['Minimum'].' <- '.
-                $profit['Week']['Average'].' -> '.
-                $profit['Week']['Maximum'].' gil)';
-
-            $profit[] = $profit;
-        }
     }
 }

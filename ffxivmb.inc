@@ -15,71 +15,69 @@
 /*.
     require_module 'standard';
     require_module 'json';
-    require_module 'curl';
 .*/
+
+require __DIR__.'/vendor/autoload.php';
+use GuzzleHttp\Client;
 
 class Ffxivmb
 {
     private $_server = "";
     private $_guid = "";
+    private $_client;
+    private $_cache;
 
     function __construct($server, $guid) 
     {
         $this->_server = $server;
         $this->_guid = $guid;
+        $this->_client = new Client(
+            ['base_uri' => "https://ffxivmb.com/"]
+        );
+        $this->_cache = [];
+    }
+
+    function __destruct() 
+    {
+        foreach ($this->_cache as $promise) {
+            try {
+                $promise->wait();
+            } catch (Exception $e) {
+            }
+        }
     }
 
     function _buildHistoryUrl($item) 
     {
-        return "https://ffxivmb.com/public/api/History?Server=".
+        return "/public/api/History?Server=".
             $this->_server."&SourceGuid=".$this->_guid."&ItemKey=".$item;
     }
 
     function _buildPriceUrl($item) 
     {
-        return "https://ffxivmb.com/public/api/Prices?Server=".
+        return "/public/api/Prices?Server=".
             $this->_server."&SourceGuid=".$this->_guid."&ItemKey=".$item;
 
     }
 
     function _sendBlock($url, $data) 
     {
-        $json = json_encode($data);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL,  $url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-        curl_setopt(
-            $ch, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen($json))
+        if (array_key_exists($url, $this->_cache)) {
+            return;
+        }
+        $this->_cache[$url] = $this->_client->requestAsync(
+            'POST', $url,
+            ['json' => $data]
         );
-
-        /*
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $result = curl_exec($ch);
-
-        var_dump($result);
-        var_dump(curl_getinfo($ch));
-        */
-
-        curl_setopt($ch, CURLOPT_TIMEOUT, 0.1);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-        curl_setopt($ch, CURLOPT_FORBID_REUSE, true);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0.1);
-        curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
-        curl_exec($ch);
-        curl_close($ch);
     }
 
-    function sendHistory($id, $data) 
+    function sendHistory($id, $data, $unused) 
     {
         $url = $this->_buildHistoryUrl($id);
         $this->_sendBlock($url, $data->History);
     }
 
-    function sendPrices($data, $time) 
+    function sendPrices($unused, $data, $time) 
     {
         $url = $this->_buildPriceUrl($data->Item->ID);
         $output = array();
