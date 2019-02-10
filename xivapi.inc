@@ -53,6 +53,7 @@ class Xivapi
 
     function flushPool($cnt=-1)
     {
+        $i = 0;
         foreach ($this->_promises as $key => $promise) {
             try {
                 $promise->wait();

@@ -44,8 +44,10 @@ function priceRecipe(&$input, $xiv, $dataset, $progress)
         $xiv->getHistory($bit['id']);
 
         $cheap = $xiv->currentCheapest($market);
-        $bit['marketCost'] = $cheap['Item']->PricePerUnit * $bit['count'];
-        $bit['marketHQ'] = $cheap['Item']->IsHQ;
+        if ($cheap != null) {
+            $bit['marketCost'] = $cheap['Item']->PricePerUnit * $bit['count'];
+            $bit['marketHQ'] = $cheap['Item']->IsHQ;
+        }
 
         if (count($dataset->findItemInShop($bit['id'])) > 0) {
             $bit['shopCost'] *= $bit['count'];
