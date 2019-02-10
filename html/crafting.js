@@ -195,6 +195,10 @@ function getDataEvent() {
         source.close();
         hideSpinner();
         document.getElementById('progress').style.display = "none";
+        if (data.data === "[]") {
+            var name = document.getElementById('item').value;
+            alert("Failed to find recipe for item  '" + name + "'");
+        }
         var item = JSON.parse(data.data);
         fillCraftFrame(item);
       }
