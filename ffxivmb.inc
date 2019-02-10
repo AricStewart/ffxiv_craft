@@ -37,16 +37,6 @@ class Ffxivmb
         $this->_cache = [];
     }
 
-    function __destruct() 
-    {
-        foreach ($this->_cache as $promise) {
-            try {
-                $promise->wait();
-            } catch (Exception $e) {
-            }
-        }
-    }
-
     function _buildHistoryUrl($item) 
     {
         return "/public/api/History?Server=".
@@ -65,7 +55,7 @@ class Ffxivmb
         if (array_key_exists($url, $this->_cache)) {
             return;
         }
-        $this->_cache[$url] = $this->_client->requestAsync(
+        $this->_cache[$url] = $this->_client->request(
             'POST', $url,
             ['json' => $data]
         );

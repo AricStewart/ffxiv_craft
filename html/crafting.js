@@ -109,8 +109,14 @@ function fillCraftFrame(data)
         week += data.Week.HQ.Average.toLocaleString()+" gil";
     }
 
+    if (data.Info.Result.Amount > 1) {
+        dataName = data.Name + ' x' + data.Info.Result.Amount;
+    } else {
+        dataName = data.Name;
+    }
+
     document.getElementById('output').innerHTML = 
-    '<h2 style="text-align:center;">'+data.Name+'</h2><hr>' +
+    '<h2 style="text-align:center;">'+dataName+'</h2><hr>' +
     '<div>' +
     'Recent: '+recent+'<br>'+
     'Weekly Average: '+week+'<br>'+

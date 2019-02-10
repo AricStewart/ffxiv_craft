@@ -109,6 +109,9 @@ function calculateProfit(&$recipe)
         $Price['HQ'] = min($Price['HQ'], $recipe['Week']['HQ']['Average']);
     }
 
+    $Price['LQ'] *= $recipe['Info']['Result']['Amount'];
+    $Price['HQ'] *= $recipe['Info']['Result']['Amount'];
+
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
 
@@ -119,13 +122,12 @@ function calculateProfit(&$recipe)
 
 function doRecipie($itemID, $dataset, $xiv, $progress=null)
 {
-    $recipe = [];
-
-    $recipe['Recipe'] = $dataset->getFullRecipe($itemID);
-    if ($recipe['Recipe'] == null) {
+    $recipe = $dataset->getFullRecipe($itemID);
+    if ($recipe == null) {
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
     }
+
     $count = 0;
     countItems($recipe['Recipe'], $count);
     if ($progress !== null) {
@@ -138,7 +140,6 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
     $xiv->getMarket($itemID, true, $progress);
     $xiv->flushPool();
 
-    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
     $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
     if (count($dataset->findItemInShop($itemID)) > 0) {
         $recipe['Cost']['Shop'] = $dataset->item[$itemID]['Price{Mid}'];
@@ -202,7 +203,11 @@ function printRecipe($recipe, $profitOnly=false)
         return;
     }
 
-    print "\n===>   ".$recipe['Name']."(".$recipe['ID'].")\n";
+    print "\n===>   ".$recipe['Name']."(".$recipe['ID'].")";
+    if ($recipe['Info']['Result']['Amount'] > 1) {
+        print " x".$recipe['Info']['Result']['Amount'];
+    }
+    print "\n";
     if (!$profitOnly) {
         print "recent: ";
         if ($recipe['Recent']['LQ']) {

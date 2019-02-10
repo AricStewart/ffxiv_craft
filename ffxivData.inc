@@ -421,7 +421,7 @@ class FfxivDataSet
         return $result;
     }
 
-    function getFullRecipe($id, $count=1, &$output=null) 
+    function getFullRecipe($id, $count=1, &$output=null, $subrun=false) 
     {
         $this->loadRecipes();
         $this->loadItems();
@@ -429,6 +429,12 @@ class FfxivDataSet
             $output = array();
         }
         $tgt = $this->recipe[$id];
+        $ingred = &$output;
+        if (!$subrun) {
+            $output['Info'] = $tgt;
+            $output['Recipe'] = [];
+            $ingred = &$output['Recipe'];
+        }
         foreach ($tgt['Ingredients'] as $i) {
             $bits = [];
             if (array_key_exists($i['Item'], $this->recipe) 
@@ -437,10 +443,10 @@ class FfxivDataSet
                 $result = $this->recipe[$i['Item']]['Result']['Amount'];
                 $this->getFullRecipe(
                     $i['Item'],
-                    ceil(($i['Amount']* $count)/$result), $bits
+                    ceil(($i['Amount']* $count)/$result), $bits, true
                 );
             }
-            $output[] = [
+            $ingred[] = [
                          'id' => $i['Item'],
                          'name' => $this->item[$i['Item']]['Name'],
                          'count' => $i['Amount'] * $count,
