@@ -36,8 +36,8 @@ $fullHistory = true;
 
 function _sortByProfit($a, $b) 
 {
-    $p = max($a['Profit']['HQ'], $a['Profit']['LQ']);
-    $p2 = max($b['Profit']['HQ'], $b['Profit']['LQ']);
+    $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
+    $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
     return $p - $p2;
 }
 

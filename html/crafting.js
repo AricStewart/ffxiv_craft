@@ -82,11 +82,13 @@ function fillCraftFrame(data)
     if (data.Cheap.LQ === null) {
         cheap =  'UNAVLAIBLE';
     } else {
-        cheap = data.Cheap.LQ.PricePerUnit.toLocaleString()+" gil";
+        cheap = data.Cheap.LQ.Item.PricePerUnit.toLocaleString()+" gil";
+        cheap +=" ("+data.Cheap.LQ.Count+" listings)";
     }
     if (data.Cheap.HQ !== null) {
         cheap += " / <img src='hq.png'>";
-        cheap += data.Cheap.HQ.PricePerUnit.toLocaleString()+" gil";
+        cheap += data.Cheap.HQ.Item.PricePerUnit.toLocaleString()+" gil";
+        cheap +=" ("+data.Cheap.HQ.Count+" listings)";
     }
 
     if (data.Recent.LQ === null) {
@@ -103,10 +105,22 @@ function fillCraftFrame(data)
         week =  'UNAVLAIBLE';
     } else {
         week = data.Week.LQ.Average.toLocaleString()+" gil";
+        sales = data.Week.LQ.Count;
+        plu = 's';
+        if (sales === 1) {
+            plu = '';
+        }
+        week +=" ( "+sales.toLocaleString()+" sale"+plu+" )";
     }
     if (data.Week.HQ.Average !== 0) {
         week += " / <img src='hq.png'>";
         week += data.Week.HQ.Average.toLocaleString()+" gil";
+        sales = data.Week.HQ.Count;
+        plu = 's';
+        if (sales === 1) {
+            plu = '';
+        }
+        week +=" ( "+sales.toLocaleString()+" sale"+plu+" )";
     }
 
     if (data.Info.Result.Amount > 1) {
@@ -128,10 +142,11 @@ function fillCraftFrame(data)
     if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
         var block = '<hr>';
         if (data.Profit.LQ > 0) {
-            block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil<br>";
+console.log(data.Profit);
+            block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)<br>";
         }
         if (data.Profit.HQ > 0) {
-            block += "<b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil<br>";
+            block += "<b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil ("+Math.round(data.Profit["HQ%"]*100)+"%)<br>";
         }
         block += "<hr>";
         document.getElementById('output').innerHTML += block;

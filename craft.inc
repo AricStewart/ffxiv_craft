@@ -44,8 +44,8 @@ function priceRecipe(&$input, $xiv, $dataset, $progress)
         $xiv->getHistory($bit['id']);
 
         $cheap = $xiv->currentCheapest($market);
-        $bit['marketCost'] = $cheap->PricePerUnit * $bit['count'];
-        $bit['marketHQ'] = $cheap->IsHQ;
+        $bit['marketCost'] = $cheap['Item']->PricePerUnit * $bit['count'];
+        $bit['marketHQ'] = $cheap['Item']->IsHQ;
 
         if (count($dataset->findItemInShop($bit['id'])) > 0) {
             $bit['shopCost'] *= $bit['count'];
@@ -97,10 +97,16 @@ function calculateProfit(&$recipe)
         $Price['HQ'] = $recipe['Recent']['HQ']->PricePerUnit;
     }
     if ($recipe['Cheap']['LQ']) {
-        $Price['LQ'] = min($Price['LQ'], $recipe['Cheap']['LQ']->PricePerUnit);
+        $Price['LQ'] = min(
+            $Price['LQ'],
+            $recipe['Cheap']['LQ']['Item']->PricePerUnit
+        );
     }
     if ($recipe['Cheap']['HQ']) {
-        $Price['HQ'] = min($Price['HQ'], $recipe['Cheap']['HQ']->PricePerUnit);
+        $Price['HQ'] = min(
+            $Price['HQ'],
+            $recipe['Cheap']['HQ']['Item']->PricePerUnit
+        );
     }
     if ($recipe['Week']['LQ']['Average']) {
         $Price['LQ'] = min($Price['LQ'], $recipe['Week']['LQ']['Average']);
@@ -111,6 +117,9 @@ function calculateProfit(&$recipe)
 
     $Price['LQ'] *= $recipe['Info']['Result']['Amount'];
     $Price['HQ'] *= $recipe['Info']['Result']['Amount'];
+
+    $Price['LQ%'] = ($Price['LQ']/$recipe['Cost']['Optimal']) - 1.0;
+    $Price['HQ%'] = ($Price['HQ']/$recipe['Cost']['Optimal']) - 1.0;
 
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
@@ -224,24 +233,38 @@ function printRecipe($recipe, $profitOnly=false)
         print "Weekly Average: ";
         if ($recipe['Week']['LQ']) {
             print number_format($recipe['Week']['LQ']['Average'])." gil";
+            $sales = $recipe['Week']['LQ']['Count'];
+            $plu = 's';
+            if ($sales === 1) {
+                $plu = '';
+            }
+            print " ( ".number_format($sales)." sale".$plu." )";
         } else {
             print " NONE";
         }
         if ($recipe['Week']['HQ']) {
             print " / (*) ";
             print number_format($recipe['Week']['HQ']['Average'])." gil";
+            $sales = $recipe['Week']['HQ']['Count'];
+            $plu = 's';
+            if ($sales === 1) {
+                $plu = '';
+            }
+            print " ( ".number_format($sales)." sale".$plu." )";
         }
         print "\n";
 
         print "current: ";
         if ($recipe['Cheap']['LQ']) {
-            print number_format($recipe['Cheap']['LQ']->PricePerUnit)." gil";
+            print number_format($recipe['Cheap']['LQ']['Item']->PricePerUnit)." gil";
+            print " (".$recipe['Cheap']['LQ']['Count']." listings)";
         } else {
             print " NONE";
         }
         if ($recipe['Cheap']['HQ']) {
             print " / (*) ";
-            print number_format($recipe['Cheap']['HQ']->PricePerUnit)." gil";
+            print number_format($recipe['Cheap']['HQ']['Item']->PricePerUnit)." gil";
+            print " (".$recipe['Cheap']['HQ']['Count']." listings)";
         }
         print "\n";
 
@@ -267,12 +290,16 @@ function printRecipe($recipe, $profitOnly=false)
         print "------------------------------------\n";
     }
     if ($recipe['Profit']['LQ'] > 0) {
-        print "** Possible Profit: ".number_format($recipe['Profit']['LQ'])." gil\n";
+        print "** Possible Profit: ".number_format($recipe['Profit']['LQ'])." gil";
+        print " (".round(($recipe['Profit']['LQ%']*100))."%)";
+        print "\n";
     }
 
     if ($recipe['Profit']['HQ'] > 0) {
         print "** Possible Profit: ".number_format($recipe['Profit']['HQ']).
-              " (*) gil\n";
+              " (*) gil";
+        print " (".round(($recipe['Profit']['HQ%']*100))."%)";
+        print "\n";
     }
 
     if (!$profitOnly) {

@@ -200,20 +200,35 @@ class Xivapi
 
     function currentCheapest($market, $HQ=null) 
     {
+        $count = 0;
+        $quantity = 0;
         $winner = null;
         if ($market->Prices !== null) {
             foreach ($market->Prices as $entry) {
                 if ($HQ !== null && $HQ != $entry->IsHQ) {
                     continue;
                 }
+                $count++;
                 if ($winner === null) {
                     $winner = $entry;
+                    $quantity = $entry->Quantity;
+                } elseif ($entry->PricePerUnit === $winner->PricePerUnit) {
+                    $quantity += $entry->Quantity;
                 } elseif ($entry->PricePerUnit < $winner->PricePerUnit) {
                     $winner = $entry;
+                    $quantity = $entry->Quantity;
                 }
             }
         }
-        return $winner;
+        if ($winner !== null) {
+            return array(
+                    'Item' => $winner,
+                    'Quantity' => $quantity,
+                    'Count' => $count
+                   );
+        } else {
+            return null;
+        }
     }
 
     function weekAverage($history, $HQ=null) 
@@ -244,6 +259,7 @@ class Xivapi
             $average = 0;
         }
         return array(
+                'Count' => $count,
                 'Minimum' => $min,
                 'Average' => $average,
                 'Maximum' => $max
@@ -268,7 +284,7 @@ class Xivapi
             if ($result['Cheapest'] !== null) {
                 $result['Week'] = $this->weekAverage($history, $HQ);
                 $result['Profit'] = $result['Week']['Average'] -
-                                    $result['Cheapest']->PricePerUnit;
+                                    $result['Cheapest']['Item']->PricePerUnit;
             }
         }
         return $result;
