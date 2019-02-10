@@ -142,7 +142,6 @@ function fillCraftFrame(data)
     if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
         var block = '<hr>';
         if (data.Profit.LQ > 0) {
-console.log(data.Profit);
             block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)<br>";
         }
         if (data.Profit.HQ > 0) {

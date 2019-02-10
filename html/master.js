@@ -28,7 +28,6 @@ function hideSpinner() {
 
 function fillBookFrame(dataset)
 {
-    console.log(dataset);
     dataset.forEach(function(data) {
         if (data.Cost.Market <= 0) {
             marketCost =  'UNAVLAIBLE';
@@ -116,7 +115,6 @@ function fillBookFrame(dataset)
         if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
             var block = '<hr>';
             if (data.Profit.LQ > 0) {
-    console.log(data.Profit);
                 block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)<br>";
             }
             if (data.Profit.HQ > 0) {
