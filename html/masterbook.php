@@ -1,33 +1,18 @@
 <?php
 require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
-
-$arguments = [
-    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
-];
-
-$data = filter_input_array(INPUT_GET, $arguments);
-if (isset($data['server'])) {
-    $server = $data['server'];
-}
-if (isset($data['item'])) {
-    $item = $data['item'];
-} else {
-    $item = "rakshasa dogi of healing";
-}
 ?>
 <html>
 <head>
-<title>Demonstrating Final Fantasy XIV Crafting Companion</title>
+<title>Demonstrating Final Fantasy XIV Crafting Companioni (Master Books)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="crafting.css">
-<script src="crafting.js"></script>
+<script src="master.js"></script>
 </head>
 <body>
 <div style="text-align:center;">
-<h2>Demonstrating Final Fantasy XIV Crafting Companion</h2>
-<a href="masterbook.php">[Master Recipe Books]</a><br><br>
+<h2>Demonstrating Final Fantasy XIV Crafting Companion (Master Books)</h2>
+<a href="index.php">[Recipe Processing]</a><br><br>
 <select id='server'>
 <?php
 $dataset = new FfxivDataSet('..');
@@ -42,19 +27,20 @@ foreach ($dataset->world as $entry) {
 }
 ?>
 </select>
-<input id='item' value='<?php echo $item; ?>'>
+<select id='book'>
+<?php
+$dataset->loadMasterBooks();
+foreach ($dataset->master as $book) {
+    echo "<option>".$book['Name']."</option>";
+}
+?>
+</select>
 <input type='button' onclick='getData()' value='Get Data'>
 <progress id='progress' style='display: none;'></progress>
 </div>
 <hr>
 <div id="output">
 </div>
-
-<?php
-if (isset($data['server']) && isset($data['item'])) {
-    echo "<script> getData(); </script>";
-}
-?>
 
 <div style="text-align:center;">
 <span>&copy; 2019 Aric Stewart

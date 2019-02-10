@@ -24,7 +24,7 @@ use GuzzleHttp\Client;
 
 ini_set('memory_limit', '5000M');
 
-function _worldSort($a, $b) 
+function _nameSort($a, $b) 
 {
     return strnatcmp($a['Name'], $b['Name']);
 }
@@ -347,6 +347,7 @@ class FfxivDataSet
                 ];
                 $this->master[] = $entry;
             }
+            usort($this->master, "_nameSort");
             fclose($handle);
         }
     }
@@ -378,7 +379,7 @@ class FfxivDataSet
                 ];
                 $this->world[] = $entry;
             }
-            usort($this->world, "_worldSort");
+            usort($this->world, "_nameSort");
             fclose($handle);
         }
     }
