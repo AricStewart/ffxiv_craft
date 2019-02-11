@@ -1,31 +1,5 @@
 /* jshint browser: true */
 
-function showSpinner() {
-  var dlg = document.getElementById('refresh_spinner');
-  if (!dlg) {
-    dlg = document.createElement('DIV');
-    dlg.classList.add('modal');
-    dlg.id = 'refresh_spinner';
-    var content = document.createElement('DIV');
-    dlg.appendChild(content);
-    content.classList.add('modal-content');
-    content.classList.add('jumbo');
-    content.classList.add('center');
-    content.classList.add('round-xxlarge');
-    content.style.width = '90px';
-    content.style.backgroundColor = 'orange';
-    var span = document.createElement('SPAN');
-    span.innerHTML = '<i class="fa fa-refresh spin"></i>';
-    content.appendChild(span);
-    document.body.appendChild(dlg);
-  }
-  dlg.style.display = 'block';
-}
-
-function hideSpinner() {
-  document.getElementById('refresh_spinner').style.display = 'none';
-}
-
 function fillBookFrame(dataset)
 {
     dataset.forEach(function(data) {
@@ -102,7 +76,8 @@ function fillBookFrame(dataset)
         }
 
         var sect =
-        '<div style="border: 5px solid gray">'+
+        '<div class="card m-5 shadow-lg">'+
+        '  <div class="card-body">'+
         '<h2 style="text-align:center;">'+dataName+'</h2><hr>' +
         '<div>' +
         'Recent: '+recent+'<br>'+
@@ -120,10 +95,9 @@ function fillBookFrame(dataset)
             if (data.Profit.HQ > 0) {
                 block += "<b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil ("+Math.round(data.Profit["HQ%"]*100)+"%)<br>";
             }
-            block += "<hr>";
             sect += block;
         }
-        sect += "</div></div>";
+        sect += "</div></div></div>";
         document.getElementById('output').innerHTML += sect;
     });
 }
@@ -135,21 +109,22 @@ function getDataBlock() {
   var book = encodeURI(document.getElementById('book').value);
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-        hideSpinner();
+        $("#refresh_spinner").modal("hide");
         var data = JSON.parse(this.responseText);
         fillBookFrame(data);
     }
   };
-  showSpinner();
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
   xhttp.open('POST', 'html_master.php', true);
   xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   xhttp.send('book=' + book +'&server=' + server);
 }
 
 function getDataEvent() {
-  showSpinner();
-  document.getElementById('progress').value = 0;
-  document.getElementById('progress').style.display = "block";
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
+  document.getElementById('progress_bar').style.width = "1%";
+  document.getElementById('progress_bar').setAttribute('aria-valuenow', 0);
+  document.getElementById('progress').style.display = '';
   var server = encodeURI(document.getElementById('server').value);
   var book = encodeURI(document.getElementById('book').value);
   var source = new EventSource("html_master.php?event=1&book=" + book +
@@ -157,14 +132,20 @@ function getDataEvent() {
   source.onmessage = function(event) {
       var data = JSON.parse(event.data);
       if (data.type == "start") {
-        document.getElementById('progress').max = data.data;
+        document.getElementById('progress_bar').setAttribute('aria-valuemax', data.data);
+        document.getElementById('progress_bar').setAttribute('aria-valuenow', 0);
       } else if (data.type == "progress") {
-        document.getElementById('progress').value += 1;
+        var w = document.getElementById('progress_bar').getAttribute('aria-valuenow');
+        w = parseInt(w)+1;
+        document.getElementById('progress_bar').setAttribute('aria-valuenow', w);
+        var p = Math.round((w / document.getElementById('progress_bar').getAttribute('aria-valuemax')) * 100);
+        p = p + '%';
+        document.getElementById('progress_bar').style.width = p;
       } else if (data.type == "info") {
         console.log(data.data);
       } else if (data.type == "done") {
         source.close();
-        hideSpinner();
+        $("#refresh_spinner").modal("hide");
         document.getElementById('progress').style.display = "none";
         var book = JSON.parse(data.data);
         fillBookFrame(book);
