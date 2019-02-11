@@ -40,7 +40,7 @@ function printLine(line, tab)
                 output += "<img src='hq.png'>";
             }
         } else {
-            output += "UNAVALIABLE";
+            output += "UNAVAILABLE";
         }
         if (l.craftCost > 0) {
             output += '/ crafted ' + l.craftCost.toLocaleString() + " gil";
@@ -62,25 +62,25 @@ function printLine(line, tab)
 function fillCraftFrame(data)
 {
     if (data.Cost.Market <= 0) {
-        marketCost =  'UNAVLAIBLE';
+        marketCost =  'UNAVAILABLE';
     } else {
         marketCost = data.Cost.Market.toLocaleString() + " gil";
     }
 
     if (data.Cost.Optimal <= 0) {
-        optimalCost =  'UNAVLAIBLE';
+        optimalCost =  'UNAVAILABLE';
     } else {
         optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
     }
 
     if (data.Cost.Shop <= 0) {
-        shopCost =  'UNAVLAIBLE';
+        shopCost =  'UNAVAILABLE';
     } else {
         shopCost = data.Cost.Shop.toLocaleString() + " gil";
     }
 
     if (data.Cheap.LQ === null) {
-        cheap =  'UNAVLAIBLE';
+        cheap =  'UNAVAILABLE';
     } else {
         cheap = data.Cheap.LQ.Item.PricePerUnit.toLocaleString()+" gil";
         cheap +=" ("+data.Cheap.LQ.Count+" listings)";
@@ -92,7 +92,7 @@ function fillCraftFrame(data)
     }
 
     if (data.Recent.LQ === null) {
-        recent =  'UNAVLAIBLE';
+        recent =  'UNAVAILABLE';
     } else {
         recent = data.Recent.LQ.PricePerUnit.toLocaleString()+" gil";
     }
@@ -102,7 +102,7 @@ function fillCraftFrame(data)
     }
 
     if (data.Week.LQ.Average === 0) {
-        week =  'UNAVLAIBLE';
+        week =  'UNAVAILABLE';
     } else {
         week = data.Week.LQ.Average.toLocaleString()+" gil";
         sales = data.Week.LQ.Count;
