@@ -1,41 +1,35 @@
 /* jshint browser: true */
 
-function showSpinner() {
-  var dlg = document.getElementById('refresh_spinner');
-  if (!dlg) {
-    dlg = document.createElement('DIV');
-    dlg.classList.add('modal');
-    dlg.id = 'refresh_spinner';
-    var content = document.createElement('DIV');
-    dlg.appendChild(content);
-    content.classList.add('modal-content');
-    content.classList.add('jumbo');
-    content.classList.add('center');
-    content.classList.add('round-xxlarge');
-    content.style.width = '90px';
-    content.style.backgroundColor = 'orange';
-    var span = document.createElement('SPAN');
-    span.innerHTML = '<i class="fa fa-refresh spin"></i>';
-    content.appendChild(span);
-    document.body.appendChild(dlg);
-  }
-  dlg.style.display = 'block';
-}
-
-function hideSpinner() {
-  document.getElementById('refresh_spinner').style.display = 'none';
+function getBadge(order, value) {
+    var i = order.indexOf(value);
+    if (order.length == 3 && i == 2) {
+        return '<span class="badge badge-danger">';
+    } else if ( order.length >= 2 && i == 1) {
+        return '<span class="badge badge-primary">';
+    } else {
+        return '<span class="badge badge-success">';
+    }
 }
 
 function printLine(line, tab)
 {
     var server = document.getElementById('server').value;
-    var output = '<ul>\n';
+    var output = '<ul class="list-style">\n';
     line.forEach(function (l) {
         output += '<li>\n';
         output += '<a href="https://www.ffxivmb.com/Items/'+server+'/'+l.id+'" target="_blank">'+
             l.name+'</a> (x'+l.count+') -> ';
+
+        var low = [];
+        if (l.marketCost > 0) low.push(l.marketCost);
+        if (l.craftCost > 0) low.push(l.craftCost);
+        if (l.shopCost > 0) low.push(l.shopCost);
+        low.sort(function(a, b){return a - b;});
+
         if (l.marketCost > 0) {
-            output += " market "+l.marketCost.toLocaleString() + " gil ";
+            output += getBadge(low, l.marketCost);
+            output += 'market</span>&nbsp;';
+            output += l.marketCost.toLocaleString() + " gil ";
             if (l.marketHQ) {
                 output += "<img src='hq.png'>";
             }
@@ -43,12 +37,15 @@ function printLine(line, tab)
             output += "UNAVAILABLE";
         }
         if (l.craftCost > 0) {
-            output += '/ crafted ' + l.craftCost.toLocaleString() + " gil";
+            output += '&nbsp;' + getBadge(low, l.craftCost);
+            output += 'crafted</span>&nbsp' + l.craftCost.toLocaleString() + " gil";
         }
         if (l.shopCost > 0) {
-            output += '/ <a href="http://www.garlandtools.org/db/#item/' +
-                    l.id + '" target="_blank">vendor</a> ' +
-                    l.shopCost.toLocaleString() + " gil";
+            output += '&nbsp;' + getBadge(low, l.shopCost);
+            output += 'vendor</span>&nbsp;';
+            output +='<a href="http://www.garlandtools.org/db/#item/' +
+                    l.id + '" target="_blank">' +
+                    l.shopCost.toLocaleString() + "</a> gil";
         }
         if (l.bits.length > 0) {
             output += printLine(l.bits, tab+1);
@@ -123,37 +120,42 @@ function fillCraftFrame(data)
         week +=" ( "+sales.toLocaleString()+" sale"+plu+" )";
     }
 
+    dataName ='<a href="http://www.garlandtools.org/db/#item/' +
+        data.ID + '" target="_blank">' + data.Name + "</a>";
     if (data.Info.Result.Amount > 1) {
-        dataName = data.Name + ' x' + data.Info.Result.Amount;
-    } else {
-        dataName = data.Name;
+        dataName += ' x' + data.Info.Result.Amount;
     }
 
-    document.getElementById('output').innerHTML = 
-    '<h2 style="text-align:center;">'+dataName+'</h2><hr>' +
-    '<div>' +
-    'Recent: '+recent+'<br>'+
-    'Weekly Average: '+week+'<br>'+
-    'Current: '+cheap+"<br>"+
-    "<hr>" +
-    'Vendor Cost: '+shopCost+"<br>" +
-    'Craft at Market Cost: '+marketCost+'<br>'+
-    'Craft at Optimal Cost: '+optimalCost+"<br>";
+    var content =
+    '<div class="card m-5">'+
+    '  <div class="card-body">'+
+    '    <h2 class="card-title text-center">'+dataName+'</h2>' +
+    '    <ul class="list-unstyled text-left">' +
+    '       <li>Recent: '+recent+'</li>'+
+    '       <li>Weekly Average: '+week+'</li>'+
+    '       <li>Current: '+cheap+"</li>"+
+    '    </ul>' +
+    '  <ul class="list-unstyled text-left">' +
+    '    <li>Vendor Cost: '+shopCost+"</li>" +
+    '    <li>Craft at Market Cost: '+marketCost+'</li>'+
+    '    <li>Craft at Optimal Cost: '+optimalCost+"</li>"+
+    '  </ul>';
     if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
-        var block = '<hr>';
+        content += '<ul class="list-unstyled text-left">';
         if (data.Profit.LQ > 0) {
-            block += '<b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)<br>";
+            content += '<li><b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)</li>";
         }
         if (data.Profit.HQ > 0) {
-            block += "<b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil ("+Math.round(data.Profit["HQ%"]*100)+"%)<br>";
+            content += "<li><b>Possible Profit</b>: <img src='hq.png'>"+data.Profit.HQ.toLocaleString()+" gil ("+Math.round(data.Profit["HQ%"]*100)+"%)</lli>";
         }
-        block += "<hr>";
-        document.getElementById('output').innerHTML += block;
+        content += "</ul>\n";
     }
-    document.getElementById('output').innerHTML += "</div>\n";
-    document.getElementById('output').innerHTML += "<div>\n";
-    document.getElementById('output').innerHTML += printLine(data.Recipe, 0);
-    document.getElementById('output').innerHTML += "</div>\n";
+    content += "<div class='card text-left'>\n";
+    content += printLine(data.Recipe, 0);
+    content += "</div>";
+    content += "</div>\n";
+
+    document.getElementById('output').innerHTML  = content;
 }
 
 function getDataBlock() {
@@ -163,21 +165,22 @@ function getDataBlock() {
   var item = encodeURI(document.getElementById('item').value);
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-        hideSpinner();
+        $("#refresh_spinner").modal("hide");
         var data = JSON.parse(this.responseText);
         fillCraftFrame(data);
     }
   };
-  showSpinner();
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
   xhttp.open('POST', 'html_craft.php', true);
   xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
   xhttp.send('item=' + item +'&server=' + server);
 }
 
 function getDataEvent() {
-  showSpinner();
-  document.getElementById('progress').value = 0;
-  document.getElementById('progress').style.display = "block";
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
+  document.getElementById('progress_bar').style.width = "1%";
+  document.getElementById('progress_bar').setAttribute('aria-valuenow', 0);
+  document.getElementById('progress').style.display = '';
   var server = encodeURI(document.getElementById('server').value);
   var item = encodeURI(document.getElementById('item').value);
   var source = new EventSource("html_craft.php?event=1&item=" + item +
@@ -185,14 +188,20 @@ function getDataEvent() {
   source.onmessage = function(event) {
       var data = JSON.parse(event.data);
       if (data.type == "start") {
-        document.getElementById('progress').max = data.data;
+        document.getElementById('progress_bar').setAttribute('aria-valuemax', data.data);
+        document.getElementById('progress_bar').setAttribute('aria-valuenow', 0);
       } else if (data.type == "progress") {
-        document.getElementById('progress').value += 1;
+        var w = document.getElementById('progress_bar').getAttribute('aria-valuenow');
+        w = parseInt(w)+1;
+        document.getElementById('progress_bar').setAttribute('aria-valuenow', w);
+        var p = Math.round((w / document.getElementById('progress_bar').getAttribute('aria-valuemax')) * 100);
+        p = p + '%';
+        document.getElementById('progress_bar').style.width = p;
       } else if (data.type == "info") {
         console.log(data.data);
       } else if (data.type == "done") {
         source.close();
-        hideSpinner();
+        $("#refresh_spinner").modal("hide");
         document.getElementById('progress').style.display = "none";
         if (data.data === "[]") {
             var name = document.getElementById('item').value;
