@@ -18,7 +18,7 @@
     require_module 'file';
 .*/
 
-
+require_once __DIR__.'/db.inc';
 require __DIR__.'/vendor/autoload.php';
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -32,9 +32,26 @@ class Xivapi
     private $_client;
     private $_promises;
     private $_poolSize;
-    private $_cache;
 
     public $timeout;
+
+    private function _checkCacheTable() 
+    {
+        $sql = "SHOW TABLES LIKE 'xivData';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE xivData (
+                    Id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                    Path TEXT NOT NULL,
+                    Data TEXT NOT NULL,
+                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+SQL;
+            DB::run($sql);
+        }
+    }
 
     function __construct($server, $xivapiKey, $ffxivmb=null, $base='.') 
     {
@@ -48,7 +65,7 @@ class Xivapi
         $this->_client = new Client(['base_uri' => "https://xivapi.com/"]);
         $this->_promises = [];
 
-        $this->_cache = [];
+        $this->_checkCacheTable();
     }
 
     function flushPool($cnt=-1)
@@ -72,82 +89,98 @@ class Xivapi
 
     function buildPath($type, $ID) 
     {
-        return $this->_base."/data/".$this->_server.".$type.$ID.json";
+        return $this->_server.".$type.$ID";
+    }
+
+    private function _fromCache($path) 
+    {
+        $qpath = myPDO::quote($path);
+        $sql = "SELECT `Data` FROM `xivData` WHERE `Path` = $qpath AND ".
+               "Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value !== false) {
+            return json_decode($value['Data']);
+        }
+        return null;
+    }
+
+    private function _toCache($path, $entry) 
+    {
+        $name = myPDO::quote($path);
+        $data = myPDO::quote(json_encode($entry));
+        $sql = "INSERT INTO `xivData` (Path,Data,Date) ".
+               " VALUES ($name, $data, NOW()) ".
+               " ON DUPLICATE KEY UPDATE ".
+               " Data = $data, Date = NOW();";
+        DB::run($sql);
     }
 
     private function _getXIVdata($method, $ID, $url, $async, $progress,
         $report=null
     ) { 
-        $file = $this->buildPath($method, $ID);
-        if (array_key_exists($file, $this->_cache)) {
+        $path = $this->buildPath($method, $ID);
+        $data = $this->_fromCache($path);
+        if ($data !== null) {
             if ($progress != null) {
                 $progress('progress');
             }
-            return $this->_cache[$file];
+            return $data;
         }
-        if (!file_exists($file) || (time()-filemtime($file) > $this->timeout)) {
-            if ($progress !== null) {
-                $progress('info', "From $url...");
-            }
 
-            if (count($this->_promises) > $this->_poolSize) {
-                $this->flushPool($this->_poolSize/2);
-            }
+        if ($progress !== null) {
+            $progress('info', "From $url...");
+        }
 
-            try {
-                $promise = $this->_client->requestAsync(
-                    'GET',
-                    "/$url?key=".$this->_xivapiKey
-                );
-                $promise->then(
-                    function ($response) use ( $file, $progress, $ID, $report ) {
-                        $contents = $response->getBody();
-                        @file_put_contents($file, $contents);
-                        @chmod($file, 0666);
-                        if ($progress != null) {
-                            $progress('progress');
-                        }
-                        $data = json_decode($contents);
-                        $this->_cache[$file] = $data;
-                        if ($report !== null && $this->_ffxivmb !== null) {
-                            $time = filemtime($file);
-                            $this->_ffxivmb->$report($ID, $data, $time);
-                        }
-                    },
-                    function (ClientException $e) {
-                        return;
+        if (count($this->_promises) > $this->_poolSize) {
+            $this->flushPool($this->_poolSize/2);
+        }
+
+        try {
+            $promise = $this->_client->requestAsync(
+                'GET',
+                "/$url?key=".$this->_xivapiKey
+            );
+            $promise->then(
+                function ($response) use ( $path, $progress, $ID, $report ) {
+                    $contents = $response->getBody();
+                    if ($progress != null) {
+                        $progress('progress');
                     }
-                );
-            } catch (Exception $e) {
-                return;
-            }
-
-            $this->_promises[] = $promise;
-
-            if ($async) {
-                return null;
-            }
-            $this->flushPool();
-        } else {
-            if ($progress != null) {
-                $progress('progress');
-            }
+                    $data = json_decode($contents);
+                    $this->_toCache($path, $data);
+                    if ($report !== null && $this->_ffxivmb !== null) {
+                        $time = microtime();
+                        $this->_ffxivmb->$report($ID, $data, $time);
+                    }
+                },
+                function (ClientException $e) {
+                    return;
+                }
+            );
+        } catch (Exception $e) {
+            return;
         }
+
+        $this->_promises[] = $promise;
+
+        if ($async) {
+            return null;
+        }
+        $this->flushPool();
 
         if ($async) {
             return null;
         }
 
-        if (!file_exists($file)) {
+        $data = $this->_fromCache($path);
+        if ($data === null) {
             sleep(1);
             return $this->_getXIVdata(
                 $method, $ID, $url, false, $progress,
                 $report
             );
         }
-        $contents = file_get_contents($file);
-        $data = json_decode($contents);
-        $this->_cache[$file] = $data;
         return $data;
     }
 
