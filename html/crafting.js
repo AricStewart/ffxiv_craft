@@ -122,7 +122,7 @@ function fillCraftFrame(data)
 
     dataName ='<a href="http://www.garlandtools.org/db/#item/' +
         data.ID + '" target="_blank">' + data.Name + "</a>";
-    if (data.Info.Result.Amount > 1) {
+    if (data.Info !== null && data.Info.Result.Amount > 1) {
         dataName += ' x' + data.Info.Result.Amount;
     }
 

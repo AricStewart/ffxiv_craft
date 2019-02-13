@@ -120,8 +120,10 @@ function calculateProfit(&$recipe)
     $Price['LQ'] *= $recipe['Info']->Result->Amount;
     $Price['HQ'] *= $recipe['Info']->Result->Amount;
 
-    $Price['LQ%'] = ($Price['LQ']/$recipe['Cost']['Optimal']) - 1.0;
-    $Price['HQ%'] = ($Price['HQ']/$recipe['Cost']['Optimal']) - 1.0;
+    if ($recipe['Cost']['Optimal']) {
+        $Price['LQ%'] = ($Price['LQ']/$recipe['Cost']['Optimal']) - 1.0;
+        $Price['HQ%'] = ($Price['HQ']/$recipe['Cost']['Optimal']) - 1.0;
+    }
 
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
@@ -304,8 +306,12 @@ function printRecipe($recipe, $profitOnly=false)
         } else {
             print "UNAVLIABLE\n";
         }
-        print "Craft at Optimal Cost: ".
-              number_format($recipe['Cost']['Optimal'])." gil \n";
+        print "Craft at Optimal Cost: ";
+        if ($recipe['Cost']['Optimal'] > 0) {
+            print number_format($recipe['Cost']['Optimal'])." gil \n";
+        } else {
+            print "UNAVLIABLE\n";
+        }
     }
     if ($recipe['Profit']['LQ'] > 0 || $recipe['Profit']['HQ'] > 0) {
         print "------------------------------------\n";

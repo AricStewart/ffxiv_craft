@@ -511,6 +511,9 @@ SQL;
             $output['Recipe'] = [];
             $ingred = &$output['Recipe'];
         }
+        if ($tgt->Ingredients === null) {
+            return $output;
+        }
         foreach ($tgt->Ingredients as $i) {
             $bits = [];
             if ($this->getRecipe($i->Item) !== null) {
