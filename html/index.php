@@ -35,7 +35,7 @@ if (isset($data['item'])) {
 <body>
 
 <!-- Modal -->
-<div class="modal fade" id="refresh_spinner" aria-labelledby="refresh_spinner" aria-hidden="true">
+<div class="modal" id="refresh_spinner" aria-labelledby="refresh_spinner" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-body">
