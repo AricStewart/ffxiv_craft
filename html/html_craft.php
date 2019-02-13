@@ -33,16 +33,14 @@ function http_progress($type="", $data="")
     flush();
 }
 
-function decode_item($itemID)
+function decode_item($itemID, $dataset)
 {
-    global $dataset;
-
     if (!is_numeric($itemID)) {
-        $result = $dataset->getItemByName($itemID);
+        $result = $dataset->getItem($itemID);
         if ($result === null) {
             return null;
         }
-        $itemID = $result;
+        $itemID = $result->Index;
     }
     return $itemID;
 }
@@ -85,7 +83,7 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $itemID = decode_item($itemID);
+    $itemID = decode_item($itemID, $dataset);
     if ($itemID === null) {
         echo "[]";
         exit();
@@ -116,7 +114,7 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $itemID = decode_item($itemID);
+    $itemID = decode_item($itemID, $dataset);
     if ($itemID=== null) {
         $data = array( "type" => "done",
                        "data" => json_encode([]));
