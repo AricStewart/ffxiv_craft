@@ -50,7 +50,6 @@ $xiv->verbose = false;
 print "Intializing...\n";
 $data = new FfxivDataSet();
 $data->loadGathering();
-$data->loadItems();
 print "Processing ...\n";
 $profit = [];
 $stuff = array_reverse($data->gather);
@@ -64,12 +63,12 @@ if ($argv[1]) {
     }
     if ($argv[$i]) {
         if (!is_numeric($argv[$i])) {
-            $result = $data->getItemByName($argv[$i]);
+            $result = $data->getItem($argv[$i]);
             if ($result === null) {
                 print 'Could not find item \''.$argv[$i]."'\n";
                 exit();
             }
-            $stuff = [$data->gather[$result]];
+            $stuff = [$data->gather[$result->Index]];
             $limit = 1;
         } else {
             $stuff = [$data->gather[$argv[$i]]];
@@ -81,9 +80,9 @@ if ($argv[1]) {
 $count = 0;
 foreach ($stuff as $item) {
     $count++;
-    if ($data->item[$item['Item']] != null) {
-        $idb = $data->item[$item['Item']];
-        if ($idb['IsUntradable']) {
+    $idb = $data->getItem($item['Item']);
+    if ($idb != null) {
+        if ($idb->IsUntradable) {
             continue;
         }
         if ($limit !== null) {
@@ -93,7 +92,7 @@ foreach ($stuff as $item) {
             }
         }
         $added = false;
-        print "($count/$limit): ".$idb['Name'].'('.$item['Item'].') ';
+        print "($count/$limit): ".$idb->Name.'('.$item['Item'].') ';
 
         $profitLQ = $xiv->itemProfit($item['Item'], false);
         printProfit($profitLQ);
@@ -119,7 +118,7 @@ function _sortByOrder($a, $b)
 
 usort($profit, '_sortByOrder');
 foreach ($profit as $p) {
-    print "! ".$data->item[$p['ID']]['Name'];
+    print "! ".$data->item[$p['ID']]->Name;
     printProfit($p);
     print "\n";
 }

@@ -131,6 +131,23 @@ function calculateProfit(&$recipe)
     return $Price;
 }
 
+function filloutRecipe(&$recipe, $dataset, $sub=false)
+{
+    if (!$sub) {
+        $ingred = &$recipe['Recipe'];
+    } else {
+        $ingred = &$recipe;
+    }
+    foreach ($ingred as &$bit) {
+        $item = $dataset->getItem($bit['id']);
+        $bit['name'] = $item->Name;
+        $bit['shopCost'] = $item->PriceMid;
+        if (count($bit['bits'])>0) {
+            filloutRecipe($bit['bits'], $dataset, true);
+        }
+    }
+}
+
 function doRecipie($itemID, $dataset, $xiv, $progress=null)
 {
     $recipe = $dataset->getFullRecipe($itemID);
@@ -138,6 +155,7 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
     }
+    filloutRecipe($recipe, $dataset);
 
     $count = 0;
     countItems($recipe['Recipe'], $count);
@@ -152,8 +170,9 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
     $xiv->flushPool();
 
     $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
+    $item = $dataset->getItem($itemID);
     if (count($dataset->findItemInShop($itemID)) > 0) {
-        $recipe['Cost']['Shop'] = $dataset->item[$itemID]['Price{Mid}'];
+        $recipe['Cost']['Shop'] = $item->PriceMid;
     } else {
         $recipe['Cost']['Shop'] = 0;
     }
@@ -168,7 +187,7 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null)
     $market = $xiv->getMarket($itemID);
     $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
                         'HQ' => $xiv->currentCheapest($market, true)];
-    $recipe['Name'] = $dataset->item[$itemID]['Name'];
+    $recipe['Name'] = $item->Name;
     $recipe['ID'] = $itemID;
 
     calculateProfit($recipe);

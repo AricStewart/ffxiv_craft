@@ -17,8 +17,10 @@
     require_module 'core';
     require_module 'file';
     require_module 'phpinfo';
+    require_module 'json';
 .*/
 
+require_once __DIR__.'/db.inc';
 require __DIR__.'/vendor/autoload.php';
 use GuzzleHttp\Client;
 
@@ -32,7 +34,6 @@ function _nameSort($a, $b)
 class FfxivDataSet
 {
     public $recipe = array();
-    public $item = array();
     public $gather = array();
     public $master = array();
     public $world = array();
@@ -78,104 +79,23 @@ class FfxivDataSet
         return ($item['Param'] > 0 && $item['Value'] > 0);
     }
 
-    function getData($file, $url) 
+    private function _loadItems($force=false) 
     {
-        $response = $this->_client->request('GET', $url);
-        @file_put_contents($file, $response->getBody());
-        @chmod($file, 0666);
-    }
-
-    function __construct($baseData='.') 
-    {
-        $this->baseData = $baseData;
-        $this->_client = new Client(
-            ['base_uri' =>
-            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
-        );
-    }
-
-    function loadRecipes()
-    {
-        if (count($this->recipe) > 0) {
-            return;
+        if ($force || !file_exists($this->baseData.$this->_itemData)) {
+            $this->_getData($this->baseData.$this->_itemData, $this->_itemURL);
+            $force=true;
         }
-        if (!file_exists($this->baseData.$this->_recipData)) {
-            $this->getData($this->baseData.$this->_recipData, $this->_recipURL);
-        }
-        $handle = fopen($this->baseData.$this->_recipData, "r");
-        $skip = 3;
-        if (empty($handle) === false) {
-            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-                if ($skip) {
-                    $skip--;
-                    continue;
-                }
-                if ($data[0] === '0' || $data[1] === '0') {
-                    continue;
-                }
-                $entry = ['Index' => intval($data[0]),
-                    'CraftType' => intval($data[2]),
-                    'RecipeLevelTable' => intval($data[3]),
-                    'Result' => [
-                        'Item' =>intval($data[4]),
-                        'Amount' => intval($data[5])],
-                    'Ingredients' => [
-                        ['Item' => intval($data[6]),
-                         'Amount' => intval($data[7])],
-                        ['Item' => intval($data[8]),
-                         'Amount' => intval($data[9])],
-                        ['Item' => intval($data[10]),
-                         'Amount' => intval($data[11])],
-                        ['Item' => intval($data[12]),
-                         'Amount' => intval($data[13])],
-                        ['Item' => intval($data[14]),
-                         'Amount' => intval($data[15])],
-                        ['Item' => intval($data[16]),
-                         'Amount' => intval($data[17])],
-                        ['Item' => intval($data[18]),
-                         'Amount' => intval($data[19])],
-                        ['Item' => intval($data[20]),
-                         'Amount' => intval($data[21])],
-                        ['Item' => intval($data[22]),
-                        'Amount' => intval($data[23])],
-                        ['Item' => intval($data[24]),
-                         'Amount' => intval($data[25]),]],
-                    'RecipeElement' => $data[26],
-                    'IsSecondary' => $this->_isTrue($data[28]),
-                    'DifficultyFactor' => $data[29],
-                    'QualityFactor' => $data[30],
-                    'DurabilityFactor' => $data[31],
-                    'RequiredCraftsmanship' => $data[33],
-                    'RequiredControl' => $data[34],
-                    'QuickSynthCraftsmanship' => $data[35],
-                    'QuickSynthControl' => $data[36],
-                    'SecretRecipeBook' => $data[37],
-                    'CanQuickSynth' => $this->_isTrue($data[38]),
-                    'CanHq' => $this->_isTrue($data[39]),
-                    'ExpRewarded' => $this->_isTrue($data[40]),
-                    'Status{Required}' => $data[41],
-                    'Item{Required}' => $data[42],
-                    'IsSpecializationRequired' => $this->_isTrue($data[43]),
-                    'PatchNumber' => $data[45]
-                    ];
-                $entry['Ingredients'] = array_filter(
-                    $entry['Ingredients'],
-                    'FfxivDataSet::_filterIngredient'
-                );
-                $this->recipe[$data[4]] = $entry;
+        if (!$force) {
+            $sql = "SELECT COUNT(`Id`) AS total FROM `items` WHERE 1;";
+            $result = DB::run($sql);
+            $value = $result->fetch();
+            if ($value !== false && $value['total'] > 0) {
+                return;
             }
-            fclose($handle);
         }
-    }
 
-    function loadItems() 
-    {
-        if (count($this->item) > 0) {
-            return;
-        }
-        if (!file_exists($this->baseData.$this->_itemData)) {
-            $this->getData($this->baseData.$this->_itemData, $this->_itemURL);
-        }
+        $sql = "DELETE FROM `items` WHERE 1";
+        DB::run($sql);
         $handle = fopen($this->baseData.$this->_itemData, "r");
         $skip = 3;
         if (empty($handle) === false) {
@@ -211,8 +131,8 @@ class FfxivDataSet
                     'IsUntradable' => $this->_isTrue($data[22]),
                     'IsIndisposable' => $this->_isTrue($data[23]),
                     'IsEquippable' => $this->_isTrue($data[24]),
-                    'Price{Mid}' => intval($data[25]),
-                    'Price{Low}' => intval($data[26]),
+                    'PriceMid' => intval($data[25]),
+                    'PriceLow' => intval($data[26]),
                     'CanBeHq' => $this->_isTrue($data[27]),
                     'IsDyeable' => $this->_isTrue($data[28]),
                     'IsCrestWorthy' => $this->_isTrue($data[29]),
@@ -283,11 +203,127 @@ class FfxivDataSet
                     'FfxivDataSet::_filterBaseparam'
                 );
 
-                $this->item[$data[0]] = $entry;
+                $id = $entry['Index'];
+                $name = myPDO::quote($entry['Name']);
+                $data = myPDO::quote(json_encode($entry));
+
+                $sql = "INSERT INTO `items` (Id, Name, Data) ".
+                       "VALUES ($id, $name, $data); ";
+                DB::run($sql);
             }
             fclose($handle);
         }
     }
+
+    private function _checkItemTable() 
+    {
+        $sql = "SHOW TABLES LIKE 'items';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE items (
+                    Id INT UNSIGNED NOT NULL PRIMARY KEY,
+                    Name TEXT NOT NULL,
+                    Data TEXT NOT NULL,
+                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+SQL;
+            DB::run($sql);
+        }
+        $this->_loadItems();
+    }
+
+    private function _getData($file, $url) 
+    {
+        $response = $this->_client->request('GET', $url);
+        @file_put_contents($file, $response->getBody());
+        @chmod($file, 0666);
+    }
+
+    function __construct($baseData='.') 
+    {
+        $this->baseData = $baseData;
+        $this->_client = new Client(
+            ['base_uri' =>
+            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
+        );
+    }
+
+    function loadRecipes()
+    {
+        if (count($this->recipe) > 0) {
+            return;
+        }
+        if (!file_exists($this->baseData.$this->_recipData)) {
+            $this->_getData($this->baseData.$this->_recipData, $this->_recipURL);
+        }
+        $handle = fopen($this->baseData.$this->_recipData, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[0] === '0' || $data[1] === '0') {
+                    continue;
+                }
+                $entry = ['Index' => intval($data[0]),
+                    'CraftType' => intval($data[2]),
+                    'RecipeLevelTable' => intval($data[3]),
+                    'Result' => [
+                        'Item' =>intval($data[4]),
+                        'Amount' => intval($data[5])],
+                    'Ingredients' => [
+                        ['Item' => intval($data[6]),
+                         'Amount' => intval($data[7])],
+                        ['Item' => intval($data[8]),
+                         'Amount' => intval($data[9])],
+                        ['Item' => intval($data[10]),
+                         'Amount' => intval($data[11])],
+                        ['Item' => intval($data[12]),
+                         'Amount' => intval($data[13])],
+                        ['Item' => intval($data[14]),
+                         'Amount' => intval($data[15])],
+                        ['Item' => intval($data[16]),
+                         'Amount' => intval($data[17])],
+                        ['Item' => intval($data[18]),
+                         'Amount' => intval($data[19])],
+                        ['Item' => intval($data[20]),
+                         'Amount' => intval($data[21])],
+                        ['Item' => intval($data[22]),
+                        'Amount' => intval($data[23])],
+                        ['Item' => intval($data[24]),
+                         'Amount' => intval($data[25]),]],
+                    'RecipeElement' => $data[26],
+                    'IsSecondary' => $this->_isTrue($data[28]),
+                    'DifficultyFactor' => $data[29],
+                    'QualityFactor' => $data[30],
+                    'DurabilityFactor' => $data[31],
+                    'RequiredCraftsmanship' => $data[33],
+                    'RequiredControl' => $data[34],
+                    'QuickSynthCraftsmanship' => $data[35],
+                    'QuickSynthControl' => $data[36],
+                    'SecretRecipeBook' => $data[37],
+                    'CanQuickSynth' => $this->_isTrue($data[38]),
+                    'CanHq' => $this->_isTrue($data[39]),
+                    'ExpRewarded' => $this->_isTrue($data[40]),
+                    'Status{Required}' => $data[41],
+                    'Item{Required}' => $data[42],
+                    'IsSpecializationRequired' => $this->_isTrue($data[43]),
+                    'PatchNumber' => $data[45]
+                    ];
+                $entry['Ingredients'] = array_filter(
+                    $entry['Ingredients'],
+                    'FfxivDataSet::_filterIngredient'
+                );
+                $this->recipe[$data[4]] = $entry;
+            }
+            fclose($handle);
+        }
+    }
+
 
     function loadGathering() 
     {
@@ -295,7 +331,7 @@ class FfxivDataSet
             return;
         }
         if (!file_exists($this->baseData.$this->_gatherData)) {
-            $this->getData($this->baseData.$this->_gatherData, $this->_gatherURL);
+            $this->_getData($this->baseData.$this->_gatherData, $this->_gatherURL);
         }
         $handle = fopen($this->baseData.$this->_gatherData, "r");
         $skip = 3;
@@ -327,7 +363,7 @@ class FfxivDataSet
             return;
         }
         if (!file_exists($this->baseData.$this->_masterData)) {
-            $this->getData($this->baseData.$this->_masterData, $this->_masterURL);
+            $this->_getData($this->baseData.$this->_masterData, $this->_masterURL);
         }
         $handle = fopen($this->baseData.$this->_masterData, "r");
         $skip = 3;
@@ -358,7 +394,7 @@ class FfxivDataSet
             return;
         }
         if (!file_exists($this->baseData.$this->_worldData)) {
-            $this->getData($this->baseData.$this->_worldData, $this->_worldURL);
+            $this->_getData($this->baseData.$this->_worldData, $this->_worldURL);
         }
         $handle = fopen($this->baseData.$this->_worldData, "r");
         $skip = 3;
@@ -390,7 +426,7 @@ class FfxivDataSet
             return;
         }
         if (!file_exists($this->baseData.$this->_gilShopData)) {
-            $this->getData($this->baseData.$this->_gilShopData, $this->_gilShopURL);
+            $this->_getData($this->baseData.$this->_gilShopData, $this->_gilShopURL);
         }
         $handle = fopen($this->baseData.$this->_gilShopData, "r");
         $skip = 3;
@@ -425,7 +461,6 @@ class FfxivDataSet
     function getFullRecipe($id, $count=1, &$output=null, $subrun=false) 
     {
         $this->loadRecipes();
-        $this->loadItems();
         if ($output == null) {
             $output = array();
         }
@@ -449,12 +484,12 @@ class FfxivDataSet
             }
             $ingred[] = [
                          'id' => $i['Item'],
-                         'name' => $this->item[$i['Item']]['Name'],
+                         'name' => '',
                          'count' => $i['Amount'] * $count,
                          'marketCost' => 0,
                          'marketHQ' => 0,
                          'craftCost' => 0,
-                         'shopCost' => $this->item[$i['Item']]['Price{Mid}'],
+                         'shopCost' => 0,
                          'bits' => $bits
                         ];
         }
@@ -500,13 +535,18 @@ class FfxivDataSet
         return $output;
     }
 
-    function getItemByName($name)
+    function getItem($param)
     {
-        $this->loadItems();
-        foreach ($this->item as $key => $val) {
-            if (strcasecmp($val['Name'], $name) == 0) {
-                return $key;
-            }
+        $this->_checkItemTable();
+        if (is_numeric($param)) {
+            $sql = "SELECT `Data` FROM `items` WHERE `ID` = $param;";
+        } else {
+            $sql = "SELECT `Data` FROM `items` WHERE lower(Name) = '$param';";
+        }
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value !== false) {
+            return json_decode($value['Data']);
         }
         return null;
     }

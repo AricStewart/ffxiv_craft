@@ -15,3 +15,8 @@
 $server = 'Coeurl';
 $ffxivmbGuid = '';
 $xivapiKey = '';
+
+$DBHOST = "localhost";
+$DBUSER = "ffxiv";
+$DBNAME = "ffxiv_craft";
+$DBPASS = "";

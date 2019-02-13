@@ -85,13 +85,13 @@ if (count($argv) > 1) {
 }
 
 if (!is_numeric($itemID)) {
-    $result = $dataset->getItemByName($itemID);
+    $result = $dataset->getItem($itemID);
     if ($result === null) {
         print 'Could not find item \''.$itemID."'\n";
         exit();
     }
-    $itemID = $result;
-}
+    $itemID = $result->Index;
+} 
 
 $output = doRecipie($itemID, $dataset, $xiv, 'tick');
 printRecipe($output);
