@@ -43,8 +43,7 @@ class Xivapi
         if ($value === false) {
             $sql = <<<SQL
                 CREATE TABLE xivData (
-                    Id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-                    Path TEXT NOT NULL,
+                    Path VARCHAR(100) NOT NULL PRIMARY KEY,
                     Data TEXT NOT NULL,
                     Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
