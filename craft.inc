@@ -117,8 +117,8 @@ function calculateProfit(&$recipe)
         $Price['HQ'] = min($Price['HQ'], $recipe['Week']['HQ']['Average']);
     }
 
-    $Price['LQ'] *= $recipe['Info']['Result']['Amount'];
-    $Price['HQ'] *= $recipe['Info']['Result']['Amount'];
+    $Price['LQ'] *= $recipe['Info']->Result->Amount;
+    $Price['HQ'] *= $recipe['Info']->Result->Amount;
 
     $Price['LQ%'] = ($Price['LQ']/$recipe['Cost']['Optimal']) - 1.0;
     $Price['HQ%'] = ($Price['HQ']/$recipe['Cost']['Optimal']) - 1.0;
@@ -234,8 +234,8 @@ function printRecipe($recipe, $profitOnly=false)
     }
 
     print "\n===>   ".$recipe['Name']."(".$recipe['ID'].")";
-    if ($recipe['Info']['Result']['Amount'] > 1) {
-        print " x".$recipe['Info']['Result']['Amount'];
+    if ($recipe['Info']->Result->Amount > 1) {
+        print " x".$recipe['Info']->Result->Amount;
     }
     print "\n";
     if (!$profitOnly) {

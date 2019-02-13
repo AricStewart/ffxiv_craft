@@ -18,7 +18,7 @@
     require_module 'file';
     require_module 'phpinfo';
     require_module 'json';
-.*/
+e*/
 
 require_once __DIR__.'/db.inc';
 require __DIR__.'/vendor/autoload.php';
@@ -33,7 +33,6 @@ function _nameSort($a, $b)
 
 class FfxivDataSet
 {
-    public $recipe = array();
     public $gather = array();
     public $master = array();
     public $world = array();
@@ -77,6 +76,13 @@ class FfxivDataSet
     private static function _filterBaseparam($item) 
     {
         return ($item['Param'] > 0 && $item['Value'] > 0);
+    }
+
+    private function _getData($file, $url) 
+    {
+        $response = $this->_client->request('GET', $url);
+        @file_put_contents($file, $response->getBody());
+        @chmod($file, 0666);
     }
 
     private function _loadItems($force=false) 
@@ -234,30 +240,24 @@ SQL;
         $this->_loadItems();
     }
 
-    private function _getData($file, $url) 
+    private function _loadRecipes($force=false)
     {
-        $response = $this->_client->request('GET', $url);
-        @file_put_contents($file, $response->getBody());
-        @chmod($file, 0666);
-    }
-
-    function __construct($baseData='.') 
-    {
-        $this->baseData = $baseData;
-        $this->_client = new Client(
-            ['base_uri' =>
-            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
-        );
-    }
-
-    function loadRecipes()
-    {
-        if (count($this->recipe) > 0) {
-            return;
-        }
-        if (!file_exists($this->baseData.$this->_recipData)) {
+        if ($force || !file_exists($this->baseData.$this->_recipData)) {
             $this->_getData($this->baseData.$this->_recipData, $this->_recipURL);
+            $force=true;
         }
+        if (!$force) {
+            $sql = "SELECT COUNT(`Id`) AS total FROM `recipes` WHERE 1;";
+            $result = DB::run($sql);
+            $value = $result->fetch();
+            if ($value !== false && $value['total'] > 0) {
+                return;
+            }
+        }
+
+        $sql = "DELETE FROM `recipes` WHERE 1";
+        DB::run($sql);
+
         $handle = fopen($this->baseData.$this->_recipData, "r");
         $skip = 3;
         if (empty($handle) === false) {
@@ -318,10 +318,51 @@ SQL;
                     $entry['Ingredients'],
                     'FfxivDataSet::_filterIngredient'
                 );
-                $this->recipe[$data[4]] = $entry;
+
+                $id = $entry['Index'];
+                $item = $entry['Result']['Item'];
+                if ($entry['SecretRecipeBook'] > 0) {
+                    $book = $entry['SecretRecipeBook'];
+                } else {
+                    $book = 'NULL';
+                }
+                $data = myPDO::quote(json_encode($entry));
+
+                $sql = "INSERT INTO `recipes` (Id, Item, Book, Data) ".
+                       "VALUES ($id, $item, $book, $data); ";
+                DB::run($sql);
             }
             fclose($handle);
         }
+    }
+
+    private function _checkRecipeTable() 
+    {
+        $sql = "SHOW TABLES LIKE 'recipes';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE recipes (
+                    Id INT UNSIGNED NOT NULL PRIMARY KEY,
+                    Item INT UNSIGNED NOT NULL,
+                    Book INT,
+                    Data TEXT NOT NULL,
+                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+SQL;
+            DB::run($sql);
+        }
+        $this->_loadRecipes();
+    }
+
+    function __construct($baseData='.') 
+    {
+        $this->baseData = $baseData;
+        $this->_client = new Client(
+            ['base_uri' =>
+            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
+        );
     }
 
 
@@ -460,32 +501,29 @@ SQL;
 
     function getFullRecipe($id, $count=1, &$output=null, $subrun=false) 
     {
-        $this->loadRecipes();
         if ($output == null) {
             $output = array();
         }
-        $tgt = $this->recipe[$id];
+        $tgt = $this->getRecipe($id);
         $ingred = &$output;
         if (!$subrun) {
             $output['Info'] = $tgt;
             $output['Recipe'] = [];
             $ingred = &$output['Recipe'];
         }
-        foreach ($tgt['Ingredients'] as $i) {
+        foreach ($tgt->Ingredients as $i) {
             $bits = [];
-            if (array_key_exists($i['Item'], $this->recipe) 
-                && $this->recipe[$i['Item']] !== null
-            ) {
-                $result = $this->recipe[$i['Item']]['Result']['Amount'];
+            if ($this->getRecipe($i->Item) !== null) {
+                $result = $this->getRecipe($i->Item)->Result->Amount;
                 $this->getFullRecipe(
-                    $i['Item'],
-                    ceil(($i['Amount']* $count)/$result), $bits, true
+                    $i->Item,
+                    ceil(($i->Amount* $count)/$result), $bits, true
                 );
             }
             $ingred[] = [
-                         'id' => $i['Item'],
+                         'id' => $i->Item,
                          'name' => '',
-                         'count' => $i['Amount'] * $count,
+                         'count' => $i->Amount * $count,
                          'marketCost' => 0,
                          'marketHQ' => 0,
                          'craftCost' => 0,
@@ -513,7 +551,6 @@ SQL;
 
     function getMasterCraft($book=null) 
     {
-        $this->loadRecipes();
         $output = [];
         if ($book !== null) {
             $theBook = $this->lookupMasterBook($book);
@@ -523,14 +560,17 @@ SQL;
             }
             $book = $theBook;
         }
-        foreach ($this->recipe as $key => $recp) {
-            if ($recp['SecretRecipeBook']) {
-                if ($book !== null && $book == $recp['SecretRecipeBook']) {
-                    $output[] = $key;
-                } elseif ($book === null) {
-                    $output[] = $key;
-                }
-            }
+
+        if ($book !== null) {
+            $sql = "SELECT * FROM `recipes` WHERE `Book` = $book";
+        } else {
+            $sql = "SELECT * FROM `recipes` WHERE `Book` IS NOT NULL";
+        }
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        while ($value !== false) {
+            $output[] = $value['Item'];
+            $value = $result->fetch();
         }
         return $output;
     }
@@ -543,6 +583,18 @@ SQL;
         } else {
             $sql = "SELECT `Data` FROM `items` WHERE lower(Name) = '$param';";
         }
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value !== false) {
+            return json_decode($value['Data']);
+        }
+        return null;
+    }
+
+    function getRecipe($param)
+    {
+        $this->_checkRecipeTable();
+        $sql = "SELECT `Data` FROM `recipes` WHERE `item` = $param;";
         $result = DB::run($sql);
         $value = $result->fetch();
         if ($value !== false) {
