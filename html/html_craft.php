@@ -45,12 +45,13 @@ function decode_item($itemID, $dataset)
     return $itemID;
 }
 
-function get_arguments($method, &$ffxiv_server, &$itemID, &$event)
+function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter)
 {
     $arguments = [
         'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
         'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
         'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
+        'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -69,10 +70,16 @@ function get_arguments($method, &$ffxiv_server, &$itemID, &$event)
         $itemID = htmlspecialchars_decode($data['item'], ENT_QUOTES);
     }
 
+    if (!isset($data['crafter'])) {
+        $crafter = '';
+    } else {
+        $crafter = htmlspecialchars_decode($data['crafter'], ENT_QUOTES);
+    }
+
 }
 
 if (!empty($_POST)) {
-    get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event);
+    get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event, $crafter);
 
     if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
         $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
@@ -89,12 +96,12 @@ if (!empty($_POST)) {
         exit();
     }
 
-    $output = doRecipie($itemID, $dataset, $xiv);
+    $output = doRecipie($itemID, $dataset, $xiv, null, $crafter);
     print json_encode($output);
 } else {
     header('Content-Type: text/event-stream');
 
-    get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event);
+    get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event, $crafter);
     if (!$event) {
         $data = array( "type" => "done",
                        "data" => json_encode([]));
@@ -125,7 +132,7 @@ if (!empty($_POST)) {
         exit();
     }
 
-    $output = doRecipie($itemID, $dataset, $xiv, 'http_progress');
+    $output = doRecipie($itemID, $dataset, $xiv, 'http_progress', $crafter);
     $data = array(
         "type" => "done",
         "data" => json_encode($output));

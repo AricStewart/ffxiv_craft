@@ -75,9 +75,10 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $a = $dataset->getMastercraft($bookID);
+    $a = $dataset->getMasterCraft($bookID);
+    $crafter = $dataset->getMasterBookJob($bookID);
     foreach ($a as $key => $i) {
-        $output[] = doRecipie($i, $dataset, $xiv);
+        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
     usort($output, '_sortByProfit');
     print json_encode($output);
@@ -104,9 +105,11 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $a = $dataset->getMastercraft($bookID);
+    $a = $dataset->getMasterCraft($bookID);
+    $crafter = $dataset->getMasterBookJob($bookID);
     $data = array(
             "type" => "start",
+            "info" => $crafter,
             "data" => count($a));
     $result = json_encode($data);
     echo "data:".$result;
@@ -115,7 +118,7 @@ if (!empty($_POST)) {
     flush();
 
     foreach ($a as $key => $i) {
-        $output[] = doRecipie($i, $dataset, $xiv);
+        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
         $data = array(
                 "type" => "progress",
                 "data" => "");

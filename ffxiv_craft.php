@@ -58,10 +58,12 @@ function tick($stage, $data=null)
     }
 }
 
+$i = 1;
 if (count($argv) > 1) {
     if ($argv[1] == '-c') {
         array_map('unlink', glob("data/*.json"));
         $itemID = $argv[2];
+        $i = 3;
     } elseif ($argv[1] == '-m') {
         $a = $dataset->getMastercraft($argv[2]);
         print count($a)."\n";
@@ -79,9 +81,15 @@ if (count($argv) > 1) {
         exit();
     } else {
         $itemID = $argv[1];
+        $i = 2;
     }
 } else {
     $itemID = 23815;
+}
+
+$crafter = 'Armorcraft';
+if (count($argv) > $i) {
+    $crafter = $argv[$i];
 }
 
 if (!is_numeric($itemID)) {
@@ -91,7 +99,7 @@ if (!is_numeric($itemID)) {
         exit();
     }
     $itemID = $result->Index;
-} 
+}
 
-$output = doRecipie($itemID, $dataset, $xiv, 'tick');
+$output = doRecipie($itemID, $dataset, $xiv, 'tick', $crafter);
 printRecipe($output);

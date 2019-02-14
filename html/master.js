@@ -68,10 +68,12 @@ function fillBookFrame(dataset)
         var server = encodeURI(document.getElementById('server').value);
         var item = encodeURI(data.ID);
         if (data.Info.Result.Amount > 1) {
-            dataName = '<a href="index.php?server='+server+'&item='+item+'" target="_blank">';
+            dataName = '<a href="index.php?server='+server+'&item='+item +
+             '&crafter='+data.Info.CraftTypeName+'" target="_blank">';
             dataName += data.Name + ' x' + data.Info.Result.Amount + '</a>';
         } else {
-            dataName = '<a href="index.php?server='+server+'&item='+item+'" target="_blank">';
+            dataName = '<a href="index.php?server='+server+'&item='+item+
+                '&crafter='+data.Info.CraftTypeName+'" target="_blank">';
             dataName += data.Name + "</a>";
         }
 

@@ -1,6 +1,21 @@
 <?php
 require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
+
+$arguments = [
+    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
+];
+
+$data = filter_input_array(INPUT_GET, $arguments);
+if (isset($data['server'])) {
+    $server = $data['server'];
+}
+if (isset($data['item'])) {
+    $item = $data['item'];
+} else {
+    $item = null;
+}
 ?>
 <html>
 <head>
@@ -49,12 +64,12 @@ require_once __DIR__."/../ffxivData.inc";
 $dataset = new FfxivDataSet('..');
 $dataset->loadWorld();
 foreach ($dataset->world as $entry) {
-    if (strcasecmp($entry['Name'], $server) == 0) {
+    if (strcasecmp($entry->Name, $server) == 0) {
         echo "<option selected>";
     } else {
         echo "<option>";
     }
-    echo $entry['Name']."</option>";
+    echo $entry->Name."</option>";
 }
 ?>
 </select>
@@ -64,7 +79,11 @@ foreach ($dataset->world as $entry) {
 <?php
 $dataset->loadMasterBooks();
 foreach ($dataset->master as $book) {
-    echo "<option>".$book['Name']."</option>";
+    if (strcasecmp($book->Name, $item) == 0) {
+        echo "<option selected>".$book->Name."</option>";
+    } else {
+        echo "<option>".$book->Name."</option>";
+    }
 }
 ?>
 </select>

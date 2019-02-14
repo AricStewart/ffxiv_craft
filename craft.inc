@@ -150,9 +150,11 @@ function filloutRecipe(&$recipe, $dataset, $sub=false)
     }
 }
 
-function doRecipie($itemID, $dataset, $xiv, $progress=null)
+function doRecipie($itemID, $dataset, $xiv, $progress=null,
+                   $preference='Armorcraft')
 {
-    $recipe = $dataset->getFullRecipe($itemID);
+    $output = array();
+    $recipe = $dataset->getFullRecipe($itemID, 1, $output , false, $preference);
     if ($recipe == null) {
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
@@ -215,7 +217,8 @@ function line($line, $tab)
         }
         if ($bit['craftCost']) {
             if ($bit['craftCost'] > 0) {
-                print "/ crafted ".number_format($bit['craftCost'])." gil";
+                print "/ crafted (".$bit['craftedBy'].") ".
+                      number_format($bit['craftCost'])." gil";
             } else {
                 print "/ crafted UNAVALIABLE";
             }
@@ -240,6 +243,14 @@ function printRecipe($recipe, $profitOnly=false)
         print " x".$recipe['Info']->Result->Amount;
     }
     print "\n";
+    if ($recipe['Info'] !== null) {
+        print "   ".$recipe['Info']->CraftTypeName." - lvl ".
+              $recipe['Info']->RecipeLevel->ClassJobLevel;
+        if ($recipe['Info']->Book !== null) {
+            print " from '".$recipe['Info']->Book->Name."'";
+        }
+        print "\n";
+    }
     if (!$profitOnly) {
         print "recent: ";
         if ($recipe['Recent']['LQ']) {

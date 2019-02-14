@@ -5,6 +5,7 @@ require_once __DIR__."/../ffxivData.inc";
 $arguments = [
     'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
     'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
+    'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
 ];
 
 $data = filter_input_array(INPUT_GET, $arguments);
@@ -15,6 +16,11 @@ if (isset($data['item'])) {
     $item = $data['item'];
 } else {
     $item = "rakshasa dogi of healing";
+}
+if (isset($data['crafter'])) {
+    $crafter = $data['crafter'];
+} else {
+    $crafter= "";
 }
 ?>
 <html>
@@ -63,17 +69,31 @@ if (isset($data['item'])) {
     $dataset = new FfxivDataSet('..');
     $dataset->loadWorld();
     foreach ($dataset->world as $entry) {
-        if (strcasecmp($entry['Name'], $server) == 0) {
+        if (strcasecmp($entry->Name, $server) == 0) {
             echo "<option selected>";
         } else {
             echo "<option>";
         }
-        echo $entry['Name']."</option>";
+        echo $entry->Name."</option>";
     }
     ?>
         </select>
       </div>
       <input id='item' type="text" class="form-control" value='<?php echo $item; ?>'>
+      <div class="input-group-append">
+        <select class="custom-select" id="crafter">
+    <?php
+    foreach ($dataset->craftType as $entry) {
+        if (strcasecmp($entry, $crafter) == 0) {
+            echo "<option selected>";
+        } else {
+            echo "<option>";
+        }
+        echo $entry."</option>";
+    }
+    ?>
+        </select>
+      </div>
       <div class="input-group-append">
         <input type='button' class="btn btn-outline-secondary" onclick='getData()' value='Get Data'>
       </div>

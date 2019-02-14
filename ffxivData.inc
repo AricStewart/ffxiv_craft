@@ -1,6 +1,6 @@
 <?php
 /**
- * Access to datafiles from https//github.com/viion/ffxiv-datamining
+ * Access to datafiles from https://github.com/viion/ffxiv-datamining
  *
  * PHP version 5
  *
@@ -28,15 +28,17 @@ ini_set('memory_limit', '5000M');
 
 function _nameSort($a, $b) 
 {
-    return strnatcmp($a['Name'], $b['Name']);
+    return strnatcmp($a->Name, $b->Name);
 }
 
 class FfxivDataSet
 {
     public $gather = array();
-    public $master = array();
     public $world = array();
     public $gilShop = array();
+    public $master = array();
+
+    private $_RecipeLevelTable = array();
 
     private $_recipData = "/data/Recipe.csv";
     private $_recipURL = "Recipe.csv";
@@ -56,8 +58,22 @@ class FfxivDataSet
     private $_gilShopData = "/data/GilShopItem.csv";
     private $_gilShopURL = "GilShopItem.csv";
 
+    private $_RecipeLevelTableData = "/data/RecipeLevelTable.csv";
+    private $_RecipeLevelTableURL = "RecipeLevelTable.csv";
+
     private $_client;
     public $baseData;
+
+    public $craftType = [
+            "Woodworking",
+            "Smithing",
+            "Armorcraft",
+            "Goldsmithing",
+            "Leatherworking",
+            "Clothcraft",
+            "Alchemy",
+            "Cooking",
+        ];
 
     private static function _isTrue($val)
     {
@@ -422,7 +438,7 @@ SQL;
                     'Item' => intval($data[1]),
                     'Name' => $data[2],
                 ];
-                $this->master[] = $entry;
+                $this->master[] = json_decode(json_encode($entry));
             }
             usort($this->master, "_nameSort");
             fclose($handle);
@@ -454,7 +470,7 @@ SQL;
                     'DataCenter' => intval($data[3]),
                     'Public' => $this->_isTrue($data[3]),
                 ];
-                $this->world[] = $entry;
+                $this->world[] = json_decode(json_encode($entry));
             }
             usort($this->world, "_nameSort");
             fclose($handle);
@@ -499,12 +515,43 @@ SQL;
         return $result;
     }
 
-    function getFullRecipe($id, $count=1, &$output=null, $subrun=false) 
+    private function _loadRecipeLevelTable() 
+    {
+        if (count($this->_RecipeLevelTable) > 0) {
+            return;
+        }
+        if (!file_exists($this->baseData.$this->_RecipeLevelTableData)) {
+            $this->_getData($this->baseData.$this->_RecipeLevelTableData, $this->_RecipeLevelTableURL);
+        }
+        $handle = fopen($this->baseData.$this->_RecipeLevelTableData, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                $entry = [
+                    'ClassJobLevel' => intval($data[1]),
+                    'Stars' => intval($data[2]),
+                    'SuggestedCraftsmanship' => intval($data[3]),
+                    'Difficulty' => intval($data[4]),
+                    'Quality' => intval($data[5]),
+                    'Durability' => intval($data[6]),
+                ];
+                $this->_RecipeLevelTable[$data[0]] = json_decode(
+                    json_encode($entry));
+            }
+            fclose($handle);
+        }
+    }
+
+    function getFullRecipe($id, $count, &$output, $subrun, $preference)
     {
         if ($output == null) {
             $output = array();
         }
-        $tgt = $this->getRecipe($id);
+        $tgt = $this->getRecipe($id, $preference);
         $ingred = &$output;
         if (!$subrun) {
             $output['Info'] = $tgt;
@@ -516,11 +563,13 @@ SQL;
         }
         foreach ($tgt->Ingredients as $i) {
             $bits = [];
-            if ($this->getRecipe($i->Item) !== null) {
-                $result = $this->getRecipe($i->Item)->Result->Amount;
+            $part = $this->getRecipe($i->Item, $preference);
+            if ($part !== null) {
+                $result = $part->Result->Amount;
                 $this->getFullRecipe(
                     $i->Item,
-                    ceil(($i->Amount* $count)/$result), $bits, true
+                    ceil(($i->Amount* $count)/$result), $bits, true,
+                    $preference
                 );
             }
             $ingred[] = [
@@ -530,6 +579,7 @@ SQL;
                          'marketCost' => 0,
                          'marketHQ' => 0,
                          'craftCost' => 0,
+                         'craftedBy' => $part->CraftTypeName,
                          'shopCost' => 0,
                          'bits' => $bits
                         ];
@@ -537,16 +587,19 @@ SQL;
         return $output;
     }
 
-
     function lookupMasterBook($name) 
     {
         $this->loadMasterBooks();
-        if (is_int($name)) {
-            return $name;
+        if (is_numeric($name)) {
+            foreach ($this->master as $r) {
+                if ($r->Index == $name) {
+                    return $r;
+                }
+            }
         }
         foreach ($this->master as $r) {
-            if (strcasecmp($r['Name'], $name) == 0) {
-                return $r['Index'];
+            if (strcasecmp($r->Name, $name) == 0) {
+                return $r->Index;
             }
         }
         return null;
@@ -578,6 +631,23 @@ SQL;
         return $output;
     }
 
+    function getMasterBookJob($name)
+    {
+        $craftMap = [
+            "Carpenter" => "Woodworking",
+            "Blacksmith" => "Smithing",
+            "Armorer" => "Armorcraft",
+            "Goldsmith" => "Goldsmithing",
+            "Leatherworker" => "Leatherworking",
+            "Weaver" => "Clothcraft",
+            "Alchemist" => "Alchemy",
+            "Culinarian" => "Cooking",
+        ];
+        $c = explode(" ",$name)[1];
+        $crafter = trim($c, ':');
+        return $craftMap[$crafter];
+    }
+
     function getItem($param)
     {
         $this->_checkItemTable();
@@ -594,15 +664,38 @@ SQL;
         return null;
     }
 
-    function getRecipe($param)
+    function getRecipe($param, $preference)
     {
+        $this->_loadRecipeLevelTable();
         $this->_checkRecipeTable();
         $sql = "SELECT `Data` FROM `recipes` WHERE `item` = $param;";
         $result = DB::run($sql);
         $value = $result->fetch();
-        if ($value !== false) {
-            return json_decode($value['Data']);
+        $output = null;
+        while ($value !== false) {
+            if ($output === null) {
+                $output = [];
+            }
+            $data = json_decode($value['Data']);
+            $data->CraftTypeName = $this->craftType[$data->CraftType];
+            $data->RecipeLevel = $this->_RecipeLevelTable[$data->RecipeLevelTable];
+            if ($data->SecretRecipeBook > 0) {
+                $this->loadMasterBooks();
+                $data->Book = $this->lookupMasterBook($data->SecretRecipeBook);
+            } else {
+                $data->Book = null;
+            }
+            if ($preference) {
+                if (strcasecmp($data->CraftTypeName, $preference)==0) {
+                    return $data;
+                }
+            }
+            $output[] = $data;
+            $value = $result->fetch();
         }
-        return null;
+        if ($output && $preference) {
+            return $output[0];
+        }
+        return $output;
     }
 }

@@ -17,8 +17,13 @@ function printLine(line, tab)
     var output = '<ul class="list-style">\n';
     line.forEach(function (l) {
         output += '<li>\n';
-        output += '<a href="https://www.ffxivmb.com/Items/'+server+'/'+l.id+'" target="_blank">'+
-            l.name+'</a> (x'+l.count+') -> ';
+        if (l.craftCost > 0) {
+            output += '<a href="index.php?server='+server+'&item='+l.id+
+            '&crafter='+l.craftedBy+'" target="_blank">';
+        } else {
+            output += '<a href="https://www.ffxivmb.com/Items/'+server+'/'+l.id+'" target="_blank">';
+        }
+       output += l.name+'</a> (x'+l.count+') -> ';
 
         var low = [];
         if (l.marketCost > 0) low.push(l.marketCost);
@@ -38,7 +43,10 @@ function printLine(line, tab)
         }
         if (l.craftCost > 0) {
             output += '&nbsp;' + getBadge(low, l.craftCost);
-            output += 'crafted</span>&nbsp' + l.craftCost.toLocaleString() + " gil";
+            output += 'crafted</span>&nbsp(' +
+              '<a href="index.php?server='+server+'&item='+l.id +
+              '&crafter='+l.craftedBy+'" target="_blank">'+ l.craftedBy +
+              '</a>) ' + l.craftCost.toLocaleString() + " gil";
         }
         if (l.shopCost > 0) {
             output += '&nbsp;' + getBadge(low, l.shopCost);
@@ -126,10 +134,23 @@ function fillCraftFrame(data)
         dataName += ' x' + data.Info.Result.Amount;
     }
 
+    subText = '';
+    if (data.Info !== null) {
+        subText = data.Info.CraftTypeName + ' - lvl ' +
+                  data.Info.RecipeLevel.ClassJobLevel;
+        if (data.Info.Book !== null) {
+            var server = document.getElementById('server').value;
+            subText += " from '<a href=\"masterbook.php?server=" + server +
+                "&item="+ encodeURIComponent(data.Info.Book.Name) +
+                "\" target='_blank'>" + data.Info.Book.Name + "</a>'";
+        }
+    }
+
     var content =
     '<div class="card m-5">'+
     '  <div class="card-body">'+
     '    <h2 class="card-title text-center">'+dataName+'</h2>' +
+    '    <h4 class="text-center">'+subText+'</h4>' +
     '    <ul class="list-unstyled text-left">' +
     '       <li>Recent: '+recent+'</li>'+
     '       <li>Weekly Average: '+week+'</li>'+
@@ -163,6 +184,7 @@ function getDataBlock() {
   var xhttp = new XMLHttpRequest();
   var server = encodeURI(document.getElementById('server').value);
   var item = encodeURI(document.getElementById('item').value);
+  var crafter = encodeURI(document.getElementById('crafter').value);
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
         $("#refresh_spinner").modal("hide");
@@ -173,7 +195,7 @@ function getDataBlock() {
   $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
   xhttp.open('POST', 'html_craft.php', true);
   xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-  xhttp.send('item=' + item +'&server=' + server);
+  xhttp.send('item=' + item +'&server=' + server + '&crafter=' + crafter);
 }
 
 function getDataEvent() {
@@ -183,8 +205,9 @@ function getDataEvent() {
   document.getElementById('progress').style.display = '';
   var server = encodeURI(document.getElementById('server').value);
   var item = encodeURI(document.getElementById('item').value);
+  var crafter = encodeURI(document.getElementById('crafter').value);
   var source = new EventSource("html_craft.php?event=1&item=" + item +
-        "&server=" + server);
+        "&server=" + server + "&crafter=" + crafter);
   source.onmessage = function(event) {
       var data = JSON.parse(event.data);
       if (data.type == "start") {
