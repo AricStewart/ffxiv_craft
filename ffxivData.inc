@@ -672,12 +672,14 @@ SQL;
         $result = DB::run($sql);
         $value = $result->fetch();
         $output = null;
+        $AllCraftTypes = [];
         while ($value !== false) {
             if ($output === null) {
                 $output = [];
             }
             $data = json_decode($value['Data']);
             $data->CraftTypeName = $this->craftType[$data->CraftType];
+            $AllCraftTypes[] = $data->CraftTypeName;
             $data->RecipeLevel = $this->_RecipeLevelTable[$data->RecipeLevelTable];
             if ($data->SecretRecipeBook > 0) {
                 $this->loadMasterBooks();
@@ -685,16 +687,19 @@ SQL;
             } else {
                 $data->Book = null;
             }
-            if ($preference) {
-                if (strcasecmp($data->CraftTypeName, $preference)==0) {
-                    return $data;
-                }
-            }
             $output[] = $data;
             $value = $result->fetch();
         }
         if ($output && $preference) {
-            return $output[0];
+            foreach($output as $data) {
+                if (strcasecmp($data->CraftTypeName, $preference)==0) {
+                    $data->AllCraftTypes = $AllCraftTypes;
+                    return $data;
+                }
+            }
+            $data = $output[0];
+            $data->AllCraftTypes = $AllCraftTypes;
+            return $data;
         }
         return $output;
     }

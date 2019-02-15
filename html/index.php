@@ -82,6 +82,7 @@ if (isset($data['crafter'])) {
       <input id='item' type="text" class="form-control" value='<?php echo $item; ?>'>
       <div class="input-group-append">
         <select class="custom-select" id="crafter">
+            <option selected>Any</option>
     <?php
     foreach ($dataset->craftType as $entry) {
         if (strcasecmp($entry, $crafter) == 0) {

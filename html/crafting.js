@@ -135,6 +135,8 @@ function fillCraftFrame(data)
     }
 
     subText = '';
+    var i;
+    var l;
     if (data.Info !== null) {
         subText = data.Info.CraftTypeName + ' - lvl ' +
                   data.Info.RecipeLevel.ClassJobLevel;
@@ -143,6 +145,26 @@ function fillCraftFrame(data)
             subText += " from '<a href=\"masterbook.php?server=" + server +
                 "&item="+ encodeURIComponent(data.Info.Book.Name) +
                 "\" target='_blank'>" + data.Info.Book.Name + "</a>'";
+        }
+        document.getElementById('crafter').value = data.Info.CraftTypeName;
+        var a = document.getElementById('crafter');
+        for (i=0, n=a.options.length;i<n;i++) {
+            l = document.getElementById('crafter').options[i].value;
+            if (l == 'Any' || data.Info.AllCraftTypes.includes(l)) {
+                document.getElementById('crafter').options[i].disabled = false;
+            } else {
+                document.getElementById('crafter').options[i].disabled = true;
+            }
+        }
+    } else {
+        document.getElementById('crafter').value = "Any";
+        for (i=0, n=document.getElementById('crafter').options.length;i<n;i++) {
+            l = document.getElementById('crafter').options[i].value;
+            if (l == 'Any') {
+                document.getElementById('crafter').options[i].disabled = false;
+            } else {
+                document.getElementById('crafter').options[i].disabled = true;
+            }
         }
     }
 
