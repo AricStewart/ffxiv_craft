@@ -271,6 +271,8 @@ SQL;
             }
         }
 
+        $this->_loadRecipeLevelTable();
+
         $sql = "DELETE FROM `recipes` WHERE 1";
         DB::run($sql);
 
@@ -337,15 +339,18 @@ SQL;
 
                 $id = $entry['Index'];
                 $item = $entry['Result']['Item'];
+                $type = $entry['CraftType'];
                 if ($entry['SecretRecipeBook'] > 0) {
                     $book = $entry['SecretRecipeBook'];
                 } else {
                     $book = 'NULL';
                 }
                 $data = myPDO::quote(json_encode($entry));
+                $level = $this->_RecipeLevelTable[$entry['RecipeLevelTable']]->ClassJobLevel;
 
-                $sql = "INSERT INTO `recipes` (Id, Item, Book, Data) ".
-                       "VALUES ($id, $item, $book, $data); ";
+                $sql = "INSERT INTO `recipes` (Id, Item, CraftType,".
+                       "RecipeLevel, Book, Data) ".
+                       "VALUES ($id, $item, $type, $level, $book, $data); ";
                 DB::run($sql);
             }
             fclose($handle);
@@ -362,6 +367,8 @@ SQL;
                 CREATE TABLE recipes (
                     Id INT UNSIGNED NOT NULL PRIMARY KEY,
                     Item INT UNSIGNED NOT NULL,
+                    CraftType INT NOT NULL,
+                    RecipeLevel INT NOT NULL,
                     Book INT,
                     Data TEXT NOT NULL,
                     Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -664,6 +671,20 @@ SQL;
         return null;
     }
 
+    function _processRecipe($value) {
+        $data = json_decode($value['Data']);
+        $data->CraftTypeName = $this->craftType[$data->CraftType];
+        $AllCraftTypes[] = $data->CraftTypeName;
+        $data->RecipeLevel = $this->_RecipeLevelTable[$data->RecipeLevelTable];
+        if ($data->SecretRecipeBook > 0) {
+            $this->loadMasterBooks();
+            $data->Book = $this->lookupMasterBook($data->SecretRecipeBook);
+        } else {
+            $data->Book = null;
+        }
+        return $data;
+    }
+
     function getRecipe($param, $preference)
     {
         $this->_loadRecipeLevelTable();
@@ -677,17 +698,7 @@ SQL;
             if ($output === null) {
                 $output = [];
             }
-            $data = json_decode($value['Data']);
-            $data->CraftTypeName = $this->craftType[$data->CraftType];
-            $AllCraftTypes[] = $data->CraftTypeName;
-            $data->RecipeLevel = $this->_RecipeLevelTable[$data->RecipeLevelTable];
-            if ($data->SecretRecipeBook > 0) {
-                $this->loadMasterBooks();
-                $data->Book = $this->lookupMasterBook($data->SecretRecipeBook);
-            } else {
-                $data->Book = null;
-            }
-            $output[] = $data;
+            $output[] = $this->_processRecipe($value);
             $value = $result->fetch();
         }
         if ($output && $preference) {
@@ -700,6 +711,36 @@ SQL;
             $data = $output[0];
             $data->AllCraftTypes = $AllCraftTypes;
             return $data;
+        }
+        return $output;
+    }
+
+    function getRecipeSet($crafter, $levelLow=0, $levelHigh=0)
+    {
+        $this->_loadRecipeLevelTable();
+        $this->_checkRecipeTable();
+        if (!is_numeric($crafter)) {
+            $crafter = array_search($crafter, $this->craftType);
+            if ($crafter === false) {
+                return null;
+            }
+        }
+        $sql = "SELECT `Item` FROM `recipes` WHERE `CraftType` = $crafter";
+        if ($levelLow > 0) {
+            $sql .= " AND `RecipeLevel` >= $levelLow";
+        }
+        if ($levelHigh > 0) {
+            $sql .= " AND `RecipeLevel` <= $levelHigh";
+        }
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        $output = null;
+        while ($value !== false) {
+            if ($output === null) {
+                $output = [];
+            }
+            $output[] = $value['Item'];
+            $value = $result->fetch();
         }
         return $output;
     }

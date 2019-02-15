@@ -4,7 +4,8 @@ function getDataBlock() {
   document.getElementById('output').innerHTML = "";
   var xhttp = new XMLHttpRequest();
   var server = encodeURI(document.getElementById('server').value);
-  var book = encodeURI(document.getElementById('book').value);
+  var crafter = encodeURI(document.getElementById('crafter').value);
+  var tier = document.getElementById('tier').value;
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
         $("#refresh_spinner").modal("hide");
@@ -13,9 +14,9 @@ function getDataBlock() {
     }
   };
   $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
-  xhttp.open('POST', 'html_master.php', true);
+  xhttp.open('POST', 'html_tier.php', true);
   xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-  xhttp.send('book=' + book +'&server=' + server);
+  xhttp.send('tier=' + tier+'&server=' + server + '&crafter=' + crafter);
 }
 
 function getDataEvent() {
@@ -24,9 +25,10 @@ function getDataEvent() {
   document.getElementById('progress_bar').setAttribute('aria-valuenow', 0);
   document.getElementById('progress').style.display = '';
   var server = encodeURI(document.getElementById('server').value);
-  var book = encodeURI(document.getElementById('book').value);
-  var source = new EventSource("html_master.php?event=1&book=" + book +
-        "&server=" + server);
+  var tier = document.getElementById('tier').value;
+  var crafter = encodeURI(document.getElementById('crafter').value);
+  var source = new EventSource("html_tier.php?event=1&tier=" + tier +
+        "&server=" + server + "&crafter=" + crafter);
   source.onmessage = function(event) {
       var data = JSON.parse(event.data);
       if (data.type == "start") {
@@ -40,13 +42,14 @@ function getDataEvent() {
         p = p + '%';
         document.getElementById('progress_bar').style.width = p;
       } else if (data.type == "info") {
+        document.getElementById('progress_bar').innerHTML = data.data;
         console.log(data.data);
       } else if (data.type == "done") {
         source.close();
         $("#refresh_spinner").modal("hide");
         document.getElementById('progress').style.display = "none";
-        var book = JSON.parse(data.data);
-        fillShortFrame(book);
+        var tier = JSON.parse(data.data);
+        fillShortFrame(tier);
       }
   };
 }

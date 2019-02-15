@@ -79,6 +79,19 @@ if (count($argv) > 1) {
             }
         }
         exit();
+    } elseif ($argv[1] == '-t') {
+        $crafter = $argv[2];
+        $tier = intval($argv[3]);
+        $set = $dataset->getRecipeSet($crafter, ($tier-1)*5, $tier*5);
+        foreach ($set as $i => $r) {
+            print " ".$r." (".($i+1)."|".count($set).") ";
+            $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter);
+        }
+        usort($output, '_sortByProfit');
+        foreach ($output as $recipe) {
+            printRecipe($recipe, true);
+        }
+        exit();
     } else {
         $itemID = $argv[1];
         $i = 2;

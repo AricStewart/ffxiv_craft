@@ -58,7 +58,9 @@ if (isset($data['crafter'])) {
 <div>
 <div class="text-center">
 <h2>Demonstrating Final Fantasy XIV Crafting Companion</h2>
-<a href="masterbook.php">[Master Recipe Books]</a><br><br>
+<a href="masterbook.php">[Master Recipe Books]</a>&nbsp;
+<a href="tier.php">[Crafting Tier]</a>
+<br><br>
 </div>
 
 <div class="m-4">

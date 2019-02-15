@@ -1,25 +1,10 @@
 <?php
 require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
-
-$arguments = [
-    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
-];
-
-$data = filter_input_array(INPUT_GET, $arguments);
-if (isset($data['server'])) {
-    $server = $data['server'];
-}
-if (isset($data['item'])) {
-    $item = $data['item'];
-} else {
-    $item = null;
-}
 ?>
 <html>
 <head>
-<title>Demonstrating Final Fantasy XIV Crafting Companioni (Master Books)</title>
+<title>Demonstrating Final Fantasy XIV Crafting Companion (Tiers)</title>
 
 <!-- Bootstrap -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
@@ -31,7 +16,7 @@ if (isset($data['item'])) {
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <script src="common.js"></script>
-<script src="master.js"></script>
+<script src="tier.js"></script>
 </head>
 <body>
 
@@ -52,10 +37,8 @@ if (isset($data['item'])) {
 
 <div>
 <div class="text-center">
-<h2>Demonstrating Final Fantasy XIV Crafting Companion (Master Books)</h2>
-<a href="index.php">[Recipe Processing]</a>&nbsp;
-<a href="tier.php">[Crafting Tier]</a>
-<br><br>
+<h2>Demonstrating Final Fantasy XIV Crafting Companion (Tiers)</h2>
+<a href="index.php">[Recipe Processing]</a>&nbsp;<a href="masterbook.php">[Master Recipe Books]</a><br><br>
 </div>
 
 <div class="m-4">
@@ -78,18 +61,36 @@ foreach ($dataset->world as $entry) {
 </select>
 </div>
 
-<select class="custom-select" id='book'>
-<?php
-$dataset->loadMasterBooks();
-foreach ($dataset->master as $book) {
-    if (strcasecmp($book->Name, $item) == 0) {
-        echo "<option selected>".$book->Name."</option>";
-    } else {
-        echo "<option>".$book->Name."</option>";
-    }
-}
-?>
+<select class="custom-select" id='tier'>
+    <option value=1>level 1-5</option>
+    <option value=2>level 6-10</option>
+    <option value=3>level 11-15</option>
+    <option value=4>level 16-20</option>
+    <option value=5>level 21-25</option>
+    <option value=6>level 26-30</option>
+    <option value=7>level 31-35</option>
+    <option value=8>level 36-40</option>
+    <option value=9>level 41-45</option>
+    <option value=10>level 46-50</option>
+    <option value=11>level 51-55</option>
+    <option value=12>level 56-60</option>
+    <option value=13>level 61-65</option>
+    <option value=14>level 66-70</option>
 </select>
+      <div class="input-group-append">
+        <select class="custom-select" id="crafter">
+    <?php
+    foreach ($dataset->craftType as $entry) {
+        if (strcasecmp($entry, $crafter) == 0) {
+            echo "<option selected>";
+        } else {
+            echo "<option>";
+        }
+        echo $entry."</option>";
+    }
+    ?>
+        </select>
+      </div>
 
       <div class="input-group-append">
         <input type='button' class="btn btn-outline-secondary" onclick='getData()' value='Get Data'>
