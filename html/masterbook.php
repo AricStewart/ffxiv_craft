@@ -30,8 +30,9 @@ if (isset($data['item'])) {
 <!-- End Bootstrap -->
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<script src="common.js"></script>
-<script src="master.js"></script>
+<script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
+<script src="master.js?version=<?php echo hash_file('sha256', 'master.js');?>"></script>
+<script src="clipboard.min.js"></script>
 </head>
 <body>
 

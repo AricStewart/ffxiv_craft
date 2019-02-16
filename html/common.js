@@ -76,6 +76,9 @@ function fillShortFrame(dataset)
                 '&crafter='+data.Info.CraftTypeName+'" target="_blank">';
             dataName += data.Name + "</a>";
         }
+        dataName += '<sup><input type="image" class="copy_button" ' +
+                    'src="clipboard.png" data-clipboard-text="' +
+                    data.Name + '"></sup>';
 
         subText = data.Info.CraftTypeName + ' - lvl ' +
                   data.Info.RecipeLevel.ClassJobLevel;
@@ -111,4 +114,10 @@ function fillShortFrame(dataset)
         sect += "</div></div></div>";
         document.getElementById('output').innerHTML += sect;
     });
+}
+
+function copyItem(element) {
+  var copyText = document.getElementById(element);
+  copyText.select();
+  document.execCommand("copy");
 }

@@ -22,16 +22,7 @@ require_once __DIR__."/../ffxivData.inc";
 require_once __DIR__."/../ffxivmb.inc";
 require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
-
-function http_progress($type="", $data="")
-{
-    $data = array( "type" => $type,
-                   "data" => $data);
-    echo "data: ".json_encode($data);
-    echo "\n\n";
-    ob_flush();
-    flush();
-}
+require_once __DIR__."/common.inc";
 
 function decode_item($itemID, $dataset)
 {
@@ -103,13 +94,7 @@ if (!empty($_POST)) {
 
     get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event, $crafter);
     if (!$event) {
-        $data = array( "type" => "done",
-                       "data" => json_encode([]));
-        echo "data: ".json_encode($data);
-        echo "\n\n";
-        ob_flush();
-        flush();
-        exit();
+        http_progress("done", json_encode([]));
     }
 
     if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
@@ -123,24 +108,12 @@ if (!empty($_POST)) {
 
     $itemID = decode_item($itemID, $dataset);
     if ($itemID=== null) {
-        $data = array( "type" => "done",
-                       "data" => json_encode([]));
-        echo "data: ".json_encode($data);
-        echo "\n\n";
-        ob_flush();
-        flush();
+        http_progress("done", json_encode([]));
         exit();
     }
 
     $output = doRecipie($itemID, $dataset, $xiv, 'http_progress', $crafter);
-    $data = array(
-        "type" => "done",
-        "data" => json_encode($output));
-    $result = json_encode($data);
-    echo "data:".$result;
-    echo "\n\n";
-    ob_flush();
-    flush();
+    http_progress("done", json_encode($output));
 }
 ob_end_flush();
 sleep(1);

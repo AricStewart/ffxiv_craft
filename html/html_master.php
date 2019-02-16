@@ -22,17 +22,7 @@ require_once __DIR__."/../ffxivData.inc";
 require_once __DIR__."/../ffxivmb.inc";
 require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
-
-function http_progress($type="", $data="")
-{
-    $data = array( "type" => $type,
-                   "data" => $data);
-    echo "data: ".json_encode($data);
-    echo "\n\n";
-    ob_flush();
-    flush();
-}
-
+require_once __DIR__."/common.inc";
 
 function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
 {
@@ -56,13 +46,6 @@ function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
 
 }
 
-function _sortByProfit($a, $b)
-{
-    $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
-    $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
-    return $p2 - $p;
-}
-
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $bookID, $event);
 
@@ -80,20 +63,15 @@ if (!empty($_POST)) {
     foreach ($a as $key => $i) {
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
-    usort($output, '_sortByProfit');
+    usort($output, 'sortByProfit');
     print json_encode($output);
 } else {
     header('Content-Type: text/event-stream');
 
     get_arguments(INPUT_GET, $ffxiv_server, $bookID, $event);
+
     if (!$event) {
-        $data = array( "type" => "done",
-                       "data" => json_encode([]));
-        echo "data: ".json_encode($data);
-        echo "\n\n";
-        ob_flush();
-        flush();
-        exit();
+        http_progress("done", json_encode([]));
     }
 
     if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
@@ -107,48 +85,22 @@ if (!empty($_POST)) {
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
-    $data = array(
-            "type" => "start",
-            "info" => $crafter,
-            "data" => count($a));
-    $result = json_encode($data);
-    echo "data:".$result;
-    echo "\n\n";
-    ob_flush();
-    flush();
-
     $index = 0;
+    $size = 0;
+    $output = [];
+
     $size = count($a);
+    http_progress("start", $size, ["info" => $crafter]);
     foreach ($a as $key => $i) {
         $index ++;
-        $data = array(
-                "type" => "info",
-                "data" => "$index/$size");
-        $result = json_encode($data);
-        echo "data:".$result;
-        echo "\n\n";
-        ob_flush();
-        flush();
+        http_progress("info", "$index/$size");
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
-        $data = array(
-                "type" => "progress",
-                "data" => "");
-        $result = json_encode($data);
-        echo "data:".$result;
-        echo "\n\n";
-        ob_flush();
-        flush();
+        http_progress("progress", "");
+        usort($output, 'sortByProfit');
+        http_progress("partial", json_encode($output));
     }
-    usort($output, '_sortByProfit');
-
-    $data = array(
-        "type" => "done",
-        "data" => json_encode($output));
-    $result = json_encode($data);
-    echo "data:".$result;
-    echo "\n\n";
-    ob_flush();
-    flush();
+    usort($output, 'sortByProfit');
+    http_progress("done", json_encode($output));
 }
 ob_end_flush();
 sleep(1);

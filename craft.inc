@@ -14,6 +14,7 @@
 
 /*.
     require_module 'standard';
+    require_module 'json';
 .*/
 
 function countItems($recipe, &$i)
@@ -35,11 +36,14 @@ function preDownloadData($input, $xiv, $progress)
     }
 }
 
-function priceRecipe(&$input, $xiv, $dataset, $progress)
+function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe)
 {
     $marketCost = 0;
     $optimalCost = 0;
     foreach ($input as &$bit) {
+        if ($progress !== null) {
+            $progress("partial", json_encode($recipe));
+        }
         $market = $xiv->getMarket($bit['id']);
         $xiv->getHistory($bit['id']);
 
@@ -65,7 +69,8 @@ function priceRecipe(&$input, $xiv, $dataset, $progress)
             $bitOptimal =  $bit['marketCost'];
         }
         if ($bit['bits']) {
-            $partCost = priceRecipe($bit['bits'], $xiv, $dataset, $progress);
+            $partCost = priceRecipe($bit['bits'], $xiv, $dataset, $progress,
+                                    $recipe);
             $bit['craftCost'] = $partCost['Optimal'];
             if ($bitOptimal <= 0) {
                 $bitOptimal = $bit['craftCost'];
@@ -84,6 +89,9 @@ function priceRecipe(&$input, $xiv, $dataset, $progress)
             $optimalCost += $bitOptimal;
         } else {
             $optimalCost = -1;
+        }
+        if ($progress !== null) {
+            $progress("partial", json_encode($recipe));
         }
     }
     return ['Market' => $marketCost, 'Optimal' => $optimalCost];
@@ -143,7 +151,9 @@ function filloutRecipe(&$recipe, $dataset, $sub=false)
     foreach ($ingred as &$bit) {
         $item = $dataset->getItem($bit['id']);
         $bit['name'] = $item->Name;
-        $bit['shopCost'] = $item->PriceMid;
+        if (count($dataset->findItemInShop($bit['id'])) > 0) {
+            $bit['shopCost'] = $item->PriceMid;
+        }
         if (count($bit['bits'])>0) {
             filloutRecipe($bit['bits'], $dataset, true);
         }
@@ -159,7 +169,16 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null,
         $recipe['error'] = "Failed to find recipe for $itemID\n";
         return $recipe;
     }
+    $item = $dataset->getItem($itemID);
+    $recipe['Name'] = $item->Name;
+    $recipe['ID'] = $itemID;
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
     filloutRecipe($recipe, $dataset);
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
 
     $count = 0;
     countItems($recipe['Recipe'], $count);
@@ -167,18 +186,26 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null,
         $progress("start", $count + 4);
     }
     preDownloadData($recipe['Recipe'], $xiv, $progress);
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
 
     /* Pre Download */
     $xiv->getHistory($itemID, true, $progress);
     $xiv->getMarket($itemID, true, $progress);
     $xiv->flushPool();
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
 
-    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress);
-    $item = $dataset->getItem($itemID);
+    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress, $recipe);
     if (count($dataset->findItemInShop($itemID)) > 0) {
         $recipe['Cost']['Shop'] = $item->PriceMid;
     } else {
         $recipe['Cost']['Shop'] = 0;
+    }
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
     }
     if ($progress !== null) {
         $progress('progress');
@@ -188,12 +215,18 @@ function doRecipie($itemID, $dataset, $xiv, $progress=null,
                          'HQ' => $xiv->mostRecent($history, true)];
     $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
                        'HQ' => $xiv->weekAverage($history, true)];
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
     $market = $xiv->getMarket($itemID);
     $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
                         'HQ' => $xiv->currentCheapest($market, true)];
-    $recipe['Name'] = $item->Name;
-    $recipe['ID'] = $itemID;
-
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
+    if ($progress !== null) {
+        $progress("partial", json_encode($recipe));
+    }
     calculateProfit($recipe);
 
     return $recipe;

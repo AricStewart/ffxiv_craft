@@ -22,17 +22,7 @@ require_once __DIR__."/../ffxivData.inc";
 require_once __DIR__."/../ffxivmb.inc";
 require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
-
-function http_progress($type="", $data="")
-{
-    $data = array( "type" => $type,
-                   "data" => $data);
-    echo "data: ".json_encode($data);
-    echo "\n\n";
-    ob_flush();
-    flush();
-}
-
+require_once __DIR__."/common.inc";
 
 function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
 {
@@ -64,13 +54,6 @@ function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
 
 }
 
-function _sortByProfit($a, $b)
-{
-    $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
-    $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
-    return $p2 - $p;
-}
-
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $tier, $event, $crafter);
 
@@ -87,19 +70,14 @@ if (!empty($_POST)) {
     foreach ($set as $i) {
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
-    usort($output, '_sortByProfit');
+    usort($output, 'sortByProfit');
     print json_encode($output);
 } else {
     header('Content-Type: text/event-stream');
 
     get_arguments(INPUT_GET, $ffxiv_server, $tier, $event, $crafter);
     if (!$event) {
-        $data = array( "type" => "done",
-                       "data" => json_encode([]));
-        echo "data: ".json_encode($data);
-        echo "\n\n";
-        ob_flush();
-        flush();
+        http_progress("done", json_encode([]));
         exit();
     }
 
@@ -113,49 +91,18 @@ if (!empty($_POST)) {
     $xiv->silent = true;
 
     $set = $dataset->getRecipeSet($crafter, (($tier-1)*5) + 1, $tier*5);
-    $data = array(
-            "type" => "start",
-            "info" => $crafter,
-            "tier" => $tier,
-            "data" => count($set));
-    $result = json_encode($data);
-    echo "data:".$result;
-    echo "\n\n";
-    ob_flush();
-    flush();
+    http_progress("start", count($set), ["info" => $crafter, "tier" => $tier]);
 
     $size = count($set);
     foreach ($set as $index => $i) {
-        $data = array(
-                "type" => "info",
-                "data" => ($index+1)."/$size");
-        $result = json_encode($data);
-        echo "data:".$result;
-        echo "\n\n";
-        ob_flush();
-        flush();
-
+        http_progress("info", ($index+1)."/$size");
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
-
-        $data = array(
-                "type" => "progress",
-                "data" => "");
-        $result = json_encode($data);
-        echo "data:".$result;
-        echo "\n\n";
-        ob_flush();
-        flush();
+        http_progress("progress", "");
+        usort($output, 'sortByProfit');
+        http_progress("partial", json_encode($output));
     }
-    usort($output, '_sortByProfit');
-
-    $data = array(
-        "type" => "done",
-        "data" => json_encode($output));
-    $result = json_encode($data);
-    echo "data:".$result;
-    echo "\n\n";
-    ob_flush();
-    flush();
+    usort($output, 'sortByProfit');
+    http_progress("done", json_encode($output));
 }
 ob_end_flush();
 sleep(1);

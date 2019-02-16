@@ -11,6 +11,7 @@ function getDataBlock() {
         $("#refresh_spinner").modal("hide");
         var data = JSON.parse(this.responseText);
         fillShortFrame(data);
+        new ClipboardJS('.copy_button');
     }
   };
   $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
@@ -44,12 +45,18 @@ function getDataEvent() {
       } else if (data.type == "info") {
         document.getElementById('progress_bar').innerHTML = data.data;
         console.log(data.data);
+      } else if (data.type == "partial") {
+        document.getElementById('output').innerHTML = "";
+        info = JSON.parse(data.data);
+        fillShortFrame(info);
       } else if (data.type == "done") {
         source.close();
         $("#refresh_spinner").modal("hide");
         document.getElementById('progress').style.display = "none";
-        var tier = JSON.parse(data.data);
-        fillShortFrame(tier);
+        info = JSON.parse(data.data);
+        document.getElementById('output').innerHTML = "";
+        fillShortFrame(info);
+        new ClipboardJS('.copy_button');
       }
   };
 }

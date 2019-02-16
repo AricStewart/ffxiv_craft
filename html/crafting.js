@@ -66,48 +66,63 @@ function printLine(line, tab)
 
 function fillCraftFrame(data)
 {
-    if (data.Cost.Market <= 0) {
+    if (data === null) {
+        return;
+    }
+    if (data.Cost === undefined) {
+        marketCost = 'CALCULATING...';
+    } else if (data.Cost.Market <= 0) {
         marketCost =  'UNAVAILABLE';
     } else {
         marketCost = data.Cost.Market.toLocaleString() + " gil";
     }
 
-    if (data.Cost.Optimal <= 0) {
+    if (data.Cost === undefined){
+        optimalCost = 'CALCULATING...';
+    } else if (data.Cost.Optimal <= 0) {
         optimalCost =  'UNAVAILABLE';
     } else {
         optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
     }
 
-    if (data.Cost.Shop <= 0) {
+    if (data.Cost === undefined) {
+        shopCost = 'CALCULATING...';
+    } else if (data.Cost.Shop <= 0) {
         shopCost =  'UNAVAILABLE';
     } else {
         shopCost = data.Cost.Shop.toLocaleString() + " gil";
     }
 
-    if (data.Cheap.LQ === null) {
+    if (data.Cheap === undefined) {
+        cheap = 'CALCULATING...';
+    } else if (data.Cheap.LQ === null) {
         cheap =  'UNAVAILABLE';
     } else {
         cheap = data.Cheap.LQ.Item.PricePerUnit.toLocaleString()+" gil";
         cheap +=" ("+data.Cheap.LQ.Count+" listings)";
     }
-    if (data.Cheap.HQ !== null) {
+    if (data.Cheap !== undefined && data.Cheap.HQ !== null) {
         cheap += " / <img src='hq.png'>";
         cheap += data.Cheap.HQ.Item.PricePerUnit.toLocaleString()+" gil";
         cheap +=" ("+data.Cheap.HQ.Count+" listings)";
     }
 
-    if (data.Recent.LQ === null) {
+    if (data.Recent === undefined) {
+        recent = 'CALCULATING...';
+    } else if (data.Recent.LQ === null) {
         recent =  'UNAVAILABLE';
     } else {
         recent = data.Recent.LQ.PricePerUnit.toLocaleString()+" gil";
     }
-    if (data.Recent.HQ !== null) {
+    if (data.Recent !== undefined && data.Recent.HQ !== null) {
         recent += " / <img src='hq.png'>";
         recent += data.Recent.HQ.PricePerUnit.toLocaleString()+" gil";
     }
 
-    if (data.Week.LQ.Average === 0) {
-        week =  'UNAVAILABLE';
+    if (data.Week === undefined) {
+        week = 'CALCULATING...';
+    } else if (data.Week.LQ.Average === 0) {
+        week = 'UNAVAILABLE';
     } else {
         week = data.Week.LQ.Average.toLocaleString()+" gil";
         sales = data.Week.LQ.Count;
@@ -117,7 +132,7 @@ function fillCraftFrame(data)
         }
         week +=" ( "+sales.toLocaleString()+" sale"+plu+" )";
     }
-    if (data.Week.HQ.Average !== 0) {
+    if (data.Week !== undefined && data.Week.HQ.Average !== 0) {
         week += " / <img src='hq.png'>";
         week += data.Week.HQ.Average.toLocaleString()+" gil";
         sales = data.Week.HQ.Count;
@@ -133,6 +148,9 @@ function fillCraftFrame(data)
     if (data.Info !== null && data.Info.Result.Amount > 1) {
         dataName += ' x' + data.Info.Result.Amount;
     }
+    dataName += '<sup><input type="image" class="copy_button" ' +
+                'src="clipboard.png" data-clipboard-text="' +
+                data.Name + '"></sup>';
 
     subText = '';
     var i;
@@ -183,7 +201,7 @@ function fillCraftFrame(data)
     '    <li>Craft at Market Cost: '+marketCost+'</li>'+
     '    <li>Craft at Optimal Cost: '+optimalCost+"</li>"+
     '  </ul>';
-    if (data.Profit.LQ > 0 || data.Profit.HQ > 0) {
+    if (data.Profit !== undefined && (data.Profit.LQ > 0 || data.Profit.HQ > 0)) {
         content += '<ul class="list-unstyled text-left">';
         if (data.Profit.LQ > 0) {
             content += '<li><b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)</li>";
@@ -199,6 +217,7 @@ function fillCraftFrame(data)
     content += "</div>\n";
 
     document.getElementById('output').innerHTML  = content;
+    new ClipboardJS('.copy_button');
 }
 
 function getDataBlock() {
@@ -244,6 +263,10 @@ function getDataEvent() {
         document.getElementById('progress_bar').style.width = p;
       } else if (data.type == "info") {
         console.log(data.data);
+      } else if (data.type == "partial") {
+        document.getElementById('output').innerHTML = "";
+        item = JSON.parse(data.data);
+        fillCraftFrame(item);
       } else if (data.type == "done") {
         source.close();
         $("#refresh_spinner").modal("hide");
@@ -252,7 +275,7 @@ function getDataEvent() {
             var name = document.getElementById('item').value;
             alert("Failed to find recipe for item  '" + name + "'");
         }
-        var item = JSON.parse(data.data);
+        item = JSON.parse(data.data);
         fillCraftFrame(item);
       }
   };

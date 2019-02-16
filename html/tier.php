@@ -15,8 +15,9 @@ require_once __DIR__."/../ffxivData.inc";
 <!-- End Bootstrap -->
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-<script src="common.js"></script>
-<script src="tier.js"></script>
+<script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
+<script src="tier.js?version=<?php echo hash_file('sha256', 'tier.js');?>"></script>
+<script src="clipboard.min.js"></script>
 </head>
 <body>
 
