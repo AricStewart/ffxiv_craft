@@ -571,8 +571,10 @@ SQL;
         foreach ($tgt->Ingredients as $i) {
             $bits = [];
             $part = $this->getRecipe($i->Item, $preference);
+            $craftBy = None;
             if ($part !== null) {
                 $result = $part->Result->Amount;
+                $craftBy = $part->CraftTypeName;
                 $this->getFullRecipe(
                     $i->Item,
                     ceil(($i->Amount* $count)/$result), $bits, true,
@@ -586,7 +588,7 @@ SQL;
                          'marketCost' => 0,
                          'marketHQ' => 0,
                          'craftCost' => 0,
-                         'craftedBy' => $part->CraftTypeName,
+                         'craftedBy' => $craftBy,
                          'shopCost' => 0,
                          'bits' => $bits
                         ];
