@@ -571,7 +571,7 @@ SQL;
         foreach ($tgt->Ingredients as $i) {
             $bits = [];
             $part = $this->getRecipe($i->Item, $preference);
-            $craftBy = None;
+            $craftBy = null;
             if ($part !== null) {
                 $result = $part->Result->Amount;
                 $craftBy = $part->CraftTypeName;
