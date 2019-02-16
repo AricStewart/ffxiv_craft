@@ -40,6 +40,7 @@ function getDataEvent() {
         p = p + '%';
         document.getElementById('progress_bar').style.width = p;
       } else if (data.type == "info") {
+        document.getElementById('progress_bar').innerHTML = data.data;
         console.log(data.data);
       } else if (data.type == "done") {
         source.close();

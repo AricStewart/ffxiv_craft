@@ -117,7 +117,18 @@ if (!empty($_POST)) {
     ob_flush();
     flush();
 
+    $index = 0;
+    $size = count($a);
     foreach ($a as $key => $i) {
+        $index ++;
+        $data = array(
+                "type" => "info",
+                "data" => "$index/$size");
+        $result = json_encode($data);
+        echo "data:".$result;
+        echo "\n\n";
+        ob_flush();
+        flush();
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
         $data = array(
                 "type" => "progress",
