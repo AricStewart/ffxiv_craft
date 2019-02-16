@@ -673,7 +673,7 @@ SQL;
         return null;
     }
 
-    function _processRecipe($value) {
+    function _processRecipe($value, &$AllCraftTypes) {
         $data = json_decode($value['Data']);
         $data->CraftTypeName = $this->craftType[$data->CraftType];
         $AllCraftTypes[] = $data->CraftTypeName;
@@ -700,7 +700,7 @@ SQL;
             if ($output === null) {
                 $output = [];
             }
-            $output[] = $this->_processRecipe($value);
+            $output[] = $this->_processRecipe($value, $AllCraftTypes);
             $value = $result->fetch();
         }
         if ($output && $preference) {
