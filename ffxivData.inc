@@ -738,6 +738,11 @@ SQL;
         $value = $result->fetch();
         $output = null;
         while ($value !== false) {
+            $item = $this->getItem($value['Item']);
+            if ($item->IsUntradable || $item->IsIndisposable) {
+                $value = $result->fetch();
+                continue;
+            }
             if ($output === null) {
                 $output = [];
             }
