@@ -1,4 +1,11 @@
 <?php
+
+/*.
+    require_module 'standard';
+    require_module 'hash';
+    require_module 'filter';
+.*/
+
 require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
 

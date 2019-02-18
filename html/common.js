@@ -235,24 +235,83 @@ function fillRecipeFrame(data, linkback)
     return sect;
 }
 
-function fillShortFrame(dataset)
-{
-    dataset.forEach(function(data) {
-        sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
-        sect += fillRecipeFrame(data, true);
-        sect += fillRecipe(data, false);
-        sect += '</div></div>';
-        document.getElementById('output').innerHTML += sect;
-    });
-    dataset.forEach(function(data) {
-        $('#collapse'+data.ID).on('hide.bs.collapse', function () {
-          $('#RecipeArrow'+data.ID).toggleClass('fa-caret-up fa-caret-down');
-        });
+function recipeCard(data, linkback, open) {
+    sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
+    sect += fillRecipeFrame(data, linkback);
+    sect += fillRecipe(data, open);
+    sect += '</div></div>';
+    return sect;
+}
 
-        $('#collapse'+data.ID).on('show.bs.collapse', function () {
-          $('#RecipeArrow'+data.ID).toggleClass('fa-caret-down fa-caret-up');
-        });
+function setupCollapse(data) {
+    $('#collapse'+data.ID).on('hide.bs.collapse', function () {
+      $('#RecipeArrow'+data.ID).toggleClass('fa-caret-up fa-caret-down');
     });
+
+    $('#collapse'+data.ID).on('show.bs.collapse', function () {
+      $('#RecipeArrow'+data.ID).toggleClass('fa-caret-down fa-caret-up');
+    });
+}
+
+function resetCrafter(disable)
+{
+    var element = document.getElementById('crafter');
+    if (!element) {
+        return;
+    }
+
+    element.value = "Any";
+    for (i=0, n=element.options.length;i<n;i++) {
+        l = element.options[i].value;
+        if (l == 'Any') {
+            element.options[i].disabled = false;
+        } else {
+            element.options[i].disabled = disable;
+        }
+    }
+}
+
+function updateCrafter(data)
+{
+    var element = document.getElementById('crafter');
+    if (!element) {
+        return;
+    }
+
+    if (data && data.Info !== null) {
+        element.value = data.Info.CraftTypeName;
+        for (i=0, n=element.options.length;i<n;i++) {
+            l = element.options[i].value;
+            if (l == 'Any' || data.Info.AllCraftTypes.includes(l)) {
+                element.options[i].disabled = false;
+            }
+        }
+    }
+}
+
+function fillOutputFrame(dataset)
+{
+    if (Array.isArray(dataset)) {
+        if (dataset.length == 1) {
+            return fillOutputFrame(dataset[0]);
+        }
+        dataset.forEach(function(data) {
+            updateCrafter(data);
+            sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
+            recipeCard(data, true, false);
+            document.getElementById('output').innerHTML += sect;
+        });
+        dataset.forEach(function(data) {
+            setupCollapse(data);
+        });
+    } else {
+        updateCrafter(dataset);
+        sect = '<div class="card m-5" id="RecipeParent'+dataset.ID+'"> <div class="card-body">';
+        recipeCard(dataset, false, true);
+        document.getElementById('output').innerHTML += sect;
+
+        setupCollapse(dataset);
+    }
     new ClipboardJS('.copy_button');
 }
 
@@ -260,4 +319,70 @@ function copyItem(element) {
   var copyText = document.getElementById(element);
   copyText.select();
   document.execCommand("copy");
+}
+
+function getDataBlockCore(uri, params) {
+  document.getElementById('output').innerHTML = "";
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+        $("#refresh_spinner").modal("hide");
+        var data = JSON.parse(this.responseText);
+        fillOutputFrame(data);
+    }
+  };
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
+  xhttp.open('POST', uri, true);
+  xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhttp.send(params);
+}
+
+function getDataStreamCore(uri) {
+  $("#refresh_spinner").modal({backdrop: 'static', keyboard: false});
+
+  var bar = document.getElementById('progress_bar');
+  bar.style.width = "1%";
+  bar.setAttribute('aria-valuenow', 0);
+  document.getElementById('progress').style.display = '';
+  var source = new EventSource(uri);
+  source.onmessage = function(event) {
+      var data = JSON.parse(event.data);
+      if (data.type == "start") {
+        bar.setAttribute('aria-valuemax', data.data);
+        bar.setAttribute('aria-valuenow', 0);
+      } else if (data.type == "progress") {
+        var w = bar.getAttribute('aria-valuenow');
+        w = parseInt(w)+1;
+        bar.setAttribute('aria-valuenow', w);
+        var p = Math.round((w / bar.getAttribute('aria-valuemax')) * 100);
+        p = p + '%';
+        bar.style.width = p;
+      } else if (data.type == "info") {
+        bar.innerHTML = data.data;
+        console.log(data.data);
+      } else if (data.type == "partial") {
+        document.getElementById('output').innerHTML = "";
+        info = JSON.parse(data.data);
+        fillOutputFrame(info);
+      } else if (data.type == "done") {
+        source.close();
+        $("#refresh_spinner").modal("hide");
+        document.getElementById('progress').style.display = "none";
+        if (data.data === "[]") {
+            alert("Failed to find recipe for item");
+        }
+        info = JSON.parse(data.data);
+        document.getElementById('output').innerHTML = "";
+        fillOutputFrame(info);
+      }
+    };
+}
+
+function getData() {
+    document.getElementById('output').innerHTML = "";
+    if(typeof(EventSource) !== "undefined") {
+      getDataEvent();
+    } else {
+      getDataBlock();
+    }
 }
