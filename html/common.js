@@ -196,13 +196,16 @@ function fillRecipeFrame(data, linkback)
                 'src="clipboard.png" data-clipboard-text="' +
                 data.Name + '"></sup>';
 
-    subText = data.Info.CraftTypeName + ' - lvl ' +
-              data.Info.RecipeLevel.ClassJobLevel;
+    var subText = '';
+    if (data.Info !== null) {
+        subText = data.Info.CraftTypeName + ' - lvl ' +
+                  data.Info.RecipeLevel.ClassJobLevel;
 
-    if (data.Info.Book !== null) {
-        subText += " from '<a href=\"masterbook.php?server=" + server +
-            "&item="+ encodeURIComponent(data.Info.Book.Name) +
-            "\" target='_blank'>" + data.Info.Book.Name + "</a>'";
+        if (data.Info.Book !== null) {
+            subText += " from '<a href=\"masterbook.php?server=" + server +
+                "&item="+ encodeURIComponent(data.Info.Book.Name) +
+                "\" target='_blank'>" + data.Info.Book.Name + "</a>'";
+        }
     }
 
     var sect =
