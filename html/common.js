@@ -369,7 +369,7 @@ function getDataStreamCore(uri) {
         $("#refresh_spinner").modal("hide");
         document.getElementById('progress').style.display = "none";
         if (data.data === "[]") {
-            alert("Failed to find recipe for item");
+            alert("Failed to find recipe for item: "+uri);
         }
         info = JSON.parse(data.data);
         document.getElementById('output').innerHTML = "";

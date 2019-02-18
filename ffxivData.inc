@@ -673,6 +673,28 @@ SQL;
         return null;
     }
 
+    function getItems($param)
+    {
+        $this->_checkItemTable();
+        if (is_numeric($param)) {
+            $sql = "SELECT `ID` FROM `items` WHERE `ID` = $param;";
+        } else {
+            $param = strtolower($param);
+            $sql = "SELECT `ID` FROM `items` WHERE lower(Name) LIKE '%$param%';";
+        }
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        $output = null;
+        while ($value !== false) {
+            if ($output === null) {
+                $output = [];
+            }
+            $output[] = $value['ID'];
+            $value = $result->fetch();
+        }
+        return $output;
+    }
+
     function _processRecipe($value, &$AllCraftTypes) {
         $data = json_decode($value['Data']);
         $data->CraftTypeName = $this->craftType[$data->CraftType];

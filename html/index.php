@@ -83,6 +83,14 @@ if (isset($data['crafter'])) {
     ?>
         </select>
       </div>
+
+      <div class="input-group-prepend">
+        <select class="custom-select" id="match">
+            <option value="exact" selected>Match Exact</option>;
+            <option value="sub" >Match Substring</option>;
+        </select>
+      </div>
+
       <input id='item' type="text" class="form-control" value='<?php echo $item; ?>'>
       <div class="input-group-append">
         <select class="custom-select" id="crafter">

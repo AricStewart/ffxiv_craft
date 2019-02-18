@@ -14,6 +14,7 @@
 
 /*.
     require_module 'standard';
+    require_module 'filter';
 .*/
 
 header('Cache-Control: no-cache');
@@ -24,25 +25,15 @@ require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
-function decode_item($itemID, $dataset)
-{
-    if (!is_numeric($itemID)) {
-        $result = $dataset->getItem($itemID);
-        if ($result === null) {
-            return null;
-        }
-        $itemID = $result->Index;
-    }
-    return $itemID;
-}
-
-function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter)
+function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter,
+                       &$match)
 {
     $arguments = [
         'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
         'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
         'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
         'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
+        'match'         => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -67,10 +58,55 @@ function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter)
         $crafter = htmlspecialchars_decode($data['crafter'], ENT_QUOTES);
     }
 
+    if (!isset($data['match'])) {
+        $match= true;
+    } else {
+        $match = ($data['match'] == 'exact');
+    }
+
 }
 
+function getItemSet($dataset, $itemID, $match)
+{
+    if ($match) {
+        $item = $dataset->getItem($itemID);
+        if ($item !== null) {
+            return array($item->Index);
+        }
+        return null;
+    } else {
+        $set = $dataset->getItems($itemID);
+        if ($set === null) {
+            return $set;
+        }
+
+        $size = count($set);
+        if ($size > 1) {
+            $output = array();
+            foreach ($set as $index => $i) {
+                $r = $dataset->getRecipe($i, null);
+                if ($r !== null) {
+                    $output[] = $set[$index];
+                    if (count($output) > 19) {
+                        break;
+                    }
+                }
+            }
+            return $output;
+        }
+
+        return $set;
+    }
+}
+
+$crafter = "";
+$event = "";
+$itemID = "";
+$ffxiv_server = "";
+$match = true;
+
 if (!empty($_POST)) {
-    get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event, $crafter);
+    get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event, $crafter, $match);
 
     if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
         $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
@@ -81,18 +117,32 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $itemID = decode_item($itemID, $dataset);
-    if ($itemID === null) {
+    $set = getItemSet($dataset, $itemID, $match);
+    if ($set === null) {
         echo "[]";
         exit();
     }
 
-    $output = doRecipie($itemID, $dataset, $xiv, null, $crafter);
+    $output = [];
+    $size = count($set);
+    foreach ($set as $index => $i) {
+        if ($size == 1) {
+            $recp = doRecipie($i, $dataset, $xiv, 'http_progress', $crafter);
+            array_unshift($output, $recp);
+        } else {
+            http_progress("info", ($index+1)."/$size");
+            $recp = doRecipie($i, $dataset, $xiv, null, $crafter);
+            if ($recp['Info'] !== null) {
+                array_unshift($output, $recp);
+            }
+        }
+    }
+    usort($output, 'sortByProfit');
     print json_encode($output);
 } else {
     header('Content-Type: text/event-stream');
 
-    get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event, $crafter);
+    get_arguments(INPUT_GET, $ffxiv_server, $itemID, $event, $crafter, $match);
     if (!$event) {
         http_progress("done", json_encode([]));
     }
@@ -106,13 +156,28 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $itemID = decode_item($itemID, $dataset);
-    if ($itemID=== null) {
+    $set = getItemSet($dataset, $itemID, $match);
+    if ($set === null) {
         http_progress("done", json_encode([]));
         exit();
     }
 
-    $output = doRecipie($itemID, $dataset, $xiv, 'http_progress', $crafter);
+    $output = array();
+    $size = 0;
+    foreach ($set as $index => $i) {
+        $data = getRecipe($i, $dataset, $crafter, 'http_progress');
+        $size += $data['Size'];
+        $output[] = $data;
+    }
+
+    http_progress("start", $size);
+
+    foreach ($output as $index => $i) {
+        unset($output[$index]);
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress', $crafter);
+        array_unshift($output, $recp);
+    }
+    usort($output, 'sortByProfit');
     http_progress("done", json_encode($output));
 }
 ob_end_flush();

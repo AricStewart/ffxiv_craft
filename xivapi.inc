@@ -67,7 +67,7 @@ SQL;
         $this->_checkCacheTable();
     }
 
-    function flushPool($cnt=-1)
+    function flushPool($cnt=-1, $progress=null)
     {
         $i = 0;
         foreach ($this->_promises as $key => $promise) {
@@ -75,6 +75,9 @@ SQL;
                 $promise->wait();
                 $i++;
                 unset($this->_promises[$key]);
+                if ($progress !== null) {
+                    $progress("progress");
+                }
                 if ($cnt > 0 && $i > $cnt) {
                     break;
                 }
@@ -121,7 +124,9 @@ SQL;
         $path = $this->buildPath($method, $ID);
         $data = $this->_fromCache($path);
         if ($data !== null) {
-            if ($progress != null) {
+            if ($progress !== null) {
+                $progress('progress');
+                $progress('progress');
                 $progress('progress');
             }
             return $data;
@@ -132,7 +137,7 @@ SQL;
         }
 
         if (count($this->_promises) > $this->_poolSize) {
-            $this->flushPool($this->_poolSize/2);
+            $this->flushPool($this->_poolSize/2, $progress);
         }
 
         try {
@@ -166,7 +171,7 @@ SQL;
         if ($async) {
             return null;
         }
-        $this->flushPool();
+        $this->flushPool($progress);
 
         if ($async) {
             return null;
