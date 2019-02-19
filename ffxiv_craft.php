@@ -114,5 +114,6 @@ if (!is_numeric($itemID)) {
     $itemID = $result->Index;
 }
 
-$output = doRecipie($itemID, $dataset, $xiv, 'tick', $crafter);
+$data = getRecipe($itemID, $dataset, $crafter, 'tick');
+$output = doRecipieFromRecipe($data, $dataset, $xiv, 'tick', $crafter);
 printRecipe($output);

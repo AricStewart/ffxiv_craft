@@ -46,6 +46,7 @@ function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
 
 }
 
+$output = array();
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $bookID, $event);
 
@@ -85,19 +86,19 @@ if (!empty($_POST)) {
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
-    $index = 0;
     $size = 0;
-    $output = [];
-
-    $size = count($a);
-    http_progress("start", $size, ["info" => $crafter]);
     foreach ($a as $key => $i) {
-        $index ++;
-        http_progress("info", "$index/$size");
-        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
-        http_progress("progress", "");
-        usort($output, 'sortByProfit');
-        http_progress("partial", json_encode($output));
+        $data = getRecipe($i, $dataset, $crafter, 'http_progress');
+        $size += $data['Size'];
+        $output[] = $data;
+    }
+
+    http_progress("start", $size, ["info" => $crafter]);
+
+    foreach ($output as $index => $i) {
+        unset($output[$index]);
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
+        array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');
     http_progress("done", json_encode($output));

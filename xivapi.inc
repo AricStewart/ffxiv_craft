@@ -19,7 +19,9 @@
 .*/
 
 require_once __DIR__.'/db.inc';
+require_once __DIR__.'/progress.inc';
 require __DIR__.'/vendor/autoload.php';
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 
@@ -67,7 +69,7 @@ SQL;
         $this->_checkCacheTable();
     }
 
-    function flushPool($cnt=-1, $progress=null)
+    function flushPool($cnt=-1)
     {
         $i = 0;
         foreach ($this->_promises as $key => $promise) {
@@ -75,9 +77,6 @@ SQL;
                 $promise->wait();
                 $i++;
                 unset($this->_promises[$key]);
-                if ($progress !== null) {
-                    $progress("progress");
-                }
                 if ($cnt > 0 && $i > $cnt) {
                     break;
                 }
@@ -124,62 +123,50 @@ SQL;
         $path = $this->buildPath($method, $ID);
         $data = $this->_fromCache($path);
         if ($data !== null) {
-            if ($progress !== null) {
-                $progress('progress');
-                $progress('progress');
-                $progress('progress');
-            }
             return $data;
         }
 
-        if ($progress !== null) {
-            $progress('info', "From $url...");
-        }
+        if (!array_key_exists($path, $this->_promises)) {
+            report_progress($progress, 'info', "From $url...");
 
-        if (count($this->_promises) > $this->_poolSize) {
-            $this->flushPool($this->_poolSize/2, $progress);
-        }
+            if (count($this->_promises) > $this->_poolSize) {
+                $this->flushPool($this->_poolSize/2);
+            }
 
-        try {
-            $promise = $this->_client->requestAsync(
-                'GET',
-                "/$url?key=".$this->_xivapiKey
-            );
-            $promise->then(
-                function ($response) use ( $path, $progress, $ID, $report ) {
-                    $contents = $response->getBody();
-                    if ($progress != null) {
-                        $progress('progress');
+            try {
+                $promise = $this->_client->requestAsync(
+                    'GET',
+                    "/$url?key=".$this->_xivapiKey
+                );
+                $promise->then(
+                    function ($response) use ( $path, $ID, $report ) {
+                        $contents = $response->getBody();
+                        $data = json_decode($contents);
+                        $this->_toCache($path, $data);
+                        if ($report !== null && $this->_ffxivmb !== null) {
+                            $time = microtime();
+                            $this->_ffxivmb->$report($ID, $data, $time);
+                        }
+                    },
+                    function (ClientException $e) {
+                        return null;
                     }
-                    $data = json_decode($contents);
-                    $this->_toCache($path, $data);
-                    if ($report !== null && $this->_ffxivmb !== null) {
-                        $time = microtime();
-                        $this->_ffxivmb->$report($ID, $data, $time);
-                    }
-                },
-                function (ClientException $e) {
-                    return;
-                }
-            );
-        } catch (Exception $e) {
-            return;
-        }
+                );
+            } catch (Exception $e) {
+                return null;
+            }
 
-        $this->_promises[] = $promise;
+            $this->_promises[$path] = $promise;
+        }
 
         if ($async) {
             return null;
         }
-        $this->flushPool($progress);
 
-        if ($async) {
-            return null;
-        }
+        $this->flushPool();
 
         $data = $this->_fromCache($path);
         if ($data === null) {
-            sleep(1);
             return $this->_getXIVdata(
                 $method, $ID, $url, false, $progress,
                 $report
@@ -198,9 +185,7 @@ SQL;
         if ($async) {
             return;
         }
-        if ($progress != null) {
-            $progress('progress');
-        }
+        report_progress($progress);
         return $history;
     }
 
@@ -214,9 +199,7 @@ SQL;
         if ($async) {
             return;
         }
-        if ($progress != null) {
-            $progress('progress');
-        }
+        report_progress($progress);
         return $market;
     }
 

@@ -54,6 +54,7 @@ function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
 
 }
 
+$output = array();
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $tier, $event, $crafter);
 
@@ -91,15 +92,19 @@ if (!empty($_POST)) {
     $xiv->silent = true;
 
     $set = $dataset->getRecipeSet($crafter, (($tier-1)*5) + 1, $tier*5);
-    http_progress("start", count($set), ["info" => $crafter, "tier" => $tier]);
+    $size = 0;
+    foreach ($set as $key => $i) {
+        $data = getRecipe($i, $dataset, $crafter, 'http_progress');
+        $size += $data['Size'];
+        $output[] = $data;
+    }
 
-    $size = count($set);
-    foreach ($set as $index => $i) {
-        http_progress("info", ($index+1)."/$size");
-        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
-        http_progress("progress", "");
-        usort($output, 'sortByProfit');
-        http_progress("partial", json_encode($output));
+    http_progress("start", $size, ["info" => $crafter, "tier" => $tier]);
+
+    foreach ($output as $index => $i) {
+        unset($output[$index]);
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
+        array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');
     http_progress("done", json_encode($output));

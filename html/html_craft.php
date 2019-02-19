@@ -174,7 +174,7 @@ if (!empty($_POST)) {
 
     foreach ($output as $index => $i) {
         unset($output[$index]);
-        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress', $crafter);
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
         array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');
