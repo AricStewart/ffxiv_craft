@@ -26,8 +26,8 @@ require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
 function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter,
-                       &$match)
-{
+    &$match
+) {
     $arguments = [
         'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
         'server'        => FILTER_SANITIZE_SPECIAL_CHARS,

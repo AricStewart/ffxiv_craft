@@ -74,8 +74,10 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe)
             $bitOptimal =  $bit['marketCost'];
         }
         if ($bit['bits']) {
-            $partCost = priceRecipe($bit['bits'], $xiv, $dataset, $progress,
-                                    $recipe);
+            $partCost = priceRecipe(
+                $bit['bits'], $xiv, $dataset, $progress,
+                $recipe
+            );
             $bit['craftCost'] = $partCost['Optimal'];
             if ($bitOptimal <= 0) {
                 $bitOptimal = $bit['craftCost'];
@@ -248,8 +250,8 @@ function doRecipieFromRecipe($recipe, $dataset, $xiv, $progress=null)
 }
 
 function doRecipie($itemID, $dataset, $xiv, $progress=null,
-                   $preference='Armorcraft')
-{
+    $preference='Armorcraft'
+) {
     $recipe = getRecipe($itemID, $dataset, $preference, $progress);
     if ($recipe == null) {
         $recipe['error'] = "Failed to find recipe for $itemID\n";
@@ -276,15 +278,15 @@ function getCompanyRecipe($itemID, $dataset, $progress=null)
     $recipe['Size'] = 0;
     $recipe['Parts'] = array();
 
-    foreach($data->CompanyCraftPart as $part) {
+    foreach ($data->CompanyCraftPart as $part) {
         $partData = array();
         $partData['Info'] = $part;
         $partData['Process'] = array();
-        foreach($part->CompanyCraftProcess as $process) {
+        foreach ($part->CompanyCraftProcess as $process) {
             $processData = array();
             $processData['Info'] = $process;
             $processData['Set'] = array();
-            foreach($process->Set as $item) {
+            foreach ($process->Set as $item) {
                 $itemData = array();
                 $itemData['Info'] = $item;
                 $itemData['Recipe'] = getRecipe($item->Item->Item, $dataset, 'Armorcraft', $progress, ($item->Quantity * $item->Required));
@@ -321,11 +323,11 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress=null)
     $target['Week'] = $xiv->weekAverage($history, false);
 
     $target['Cost'] = array('Optimal' => 0, 'Market' => 0, 'Marketboard' => 0);
-    foreach($target['Parts'] as &$part) {
+    foreach ($target['Parts'] as &$part) {
         $part['Cost'] = array('Optimal' => 0, 'Market' => 0, 'Marketboard' => 0);
-        foreach($part['Process'] as &$process) {
+        foreach ($part['Process'] as &$process) {
             $process['Cost'] = array('Optimal' => 0, 'Market' => 0, 'Marketboard' => 0);
-            foreach($process['Set'] as &$item) {
+            foreach ($process['Set'] as &$item) {
                 $recipe = doRecipieFromRecipe($item['Recipe'], $dataset, $xiv, $progress);
                 $process['Cost']['Optimal'] += $recipe['Cost']['Optimal'];
                 $process['Cost']['Market'] += $recipe['Cost']['Market'];
@@ -518,9 +520,9 @@ function test($dataset, $xiv)
 
 function printCompanyRecipe($target)
 {
-    foreach($target['Parts'] as $pindex => $part) {
-        foreach($part['Process'] as $index => $process) {
-            foreach($process['Set'] as $item) {
+    foreach ($target['Parts'] as $pindex => $part) {
+        foreach ($part['Process'] as $index => $process) {
+            foreach ($process['Set'] as $item) {
                 printRecipe($item['Recipe'], true);
             }
             print "<><><><><><><><><><><><> Stage ".($index+1)." <><><><><><><><><><><><>\n";

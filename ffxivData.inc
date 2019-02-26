@@ -108,7 +108,7 @@ class FfxivDataSet
 
     private static function _filterNull($item) 
     {
-        return ($item != NULL);
+        return ($item != null);
     }
 
     private static function _filterCompanySet($item) 
@@ -569,7 +569,8 @@ SQL;
                     'Durability' => intval($data[6]),
                 ];
                 $this->_RecipeLevelTable[$data[0]] = json_decode(
-                    json_encode($entry));
+                    json_encode($entry)
+                );
             }
             fclose($handle);
         }
@@ -675,7 +676,7 @@ SQL;
             "Alchemist" => "Alchemy",
             "Culinarian" => "Cooking",
         ];
-        $c = explode(" ",$name)[1];
+        $c = explode(" ", $name)[1];
         $crafter = trim($c, ':');
         return $craftMap[$crafter];
     }
@@ -718,7 +719,8 @@ SQL;
         return $output;
     }
 
-    function _processRecipe($value, &$AllCraftTypes) {
+    function _processRecipe($value, &$AllCraftTypes) 
+    {
         $data = json_decode($value['Data']);
         $data->CraftTypeName = $this->craftType[$data->CraftType];
         $AllCraftTypes[] = $data->CraftTypeName;
@@ -749,7 +751,7 @@ SQL;
             $value = $result->fetch();
         }
         if ($output && $preference) {
-            foreach($output as $data) {
+            foreach ($output as $data) {
                 if (strcasecmp($data->CraftTypeName, $preference)==0) {
                     $data->AllCraftTypes = $AllCraftTypes;
                     return $data;
@@ -1008,7 +1010,7 @@ SQL;
     {
         $this->loadCompanyCrafting();
         $items = array();
-        foreach($this->_companySequence as $sequence) {
+        foreach ($this->_companySequence as $sequence) {
             $items[] = $this->getItem($sequence->ResultItem);
         }
         usort($items, "_nameSort");

@@ -30,7 +30,7 @@ class myPDO
             try {
                 self::$_instance = new PDO($dsn, $username, $password, $options);
             } catch (Exception $e) {
-throw $e;
+                throw $e;
             }
         }
         return self::$_instance;
