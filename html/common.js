@@ -188,12 +188,16 @@ function fillRecipeFrame(data, linkback, profit, marketboard)
     var dataName = "";
     var server = encodeURI(document.getElementById('server').value);
     if (linkback) {
-        var item = encodeURI(data.ID);
-        dataName = '<a href="index.php?server='+server+'&item='+item +
-                    '&crafter='+data.Info.CraftTypeName+'" target="_blank">' +
-                    data.Name + '</a>';
-        if (data.Info.Result.Amount > 1 || data.Count > 1) {
-            dataName += ' x' + data.Info.Result.Amount * data.Count;
+        if (data.Info !== null) {
+            var item = encodeURI(data.ID);
+            dataName = '<a href="index.php?server='+server+'&item='+item +
+                        '&crafter='+data.Info.CraftTypeName+'" target="_blank">' +
+                        data.Name + '</a>';
+            if (data.Info.Result.Amount > 1 || data.Count > 1) {
+                dataName += ' x' + data.Info.Result.Amount * data.Count;
+            }
+        } else {
+            dataName = data.Name;
         }
     } else{
         dataName ='<a href="http://www.garlandtools.org/db/#item/' +
@@ -343,7 +347,7 @@ function fillCompanyRecipeFrame(data)
 
     if (data.Recent === undefined) {
         recent = 'CALCULATING...';
-    } else {
+    } else if (data.Recent !== null) {
         recent = data.Recent.PricePerUnit.toLocaleString()+" gil ( Purchased ";
         var ts = new Date(data.Recent.PurchaseDate*1000);
         recent += ts.toString() + ")";
