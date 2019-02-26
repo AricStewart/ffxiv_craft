@@ -38,6 +38,9 @@ class FfxivDataSet
     public $gilShop = array();
     public $master = array();
 
+    /* Company Data */
+    private $_companySequence = array();
+
     private $_RecipeLevelTable = array();
 
     private $_recipData = "/data/Recipe.csv";
@@ -60,6 +63,15 @@ class FfxivDataSet
 
     private $_RecipeLevelTableData = "/data/RecipeLevelTable.csv";
     private $_RecipeLevelTableURL = "RecipeLevelTable.csv";
+
+    private $_CompanyCraftSequence = "/data/CompanyCraftSequence.csv";
+    private $_CompanyCraftSequenceURL = "CompanyCraftSequence.csv";
+    private $_CompanyCraftPart = "/data/CompanyCraftPart.csv";
+    private $_CompanyCraftPartURL = "CompanyCraftPart.csv";
+    private $_CompanyCraftProcess = "/data/CompanyCraftProcess.csv";
+    private $_CompanyCraftProcessURL = "CompanyCraftProcess.csv";
+    private $_CompanyCraftSupplyItem = "/data/CompanyCraftSupplyItem.csv";
+    private $_CompanyCraftSupplyItemURL = "CompanyCraftSupplyItem.csv";
 
     private $_client;
     public $baseData;
@@ -92,6 +104,16 @@ class FfxivDataSet
     private static function _filterBaseparam($item) 
     {
         return ($item['Param'] > 0 && $item['Value'] > 0);
+    }
+
+    private static function _filterNull($item) 
+    {
+        return ($item != NULL);
+    }
+
+    private static function _filterCompanySet($item) 
+    {
+        return ($item['Quantity'] > 0);
     }
 
     private function _getData($file, $url) 
@@ -562,6 +584,7 @@ SQL;
         $ingred = &$output;
         if (!$subrun) {
             $output['Info'] = $tgt;
+            $output['Count'] = $count;
             $output['Recipe'] = [];
             $ingred = &$output['Recipe'];
         }
@@ -772,5 +795,223 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+    }
+
+    /* Company Crafting Items */
+    /*  CompanyCraftSequence.ResultItem Look at  CompanyCraftPart  (0-7) that
+        references  CompanyCraftPart.key there are 3 CompanyCraftProcess
+        values one for each stage. So off to  CompanyCraftProcess.csv  which
+        spells out SupplyItem, SetQuantity and SetsRequired (1-11) ,
+        SupplyItem is found in CompanyCraftSupplyItem, which gives and
+        ItemID! Finally */
+
+    private function _loadCompanyCraftSupplyItem() 
+    {
+        $table = array();
+
+        if (!file_exists($this->baseData.$this->_CompanyCraftSupplyItem)) {
+            $this->_getData($this->baseData.$this->_CompanyCraftSupplyItem, $this->_CompanyCraftSupplyItemURL);
+        }
+        $handle = fopen($this->baseData.$this->_CompanyCraftSupplyItem, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[1] === "0") {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'Item' => intval($data[1])
+                ];
+                $table[intval($data[0])] = json_decode(json_encode($entry));
+            }
+            fclose($handle);
+        }
+        return $table;
+    }
+
+    private function _loadCompanyCraftProcess($item)
+    {
+        $table = array();
+
+        if (!file_exists($this->baseData.$this->_CompanyCraftProcess)) {
+            $this->_getData($this->baseData.$this->_CompanyCraftProcess, $this->_CompanyCraftProcessURL);
+        }
+        $handle = fopen($this->baseData.$this->_CompanyCraftProcess, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[1] === "0") {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'Set' => [
+                        ['Item' => $item[intval($data[1])],
+                         'Quantity' => intval($data[2]),
+                         'Required' => intval($data[3])],
+                        ['Item' => $item[intval($data[4])],
+                         'Quantity' => intval($data[5]),
+                         'Required' => intval($data[6])],
+                        ['Item' => $item[intval($data[7])],
+                         'Quantity' => intval($data[8]),
+                         'Required' => intval($data[9])],
+                        ['Item' => $item[intval($data[10])],
+                         'Quantity' => intval($data[11]),
+                         'Required' => intval($data[12])],
+                        ['Item' => $item[intval($data[13])],
+                         'Quantity' => intval($data[14]),
+                         'Required' => intval($data[15])],
+                        ['Item' => $item[intval($data[16])],
+                         'Quantity' => intval($data[17]),
+                         'Required' => intval($data[18])],
+                        ['Item' => $item[intval($data[19])],
+                         'Quantity' => intval($data[20]),
+                         'Required' => intval($data[21])],
+                        ['Item' => $item[intval($data[22])],
+                         'Quantity' => intval($data[23]),
+                         'Required' => intval($data[24])],
+                        ['Item' => $item[intval($data[25])],
+                         'Quantity' => intval($data[26]),
+                         'Required' => intval($data[27])],
+                        ['Item' => $item[intval($data[28])],
+                         'Quantity' => intval($data[29]),
+                         'Required' => intval($data[30])],
+                        ['Item' => $item[intval($data[31])],
+                         'Quantity' => intval($data[32]),
+                         'Required' => intval($data[33])],
+                        ['Item' => $item[intval($data[34])],
+                         'Quantity' => intval($data[35]),
+                         'Required' => intval($data[36])],
+                     ],
+                ];
+
+                $entry['Set'] = array_filter(
+                    $entry['Set'],
+                    'FfxivDataSet::_filterCompanySet'
+                );
+
+                $table[intval($data[0])] = json_decode(json_encode($entry));
+            }
+            fclose($handle);
+        }
+        return $table;
+    }
+
+    private function _loadCompanyCraftPart($process)
+    {
+        $table = array();
+
+        if (!file_exists($this->baseData.$this->_CompanyCraftPart)) {
+            $this->_getData($this->baseData.$this->_CompanyCraftPart, $this->_CompanyCraftPartURL);
+        }
+        $handle = fopen($this->baseData.$this->_CompanyCraftPart, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[1] === "0") {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'CompanyCraftType' => intval($data[2]),
+                    'CompanyCraftProcess' => [
+                        $process[intval($data[3])],
+                        $process[intval($data[4])],
+                        $process[intval($data[5])],
+                     ],
+                ];
+
+                $entry['CompanyCraftProcess'] = array_filter(
+                    $entry['CompanyCraftProcess'],
+                    'FfxivDataSet::_filterNull'
+                );
+
+                $table[intval($data[0])] = json_decode(json_encode($entry));
+            }
+            fclose($handle);
+        }
+        return $table;
+    }
+
+    private function _loadCompanySequence($parts) 
+    {
+        $table = array();
+
+        if (!file_exists($this->baseData.$this->_CompanyCraftSequence)) {
+            $this->_getData($this->baseData.$this->_CompanyCraftSequence, $this->_CompanyCraftSequenceURL);
+        }
+        $handle = fopen($this->baseData.$this->_CompanyCraftSequence, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[1] === "0") {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'ResultItem' => intval($data[1]),
+                    'CompanyCraftDraftCategory' => intval($data[3]),
+                    'CompanyCraftType' => intval($data[4]),
+                    'CompanyCraftDraft' => intval($data[5]),
+                    'CompanyCraftPart' => [
+                        $parts[intval($data[6])],
+                        $parts[intval($data[7])],
+                        $parts[intval($data[8])],
+                        $parts[intval($data[9])],
+                        $parts[intval($data[10])],
+                        $parts[intval($data[11])],
+                        $parts[intval($data[12])]]
+                ];
+                $entry['CompanyCraftPart'] = array_filter(
+                    $entry['CompanyCraftPart'],
+                    'FfxivDataSet::_filterNull'
+                );
+
+                $table[intval($data[1])] = json_decode(json_encode($entry));
+            }
+            fclose($handle);
+        }
+        return $table;
+    }
+
+    function loadCompanyCrafting()
+    {
+        if (count($this->_companySequence) > 0) {
+            return $this->_companySequence;
+        }
+        $SupplyItem  = $this->_loadCompanyCraftSupplyItem();
+        $Process  = $this->_loadCompanyCraftProcess($SupplyItem);
+        $Parts = $this->_loadCompanyCraftPart($Process);
+        $this->_companySequence = $this->_loadCompanySequence($Parts);
+
+        return $this->_companySequence;
+    }
+
+    function listCompanyItems()
+    {
+        $this->loadCompanyCrafting();
+        $items = array();
+        foreach($this->_companySequence as $sequence) {
+            $items[] = $this->getItem($sequence->ResultItem);
+        }
+        usort($items, "_nameSort");
+        return $items;
     }
 }

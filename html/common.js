@@ -88,15 +88,12 @@ function fillRecipe(data, open)
     content += 'aria-labelledby="heading' + data.ID + '" data-parent="#RecipeParent'+data.ID+'">' +
                '   <div class="card-body">';
     content += printLine(data.Recipe, 0);
-    content += ' </div> </div> </div>';
-    content += "</div>";
-    content += "</div>";
-    content += "</div>\n";
+    content += ' </div> </div> </div>\n';
 
     return content;
 }
 
-function fillRecipeFrame(data, linkback)
+function fillRecipeFrame(data, linkback, profit, marketboard)
 {
     if (data === null) {
         return;
@@ -122,7 +119,20 @@ function fillRecipeFrame(data, linkback)
     } else if (data.Cost.Shop <= 0) {
         shopCost =  'UNAVAILABLE';
     } else {
-        shopCost = data.Cost.Shop.toLocaleString() + " gil";
+        shopCost = '<a href="http://www.garlandtools.org/db/#item/'+
+            data.ID + '" target="_blank">' + data.Cost.Shop.toLocaleString() +
+            "</a> gil";
+    }
+
+    if (marketboard) {
+        if (data.Cost === undefined) {
+            boardCost = 'CALCULATING...';
+        } else if (data.Cost.Marketboard === undefined ||
+                   data.Cost.Marketboard <= 0) {
+            boardCost = 'UNAVAILABLE';
+        } else {
+            boardCost = data.Cost.Marketboard.toLocaleString() + " gil";
+        }
     }
 
     if (data.Cheap === undefined) {
@@ -182,8 +192,8 @@ function fillRecipeFrame(data, linkback)
         dataName = '<a href="index.php?server='+server+'&item='+item +
                     '&crafter='+data.Info.CraftTypeName+'" target="_blank">' +
                     data.Name + '</a>';
-        if (data.Info.Result.Amount > 1) {
-            dataName += ' x' + data.Info.Result.Amount;
+        if (data.Info.Result.Amount > 1 || data.Count > 1) {
+            dataName += ' x' + data.Info.Result.Amount * data.Count;
         }
     } else{
         dataName ='<a href="http://www.garlandtools.org/db/#item/' +
@@ -217,12 +227,16 @@ function fillRecipeFrame(data, linkback)
     '       <li>Current: '+cheap+"</li>"+
     '    </ul>' +
     '  <ul class="list-unstyled text-left">' +
-    '    <li>Vendor Cost: '+shopCost+"</li>" +
+    '    <li>Vendor Cost: ' +shopCost+"</li>";
+    if (marketboard) {
+        sect += '    <li>MarketBoard Cost: '+boardCost+"</li>";
+    }
+    sect +=
     '    <li>Craft at Market Cost: '+marketCost+'</li>'+
     '    <li>Craft at Optimal Cost: '+optimalCost+"</li>"+
     '  </ul>';
 
-    if (data.Profit !== undefined &&(data.Profit.LQ > 0 || data.Profit.HQ > 0) ){
+    if (profit && data.Profit !== undefined &&(data.Profit.LQ > 0 || data.Profit.HQ > 0) ){
         sect += '<ul class="list-unstyled text-left">';
         if (data.Profit.LQ > 0) {
             sect += '<li><b>Possible Profit</b>: '+data.Profit.LQ.toLocaleString()+" gil ("+Math.round(data.Profit["LQ%"]*100)+"%)</li>";
@@ -236,8 +250,8 @@ function fillRecipeFrame(data, linkback)
 }
 
 function recipeCard(data, linkback, open) {
-    sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
-    sect += fillRecipeFrame(data, linkback);
+    var sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
+    sect += fillRecipeFrame(data, linkback, true, false);
     sect += fillRecipe(data, open);
     sect += '</div></div>';
     return sect;
@@ -289,8 +303,164 @@ function updateCrafter(data)
     }
 }
 
+function fillCompanyRecipeFrame(data)
+{
+    if (data === null) {
+        return;
+    }
+    if (data.Cost === undefined) {
+        marketCost = 'CALCULATING...';
+    } else if (data.Cost.Market <= 0) {
+        marketCost =  'UNAVAILABLE';
+    } else {
+        marketCost = data.Cost.Market.toLocaleString() + " gil";
+    }
+
+    if (data.Cost === undefined){
+        optimalCost = 'CALCULATING...';
+    } else if (data.Cost.Optimal <= 0) {
+        optimalCost =  'UNAVAILABLE';
+    } else {
+        optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
+    }
+
+    if (data.Cost === undefined) {
+        boardCost = 'CALCULATING...';
+    } else if (data.Cost.Marketboard <= 0) {
+        boardCost = 'UNAVAILABLE';
+    } else {
+        boardCost = data.Cost.Marketboard.toLocaleString() + " gil";
+    }
+
+    if (data.marketCost === undefined) {
+        cheap = 'CALCULATING...';
+    } else if (data.marketCost  === null) {
+        cheap =  'UNAVAILABLE';
+    } else {
+        cheap = data.marketCost.toLocaleString()+" gil";
+        cheap +=" ("+data.MarketNumber+" listings)";
+    }
+
+    if (data.Recent === undefined) {
+        recent = 'CALCULATING...';
+    } else {
+        recent = data.Recent.PricePerUnit.toLocaleString()+" gil ( Purchased ";
+        var ts = new Date(data.Recent.PurchaseDate*1000);
+        recent += ts.toString() + ")";
+    }
+
+    if (data.Week === undefined) {
+        week = 'CALCULATING...';
+    } else if (data.Week.PricePerUnit === 0) {
+        week =  'UNAVAILABLE';
+    } else {
+        week = data.Week.Minimum.toLocaleString()+" gil";
+        sales = data.Week.Count;
+        plu = 's';
+        if (sales === 1) {
+            plu = '';
+        }
+        week +=" ( "+sales.toLocaleString()+" sale"+plu+" )";
+    }
+
+    var server = encodeURI(document.getElementById('server').value);
+    var dataName ='<a href="http://www.garlandtools.org/db/#item/' +
+        data.ID + '" target="_blank">' + data.Name + "</a>";
+    dataName += '<sup><input type="image" class="copy_button" ' +
+                'src="clipboard.png" data-clipboard-text="' +
+                data.Name + '"></sup>';
+
+    var sect =
+    '<div class="card m-5 shadow-lg">' +
+    '  <h2 class="card-title text-center">'+dataName+'</h2>' +
+    '<div class="card-body">' +
+    '  <ul class="list-unstyled text-left">' +
+    '     <li>Recent: '+recent+'</li>'+
+    '      <li>Weekly Average: '+week+'</li>'+
+    '     <li>Current: '+cheap+"</li>"+
+    '  </ul>' +
+    '  <ul class="list-unstyled text-left">' +
+    '    <li>MarketBoard Cost: '+boardCost+"</li>" +
+    '    <li>Craft at Market Cost: '+marketCost+'</li>'+
+    '    <li>Craft at Optimal Cost: '+optimalCost+"</li>"+
+    '  </ul></div></div>';
+
+    return sect;
+}
+
+function fillCompanyStageFrame(data)
+{
+    if (data === null) {
+        return;
+    }
+    if (data.Cost === undefined) {
+        marketCost = 'CALCULATING...';
+    } else if (data.Cost.Market <= 0) {
+        marketCost =  'UNAVAILABLE';
+    } else {
+        marketCost = data.Cost.Market.toLocaleString() + " gil";
+    }
+
+    if (data.Cost === undefined){
+        optimalCost = 'CALCULATING...';
+    } else if (data.Cost.Optimal <= 0) {
+        optimalCost =  'UNAVAILABLE';
+    } else {
+        optimalCost = data.Cost.Optimal.toLocaleString() + " gil";
+    }
+
+    if (data.Cost === undefined) {
+        boardCost = 'CALCULATING...';
+    } else if (data.Cost.Marketboard <= 0) {
+        boardCost = 'UNAVAILABLE';
+    } else {
+        boardCost = data.Cost.Marketboard.toLocaleString() + " gil";
+    }
+
+    var sect =
+    '  <ul class="list-unstyled text-left">' +
+    '    <li>MarketBoard Cost: '+boardCost+"</li>" +
+    '    <li>Craft at Market Cost: '+marketCost+'</li>'+
+    '    <li>Craft at Optimal Cost: '+optimalCost+"</li>"+
+    '  </ul>';
+
+    return sect;
+}
+
 function fillOutputFrame(dataset)
 {
+    var sect;
+    if ("Parts" in dataset) {
+        sect = fillCompanyRecipeFrame(dataset);
+        document.getElementById('output').innerHTML += sect;
+        dataset.Parts.forEach(function(part) {
+            var i = 1;
+            part.Process.forEach(function(process) {
+                document.getElementById('output').innerHTML += '<hr>';
+                var sect = '<div class="card m-5 shadow-lg" id="">' +
+               '<div class="card-header">' +
+               '   <h5 class="mb-0"> Stage ' + i +
+               '   </h5>' +
+               ' </div>';
+                i += 1;
+                sect += '<div class="card-body">';
+                sect += fillCompanyStageFrame(process);
+                process.Set.forEach(function(item) {
+                    sect += '<div class="card m-5  id="RecipeParent'+item.Recipe.ID+'"> <div class="card-body">';
+
+                    sect += '<div class="card m-5 shadow-lg" id="RecipeParent'+item.Recipe.ID+'"> <div class="card-body">';
+                    sect += fillRecipeFrame(item.Recipe, true, false, true);
+                    sect += fillRecipe(item.Recipe, false);
+                    sect += '</div></div>';
+
+                    sect += '</div>';
+                    sect += '</div>';
+                });
+                document.getElementById('output').innerHTML += sect;
+            });
+        });
+        return;
+    }
     if (Array.isArray(dataset)) {
         if (dataset.length == 1) {
             return fillOutputFrame(dataset[0]);
@@ -298,7 +468,7 @@ function fillOutputFrame(dataset)
         dataset.forEach(function(data) {
             updateCrafter(data);
             sect = '<div class="card m-5 shadow-lg" id="RecipeParent'+data.ID+'"> <div class="card-body">';
-            recipeCard(data, true, false);
+            sect += recipeCard(data, true, false);
             document.getElementById('output').innerHTML += sect;
         });
         dataset.forEach(function(data) {
@@ -307,7 +477,7 @@ function fillOutputFrame(dataset)
     } else {
         updateCrafter(dataset);
         sect = '<div class="card m-5" id="RecipeParent'+dataset.ID+'"> <div class="card-body">';
-        recipeCard(dataset, false, true);
+        sect += recipeCard(dataset, false, true);
         document.getElementById('output').innerHTML += sect;
 
         setupCollapse(dataset);

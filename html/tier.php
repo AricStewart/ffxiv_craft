@@ -39,7 +39,10 @@ require_once __DIR__."/../ffxivData.inc";
 <div>
 <div class="text-center">
 <h2>Demonstrating Final Fantasy XIV Crafting Companion (Tiers)</h2>
-<a href="index.php">[Recipe Processing]</a>&nbsp;<a href="masterbook.php">[Master Recipe Books]</a><br><br>
+<a href="index.php">[Recipe Processing]</a>&nbsp;
+<a href="masterbook.php">[Master Recipe Books]</a>&nbsp;
+<a href="company.php">[Company Workshop]</a>
+<br><br>
 </div>
 
 <div class="m-4">

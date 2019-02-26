@@ -92,6 +92,12 @@ if (count($argv) > 1) {
             printRecipe($recipe, true);
         }
         exit();
+    } elseif ($argv[1] == '-x') {
+        $company = $dataset->loadCompanyCrafting();
+        $recipe = getCompanyRecipe($argv[2], $dataset, 'tick');
+        $output = doCompanyRecipe($recipe, $dataset, $xiv, 'tick');
+        printCompanyRecipe($output);
+        exit();
     } else {
         $itemID = $argv[1];
         $i = 2;

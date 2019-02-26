@@ -1,31 +1,10 @@
 <?php
 require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
-
-$arguments = [
-    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
-    'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
-];
-
-$data = filter_input_array(INPUT_GET, $arguments);
-if (isset($data['server'])) {
-    $server = $data['server'];
-}
-if (isset($data['item'])) {
-    $item = $data['item'];
-} else {
-    $item = "rakshasa dogi of healing";
-}
-if (isset($data['crafter'])) {
-    $crafter = $data['crafter'];
-} else {
-    $crafter= "";
-}
 ?>
 <html>
 <head>
-<title>Demonstrating Final Fantasy XIV Crafting Companion</title>
+<title>Demonstrating Final Fantasy XIV Crafting Companion (Company Workshop)</title>
 
 <!-- Bootstrap -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
@@ -37,7 +16,7 @@ if (isset($data['crafter'])) {
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
-<script src="crafting.js?version=<?php echo hash_file('sha256', 'crafting.js');?>"></script>
+<script src="company.js?version=<?php echo hash_file('sha256', 'company.js');?>"></script>
 <script src="clipboard.min.js"></script>
 </head>
 <body>
@@ -56,75 +35,56 @@ if (isset($data['crafter'])) {
   </div>
 </div>
 
-<div>
+
 <div>
 <div class="text-center">
-<h2>Demonstrating Final Fantasy XIV Crafting Companion</h2>
+<h2>Demonstrating Final Fantasy XIV Crafting Companion (Company Workshop)</h2>
+<a href="index.php">[Recipe Processing]</a>&nbsp;
 <a href="masterbook.php">[Master Recipe Books]</a>&nbsp;
-<a href="tier.php">[Crafting Tier]</a>&nbsp;
-<a href="company.php">[Company Workshop]</a>
+<a href="tier.php">[Crafting Tier]</a>
 <br><br>
 </div>
 
 <div class="m-4">
     <div class="input-group mb-5">
-      <div class="input-group-prepend">
-        <select class="custom-select" id="server">
-    <?php
-    $dataset = new FfxivDataSet('..');
-    $dataset->loadWorld();
-    foreach ($dataset->world as $entry) {
-        if (strcasecmp($entry->Name, $server) == 0) {
-            echo "<option selected>";
-        } else {
-            echo "<option>";
-        }
-        echo $entry->Name."</option>";
-    }
-    ?>
-        </select>
-      </div>
 
-      <div class="input-group-prepend">
-        <select class="custom-select" id="match">
-            <option value="exact" selected>Match Exact</option>;
-            <option value="sub" >Match Substring</option>;
-        </select>
-      </div>
-
-      <input id='item' type="text" class="form-control" value='<?php echo $item; ?>'>
-      <div class="input-group-append">
-        <select class="custom-select" id="crafter">
-            <option selected>Any</option>
-    <?php
-    foreach ($dataset->craftType as $entry) {
-        if (strcasecmp($entry, $crafter) == 0) {
-            echo "<option selected>";
-        } else {
-            echo "<option>";
-        }
-        echo $entry."</option>";
+<div class="input-group-prepend">
+<select class="custom-select" id='server'>
+<?php
+$dataset = new FfxivDataSet('..');
+$dataset->loadWorld();
+foreach ($dataset->world as $entry) {
+    if (strcasecmp($entry->Name, $server) == 0) {
+        echo "<option selected>";
+    } else {
+        echo "<option>";
     }
-    ?>
-        </select>
-      </div>
+    echo $entry->Name."</option>";
+}
+?>
+</select>
+</div>
+
+<select class="custom-select" id='target'>
+<?php
+$set = $dataset->listCompanyItems();
+foreach ($set as $item) {
+    echo "<option value='".$item->Index."'>".$item->Name."</option>";
+}
+?>
+</select>
       <div class="input-group-append">
         <input type='button' class="btn btn-outline-secondary" onclick='getData()' value='Get Data'>
       </div>
     </div>
 </div>
+
 <div class="progress" id="progress" style="height: 20px; display:none;">
     <div class="progress-bar progress-bar-striped progress-bar-animated active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 1%;" id="progress_bar"></div>
 </div>
 
 <div id="output">
 </div>
-
-<?php
-if (isset($data['server']) && isset($data['item'])) {
-    echo "<script> getData(); </script>";
-}
-?>
 
 <footer class="page-footer font-small blue pt-4">
   <div class="footer-copyright text-center py-3">
