@@ -439,9 +439,13 @@ function fillOutputFrame(dataset)
         document.getElementById('output').innerHTML += sect;
         dataset.Parts.forEach(function(part) {
             var i = 1;
+            var sect = '<div class="card m-5 shadow-lg" id="">' +
+               '<div class="card-header">' +
+               '   <h5 class="mb-0"> ' + part.Info.CompanyCraftType +
+               '   </h5>' +
+               ' </div>';
             part.Process.forEach(function(process) {
-                document.getElementById('output').innerHTML += '<hr>';
-                var sect = '<div class="card m-5 shadow-lg" id="">' +
+                sect += '<div class="card m-5 shadow-lg" id="">' +
                '<div class="card-header">' +
                '   <h5 class="mb-0"> Stage ' + i +
                '   </h5>' +
@@ -460,8 +464,11 @@ function fillOutputFrame(dataset)
                     sect += '</div>';
                     sect += '</div>';
                 });
-                document.getElementById('output').innerHTML += sect;
+                sect += '</div>';
+                sect += '</div>';
             });
+            sect += '</div>';
+            document.getElementById('output').innerHTML += sect;
         });
         return;
     }

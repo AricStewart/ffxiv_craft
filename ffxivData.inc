@@ -66,6 +66,8 @@ class FfxivDataSet
 
     private $_CompanyCraftSequence = "/data/CompanyCraftSequence.csv";
     private $_CompanyCraftSequenceURL = "CompanyCraftSequence.csv";
+    private $_CompanyCraftType = "/data/CompanyCraftType.csv";
+    private $_CompanyCraftTypeURL = "CompanyCraftType.csv";
     private $_CompanyCraftPart = "/data/CompanyCraftPart.csv";
     private $_CompanyCraftPartURL = "CompanyCraftPart.csv";
     private $_CompanyCraftProcess = "/data/CompanyCraftProcess.csv";
@@ -908,7 +910,7 @@ SQL;
         return $table;
     }
 
-    private function _loadCompanyCraftPart($process)
+    private function _loadCompanyCraftPart($process, $type)
     {
         $table = array();
 
@@ -928,7 +930,7 @@ SQL;
                 }
                 $entry = [
                     'Index' => intval($data[0]),
-                    'CompanyCraftType' => intval($data[2]),
+                    'CompanyCraftType' => $type[intval($data[2])]->Name,
                     'CompanyCraftProcess' => [
                         $process[intval($data[3])],
                         $process[intval($data[4])],
@@ -948,7 +950,37 @@ SQL;
         return $table;
     }
 
-    private function _loadCompanySequence($parts) 
+    private function _loadCompanyCraftType()
+    {
+        $table = array();
+
+        if (!file_exists($this->baseData.$this->_CompanyCraftType)) {
+            $this->_getData($this->baseData.$this->_CompanyCraftType, $this->_CompanyCraftTypeURL);
+        }
+        $handle = fopen($this->baseData.$this->_CompanyCraftType, "r");
+        $skip = 3;
+        if (empty($handle) === false) {
+            while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                if ($skip) {
+                    $skip--;
+                    continue;
+                }
+                if ($data[1] === "0") {
+                    continue;
+                }
+                $entry = [
+                    'Index' => intval($data[0]),
+                    'Name' => $data[1]
+                ];
+
+                $table[intval($data[0])] = json_decode(json_encode($entry));
+            }
+            fclose($handle);
+        }
+        return $table;
+    }
+
+    private function _loadCompanySequence($parts, $type) 
     {
         $table = array();
 
@@ -970,7 +1002,7 @@ SQL;
                     'Index' => intval($data[0]),
                     'ResultItem' => intval($data[1]),
                     'CompanyCraftDraftCategory' => intval($data[3]),
-                    'CompanyCraftType' => intval($data[4]),
+                    'CompanyCraftType' => $type[intval($data[4])]->Name,
                     'CompanyCraftDraft' => intval($data[5]),
                     'CompanyCraftPart' => [
                         $parts[intval($data[6])],
@@ -1000,8 +1032,9 @@ SQL;
         }
         $SupplyItem  = $this->_loadCompanyCraftSupplyItem();
         $Process  = $this->_loadCompanyCraftProcess($SupplyItem);
-        $Parts = $this->_loadCompanyCraftPart($Process);
-        $this->_companySequence = $this->_loadCompanySequence($Parts);
+        $Type = $this->_loadCompanyCraftType();
+        $Parts = $this->_loadCompanyCraftPart($Process, $Type);
+        $this->_companySequence = $this->_loadCompanySequence($Parts, $Type);
 
         return $this->_companySequence;
     }
