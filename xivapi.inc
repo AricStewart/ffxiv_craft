@@ -166,12 +166,6 @@ SQL;
         $this->flushPool();
 
         $data = $this->_fromCache($path);
-        if ($data === null) {
-            return $this->_getXIVdata(
-                $method, $ID, $url, false, $progress,
-                $report
-            );
-        }
         return $data;
     }
 
