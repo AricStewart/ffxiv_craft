@@ -26,110 +26,148 @@ use GuzzleHttp\Client;
 
 ini_set('memory_limit', '5000M');
 
-function _nameSort($a, $b) 
+
+function _nameSort($a, $b)
 {
     return strnatcmp($a->Name, $b->Name);
+
 }
+
 
 class FfxivDataSet
 {
+
     public $gather = array();
+
     public $world = array();
+
     public $gilShop = array();
+
     public $master = array();
 
     /* Company Data */
-    private $_companySequence = array();
+    private $companySequence = array();
 
-    private $_RecipeLevelTable = array();
+    private $RecipeLevelTable = array();
 
-    private $_recipData = "/data/Recipe.csv";
-    private $_recipURL = "Recipe.csv";
+    private $recipeData = "/data/Recipe.csv";
 
-    private $_itemData = "/data/Item.csv";
-    private $_itemURL =  "Item.csv";
+    private $recipeURL = "Recipe.csv";
 
-    private $_gatherData = "/data/GatheringItem.csv";
-    private $_gatherURL = "GatheringItem.csv";
+    private $itemData = "/data/Item.csv";
 
-    private $_masterData = "/data/SecretRecipeBook.csv";
-    private $_masterURL = "SecretRecipeBook.csv";
+    private $itemURL = "Item.csv";
 
-    private $_worldData = "/data/World.csv";
-    private $_worldURL = "World.csv";
+    private $gatherData = "/data/GatheringItem.csv";
 
-    private $_gilShopData = "/data/GilShopItem.csv";
-    private $_gilShopURL = "GilShopItem.csv";
+    private $gatherURL = "GatheringItem.csv";
 
-    private $_RecipeLevelTableData = "/data/RecipeLevelTable.csv";
-    private $_RecipeLevelTableURL = "RecipeLevelTable.csv";
+    private $masterData = "/data/SecretRecipeBook.csv";
 
-    private $_CompanyCraftSequence = "/data/CompanyCraftSequence.csv";
-    private $_CompanyCraftSequenceURL = "CompanyCraftSequence.csv";
-    private $_CompanyCraftType = "/data/CompanyCraftType.csv";
-    private $_CompanyCraftTypeURL = "CompanyCraftType.csv";
-    private $_CompanyCraftPart = "/data/CompanyCraftPart.csv";
-    private $_CompanyCraftPartURL = "CompanyCraftPart.csv";
-    private $_CompanyCraftProcess = "/data/CompanyCraftProcess.csv";
-    private $_CompanyCraftProcessURL = "CompanyCraftProcess.csv";
-    private $_CompanyCraftSupplyItem = "/data/CompanyCraftSupplyItem.csv";
-    private $_CompanyCraftSupplyItemURL = "CompanyCraftSupplyItem.csv";
+    private $masterURL = "SecretRecipeBook.csv";
 
-    private $_client;
+    private $worldData = "/data/World.csv";
+
+    private $worldURL = "World.csv";
+
+    private $gilShopData = "/data/GilShopItem.csv";
+
+    private $gilShopURL = "GilShopItem.csv";
+
+    private $RecipeLevelTableData = "/data/RecipeLevelTable.csv";
+
+    private $RecipeLevelTableURL = "RecipeLevelTable.csv";
+
+    private $CompanyCraftSequence = "/data/CompanyCraftSequence.csv";
+
+    private $CompanyCraftSequenceURL = "CompanyCraftSequence.csv";
+
+    private $CompanyCraftType = "/data/CompanyCraftType.csv";
+
+    private $CompanyCraftTypeURL = "CompanyCraftType.csv";
+
+    private $CompanyCraftPart = "/data/CompanyCraftPart.csv";
+
+    private $CompanyCraftPartURL = "CompanyCraftPart.csv";
+
+    private $CompanyCraftProcess = "/data/CompanyCraftProcess.csv";
+
+    private $CompanyCraftProcessURL = "CompanyCraftProcess.csv";
+
+    private $CompanyCraftSupplyItem = "/data/CompanyCraftSupplyItem.csv";
+
+    private $CompanyCraftSupplyItemURL = "CompanyCraftSupplyItem.csv";
+
+    private $client;
+
     public $baseData;
 
     public $craftType = [
-            "Woodworking",
-            "Smithing",
-            "Armorcraft",
-            "Goldsmithing",
-            "Leatherworking",
-            "Clothcraft",
-            "Alchemy",
-            "Cooking",
+    "Woodworking",
+    "Smithing",
+    "Armorcraft",
+    "Goldsmithing",
+    "Leatherworking",
+    "Clothcraft",
+    "Alchemy",
+    "Cooking",
         ];
 
-    private static function _isTrue($val)
+
+    private static function isTrue($val)
     {
         $boolval = ( is_string($val) ? filter_var(
             $val,
-            FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
         ) : (bool) $val );
-        return ( $boolval===null ? false : $boolval );
+        return ( $boolval === null ? false : $boolval );
+
     }
 
-    private static function _filterIngredient($item) 
+
+    private static function filterIngredient($item)
     {
         return ($item['Item'] > 0 && $item['Amount'] > 0);
+
     }
 
-    private static function _filterBaseparam($item) 
+
+    private static function filterBaseparam($item)
     {
         return ($item['Param'] > 0 && $item['Value'] > 0);
+
     }
 
-    private static function _filterNull($item) 
+
+    private static function filterNull($item)
     {
         return ($item != null);
+
     }
 
-    private static function _filterCompanySet($item) 
+
+    private static function filterCompanySet($item)
     {
         return ($item['Quantity'] > 0);
+
     }
 
-    private function _getData($file, $url) 
+
+    private function getData($file, $url)
     {
-        $response = $this->_client->request('GET', $url);
+        $response = $this->client->request('GET', $url);
         @file_put_contents($file, $response->getBody());
         @chmod($file, 0666);
+
     }
 
-    private function _loadItems($force=false) 
+
+    private function loadItems($force = false)
     {
-        if ($force || !file_exists($this->baseData.$this->_itemData)) {
-            $this->_getData($this->baseData.$this->_itemData, $this->_itemURL);
-            $force=true;
+        if ($force || !file_exists($this->baseData.$this->itemData)) {
+            $this->getData($this->baseData.$this->itemData, $this->itemURL);
+            $force = true;
         }
         if (!$force) {
             $sql = "SELECT COUNT(`Id`) AS total FROM `items` WHERE 1;";
@@ -142,7 +180,7 @@ class FfxivDataSet
 
         $sql = "DELETE FROM `items` WHERE 1";
         DB::run($sql);
-        $handle = fopen($this->baseData.$this->_itemData, "r");
+        $handle = fopen($this->baseData.$this->itemData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 2000, ",")) !== false) {
@@ -154,114 +192,115 @@ class FfxivDataSet
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Singular' => $data[1],
-                    'Adjective' => intval($data[2]),
-                    'Plural' => $data[3],
-                    'PossessivePronoun' => intval($data[4]),
-                    'StartsWithVowel' => intval($data[5]),
-                    'Pronoun' => intval($data[7]),
-                    'Article' => intval($data[8]),
-                    'Description' => $data[9],
-                    'Name' => $data[10],
-                    'Icon' => intval($data[11]),
-                    'Level{Item}' => intval($data[12]),
-                    'Rarity' => intval($data[13]),
-                    'FilterGroup' => intval($data[14]),
-                    'AdditionalData' => intval($data[15]),
-                    'ItemUICategory' => intval($data[16]),
-                    'ItemSearchCategory' => intval($data[17]),
-                    'EquipSlotCategory' => intval($data[18]),
-                    'StackSize' => intval($data[20]),
-                    'IsUnique' => $this->_isTrue($data[21]),
-                    'IsUntradable' => $this->_isTrue($data[22]),
-                    'IsIndisposable' => $this->_isTrue($data[23]),
-                    'IsEquippable' => $this->_isTrue($data[24]),
-                    'PriceMid' => intval($data[25]),
-                    'PriceLow' => intval($data[26]),
-                    'CanBeHq' => $this->_isTrue($data[27]),
-                    'IsDyeable' => $this->_isTrue($data[28]),
-                    'IsCrestWorthy' => $this->_isTrue($data[29]),
-                    'ItemAction' => intval($data[30]),
-                    'Cooldown<s>' => intval($data[32]),
-                    'ClassJob{Repair}' => intval($data[33]),
-                    'Item{Repair}' => intval($data[34]),
-                    'Item{Glamour}' => intval($data[35]),
-                    'Salvage' => intval($data[36]),
-                    'IsCollectable' => $this->_isTrue($data[37]),
-                    'AetherialReduce' => intval($data[38]),
-                    'Level{Equip}' => intval($data[39]),
-                    'EquipRestriction' => intval($data[41]),
-                    'ClassJobCategory' => intval($data[42]),
-                    'GrandCompany' => intval($data[43]),
-                    'ItemSeries' => intval($data[44]),
-                    'BaseParamModifier' => intval($data[45]),
-                    'Model{Main}' => $data[46],
-                    'Model{Sub}' => $data[47],
-                    'ClassJob{Use}' => intval($data[48]),
-                    'Damage{Phys}' => intval($data[50]),
-                    'Damage{Mag}' => intval($data[51]),
-                    'Delay<ms>' => intval($data[52]),
-                    'BlockRate' => intval($data[54]),
-                    'Block' => intval($data[55]),
-                    'Defense{Phys}' => intval($data[56]),
-                    'Defense{Mag}' => intval($data[57]),
-                    'BaseParam' => [
-                        ['Param' => intval($data[58]),
-                         'Value' => intval($data[59])],
-                        ['Param' => intval($data[60]),
-                         'Value' => intval($data[61])],
-                        ['Param' => intval($data[62]),
-                         'Value' => intval($data[63])],
-                        ['Param' => intval($data[64]),
-                         'Value' => intval($data[65])],
-                        ['Param' => intval($data[66]),
-                         'Value' => intval($data[67])],
-                        ['Param' => intval($data[68]),
-                         'Value' => intval($data[69])]],
-                    'ItemSpecialBonus' => intval($data[70]),
-                    'ItemSpecialBonus{Param}' => intval($data[71]),
-                    'BaseParam{Special}' => [
-                        ['Param' => intval($data[72]),
-                         'Value' => intval($data[73])],
-                        ['Param' => intval($data[74]),
-                         'Value' => intval($data[75])],
-                        ['Param' => intval($data[76]),
-                         'Value' => intval($data[77])],
-                        ['Param' => intval($data[78]),
-                         'Value' => intval($data[79])],
-                        ['Param' => intval($data[80]),
-                         'Value' => intval($data[81])],
-                        ['Param' => intval($data[82]),
-                         'Value' => intval($data[83])]],
-                    'MaterializeType' => intval($data[84]),
-                    'MateriaSlotCount' => intval($data[85]),
-                    'IsAdvancedMeldingPermitted' => $this->_isTrue($data[86]),
-                    'IsPvP' => $this->_isTrue($data[87]),
-                    'IsGlamourous' => $this->_isTrue($data[89])
+                'Index' => intval($data[0]),
+                'Singular' => $data[1],
+                'Adjective' => intval($data[2]),
+                'Plural' => $data[3],
+                'PossessivePronoun' => intval($data[4]),
+                'StartsWithVowel' => intval($data[5]),
+                'Pronoun' => intval($data[7]),
+                'Article' => intval($data[8]),
+                'Description' => $data[9],
+                'Name' => $data[10],
+                'Icon' => intval($data[11]),
+                'Level{Item}' => intval($data[12]),
+                'Rarity' => intval($data[13]),
+                'FilterGroup' => intval($data[14]),
+                'AdditionalData' => intval($data[15]),
+                'ItemUICategory' => intval($data[16]),
+                'ItemSearchCategory' => intval($data[17]),
+                'EquipSlotCategory' => intval($data[18]),
+                'StackSize' => intval($data[20]),
+                'IsUnique' => $this->isTrue($data[21]),
+                'IsUntradable' => $this->isTrue($data[22]),
+                'IsIndisposable' => $this->isTrue($data[23]),
+                'IsEquippable' => $this->isTrue($data[24]),
+                'PriceMid' => intval($data[25]),
+                'PriceLow' => intval($data[26]),
+                'CanBeHq' => $this->isTrue($data[27]),
+                'IsDyeable' => $this->isTrue($data[28]),
+                'IsCrestWorthy' => $this->isTrue($data[29]),
+                'ItemAction' => intval($data[30]),
+                'Cooldown<s>' => intval($data[32]),
+                'ClassJob{Repair}' => intval($data[33]),
+                'Item{Repair}' => intval($data[34]),
+                'Item{Glamour}' => intval($data[35]),
+                'Salvage' => intval($data[36]),
+                'IsCollectable' => $this->isTrue($data[37]),
+                'AetherialReduce' => intval($data[38]),
+                'Level{Equip}' => intval($data[39]),
+                'EquipRestriction' => intval($data[41]),
+                'ClassJobCategory' => intval($data[42]),
+                'GrandCompany' => intval($data[43]),
+                'ItemSeries' => intval($data[44]),
+                'BaseParamModifier' => intval($data[45]),
+                'Model{Main}' => $data[46],
+                'Model{Sub}' => $data[47],
+                'ClassJob{Use}' => intval($data[48]),
+                'Damage{Phys}' => intval($data[50]),
+                'Damage{Mag}' => intval($data[51]),
+                'Delay<ms>' => intval($data[52]),
+                'BlockRate' => intval($data[54]),
+                'Block' => intval($data[55]),
+                'Defense{Phys}' => intval($data[56]),
+                'Defense{Mag}' => intval($data[57]),
+                'BaseParam' => [
+                ['Param' => intval($data[58]),
+                'Value' => intval($data[59])],
+                ['Param' => intval($data[60]),
+                'Value' => intval($data[61])],
+                ['Param' => intval($data[62]),
+                'Value' => intval($data[63])],
+                ['Param' => intval($data[64]),
+                'Value' => intval($data[65])],
+                ['Param' => intval($data[66]),
+                'Value' => intval($data[67])],
+                ['Param' => intval($data[68]),
+                'Value' => intval($data[69])]],
+                'ItemSpecialBonus' => intval($data[70]),
+                'ItemSpecialBonus{Param}' => intval($data[71]),
+                'BaseParam{Special}' => [
+                ['Param' => intval($data[72]),
+                'Value' => intval($data[73])],
+                ['Param' => intval($data[74]),
+                'Value' => intval($data[75])],
+                ['Param' => intval($data[76]),
+                'Value' => intval($data[77])],
+                ['Param' => intval($data[78]),
+                'Value' => intval($data[79])],
+                ['Param' => intval($data[80]),
+                'Value' => intval($data[81])],
+                ['Param' => intval($data[82]),
+                'Value' => intval($data[83])]],
+                'MaterializeType' => intval($data[84]),
+                'MateriaSlotCount' => intval($data[85]),
+                'IsAdvancedMeldingPermitted' => $this->isTrue($data[86]),
+                'IsPvP' => $this->isTrue($data[87]),
+                'IsGlamourous' => $this->isTrue($data[89])
                 ];
                 $entry['BaseParam'] = array_filter(
                     $entry['BaseParam'],
-                    'FfxivDataSet::_filterBaseparam'
+                    'FfxivDataSet::filterBaseparam'
                 );
                 $entry['BaseParam{Special}'] = array_filter(
                     $entry['BaseParam{Special}'],
-                    'FfxivDataSet::_filterBaseparam'
+                    'FfxivDataSet::filterBaseparam'
                 );
 
                 $id = $entry['Index'];
-                $name = myPDO::quote($entry['Name']);
-                $data = myPDO::quote(json_encode($entry));
+                $name = MyPDO::quote($entry['Name']);
+                $data = MyPDO::quote(json_encode($entry));
 
-                $sql = "INSERT INTO `items` (Id, Name, Data) ".
-                       "VALUES ($id, $name, $data); ";
+                $sql = "INSERT INTO `items` (Id, Name, Data) "."VALUES ($id, $name, $data); ";
                 DB::run($sql);
             }
             fclose($handle);
         }
+
     }
 
-    private function _checkItemTable() 
+
+    private function checkItemTable()
     {
         $sql = "SHOW TABLES LIKE 'items';";
         $result = DB::run($sql);
@@ -277,14 +316,16 @@ class FfxivDataSet
 SQL;
             DB::run($sql);
         }
-        $this->_loadItems();
+        $this->loadItems();
+
     }
 
-    private function _loadRecipes($force=false)
+
+    private function loadRecipes($force = false)
     {
-        if ($force || !file_exists($this->baseData.$this->_recipData)) {
-            $this->_getData($this->baseData.$this->_recipData, $this->_recipURL);
-            $force=true;
+        if ($force || !file_exists($this->baseData.$this->recipeData)) {
+            $this->getData($this->baseData.$this->recipeData, $this->recipeURL);
+            $force = true;
         }
         if (!$force) {
             $sql = "SELECT COUNT(`Id`) AS total FROM `recipes` WHERE 1;";
@@ -295,12 +336,12 @@ SQL;
             }
         }
 
-        $this->_loadRecipeLevelTable();
+        $this->loadRecipeLevelTable();
 
         $sql = "DELETE FROM `recipes` WHERE 1";
         DB::run($sql);
 
-        $handle = fopen($this->baseData.$this->_recipData, "r");
+        $handle = fopen($this->baseData.$this->recipeData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -312,53 +353,53 @@ SQL;
                     continue;
                 }
                 $entry = ['Index' => intval($data[0]),
-                    'CraftType' => intval($data[2]),
-                    'RecipeLevelTable' => intval($data[3]),
-                    'Result' => [
-                        'Item' =>intval($data[4]),
-                        'Amount' => intval($data[5])],
-                    'Ingredients' => [
-                        ['Item' => intval($data[6]),
-                         'Amount' => intval($data[7])],
-                        ['Item' => intval($data[8]),
-                         'Amount' => intval($data[9])],
-                        ['Item' => intval($data[10]),
-                         'Amount' => intval($data[11])],
-                        ['Item' => intval($data[12]),
-                         'Amount' => intval($data[13])],
-                        ['Item' => intval($data[14]),
-                         'Amount' => intval($data[15])],
-                        ['Item' => intval($data[16]),
-                         'Amount' => intval($data[17])],
-                        ['Item' => intval($data[18]),
-                         'Amount' => intval($data[19])],
-                        ['Item' => intval($data[20]),
-                         'Amount' => intval($data[21])],
-                        ['Item' => intval($data[22]),
-                        'Amount' => intval($data[23])],
-                        ['Item' => intval($data[24]),
-                         'Amount' => intval($data[25]),]],
-                    'RecipeElement' => $data[26],
-                    'IsSecondary' => $this->_isTrue($data[28]),
-                    'DifficultyFactor' => $data[29],
-                    'QualityFactor' => $data[30],
-                    'DurabilityFactor' => $data[31],
-                    'RequiredCraftsmanship' => $data[33],
-                    'RequiredControl' => $data[34],
-                    'QuickSynthCraftsmanship' => $data[35],
-                    'QuickSynthControl' => $data[36],
-                    'SecretRecipeBook' => $data[37],
-                    'CanQuickSynth' => $this->_isTrue($data[38]),
-                    'CanHq' => $this->_isTrue($data[39]),
-                    'ExpRewarded' => $this->_isTrue($data[40]),
-                    'Status{Required}' => $data[41],
-                    'Item{Required}' => $data[42],
-                    'IsSpecializationRequired' => $this->_isTrue($data[43]),
-                    'PatchNumber' => $data[45]
+                'CraftType' => intval($data[2]),
+                'RecipeLevelTable' => intval($data[3]),
+                'Result' => [
+                'Item' => intval($data[4]),
+                'Amount' => intval($data[5])],
+                'Ingredients' => [
+                ['Item' => intval($data[6]),
+                'Amount' => intval($data[7])],
+                ['Item' => intval($data[8]),
+                'Amount' => intval($data[9])],
+                ['Item' => intval($data[10]),
+                'Amount' => intval($data[11])],
+                ['Item' => intval($data[12]),
+                'Amount' => intval($data[13])],
+                ['Item' => intval($data[14]),
+                'Amount' => intval($data[15])],
+                ['Item' => intval($data[16]),
+                'Amount' => intval($data[17])],
+                ['Item' => intval($data[18]),
+                'Amount' => intval($data[19])],
+                ['Item' => intval($data[20]),
+                'Amount' => intval($data[21])],
+                ['Item' => intval($data[22]),
+                'Amount' => intval($data[23])],
+                ['Item' => intval($data[24]),
+                'Amount' => intval($data[25]),]],
+                'RecipeElement' => $data[26],
+                'IsSecondary' => $this->isTrue($data[28]),
+                'DifficultyFactor' => $data[29],
+                'QualityFactor' => $data[30],
+                'DurabilityFactor' => $data[31],
+                'RequiredCraftsmanship' => $data[33],
+                'RequiredControl' => $data[34],
+                'QuickSynthCraftsmanship' => $data[35],
+                'QuickSynthControl' => $data[36],
+                'SecretRecipeBook' => $data[37],
+                'CanQuickSynth' => $this->isTrue($data[38]),
+                'CanHq' => $this->isTrue($data[39]),
+                'ExpRewarded' => $this->isTrue($data[40]),
+                'Status{Required}' => $data[41],
+                'Item{Required}' => $data[42],
+                'IsSpecializationRequired' => $this->isTrue($data[43]),
+                'PatchNumber' => $data[45]
                     ];
                 $entry['Ingredients'] = array_filter(
                     $entry['Ingredients'],
-                    'FfxivDataSet::_filterIngredient'
+                    'FfxivDataSet::filterIngredient'
                 );
 
                 $id = $entry['Index'];
@@ -369,19 +410,19 @@ SQL;
                 } else {
                     $book = 'NULL';
                 }
-                $data = myPDO::quote(json_encode($entry));
-                $level = $this->_RecipeLevelTable[$entry['RecipeLevelTable']]->ClassJobLevel;
+                $data = MyPDO::quote(json_encode($entry));
+                $level = $this->RecipeLevelTable[$entry['RecipeLevelTable']]->ClassJobLevel;
 
-                $sql = "INSERT INTO `recipes` (Id, Item, CraftType,".
-                       "RecipeLevel, Book, Data) ".
-                       "VALUES ($id, $item, $type, $level, $book, $data); ";
+                $sql = "INSERT INTO `recipes` (Id, Item, CraftType,"."RecipeLevel, Book, Data) "."VALUES ($id, $item, $type, $level, $book, $data); ";
                 DB::run($sql);
             }
             fclose($handle);
         }
+
     }
 
-    private function _checkRecipeTable() 
+
+    private function checkRecipeTable()
     {
         $sql = "SHOW TABLES LIKE 'recipes';";
         $result = DB::run($sql);
@@ -400,28 +441,30 @@ SQL;
 SQL;
             DB::run($sql);
         }
-        $this->_loadRecipes();
+        $this->loadRecipes();
+
     }
 
-    function __construct($baseData='.') 
+
+    public function __construct($baseData = '.')
     {
         $this->baseData = $baseData;
-        $this->_client = new Client(
-            ['base_uri' =>
-            "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
+        $this->client = new Client(
+            ['base_uri' => "https://raw.githubusercontent.com/viion/ffxiv-datamining/master/csv/"]
         );
+
     }
 
 
-    function loadGathering() 
+    public function loadGathering()
     {
         if (count($this->gather) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->_gatherData)) {
-            $this->_getData($this->baseData.$this->_gatherData, $this->_gatherURL);
+        if (!file_exists($this->baseData.$this->gatherData)) {
+            $this->getData($this->baseData.$this->gatherData, $this->gatherURL);
         }
-        $handle = fopen($this->baseData.$this->_gatherData, "r");
+        $handle = fopen($this->baseData.$this->gatherData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -433,27 +476,29 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Item' => intval($data[1]),
-                    'GatheringItemLevel' => intval($data[2]),
-                    'IsHidden' => $this->_isTrue($data[3])
+                'Index' => intval($data[0]),
+                'Item' => intval($data[1]),
+                'GatheringItemLevel' => intval($data[2]),
+                'IsHidden' => $this->isTrue($data[3])
                 ];
 
                 $this->gather[$data[1]] = $entry;
             }
             fclose($handle);
         }
+
     }
 
-    function loadMasterBooks() 
+
+    public function loadMasterBooks()
     {
         if (count($this->master) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->_masterData)) {
-            $this->_getData($this->baseData.$this->_masterData, $this->_masterURL);
+        if (!file_exists($this->baseData.$this->masterData)) {
+            $this->getData($this->baseData.$this->masterData, $this->masterURL);
         }
-        $handle = fopen($this->baseData.$this->_masterData, "r");
+        $handle = fopen($this->baseData.$this->masterData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -465,26 +510,28 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Item' => intval($data[1]),
-                    'Name' => $data[2],
+                'Index' => intval($data[0]),
+                'Item' => intval($data[1]),
+                'Name' => $data[2],
                 ];
                 $this->master[] = json_decode(json_encode($entry));
             }
             usort($this->master, "_nameSort");
             fclose($handle);
         }
+
     }
 
-    function loadWorld() 
+
+    public function loadWorld()
     {
         if (count($this->world) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->_worldData)) {
-            $this->_getData($this->baseData.$this->_worldData, $this->_worldURL);
+        if (!file_exists($this->baseData.$this->worldData)) {
+            $this->getData($this->baseData.$this->worldData, $this->worldURL);
         }
-        $handle = fopen($this->baseData.$this->_worldData, "r");
+        $handle = fopen($this->baseData.$this->worldData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -492,31 +539,33 @@ SQL;
                     $skip--;
                     continue;
                 }
-                if (!$this->_isTrue($data[4])) {
+                if (!$this->isTrue($data[4])) {
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Name' => $data[1],
-                    'DataCenter' => intval($data[3]),
-                    'Public' => $this->_isTrue($data[3]),
+                'Index' => intval($data[0]),
+                'Name' => $data[1],
+                'DataCenter' => intval($data[3]),
+                'Public' => $this->isTrue($data[3]),
                 ];
                 $this->world[] = json_decode(json_encode($entry));
             }
             usort($this->world, "_nameSort");
             fclose($handle);
         }
+
     }
 
-    function loadGilShop() 
+
+    public function loadGilShop()
     {
         if (count($this->gilShop) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->_gilShopData)) {
-            $this->_getData($this->baseData.$this->_gilShopData, $this->_gilShopURL);
+        if (!file_exists($this->baseData.$this->gilShopData)) {
+            $this->getData($this->baseData.$this->gilShopData, $this->gilShopURL);
         }
-        $handle = fopen($this->baseData.$this->_gilShopData, "r");
+        $handle = fopen($this->baseData.$this->gilShopData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -525,16 +574,18 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => $data[0],
-                    'Item' => intval($data[1]),
+                'Index' => $data[0],
+                'Item' => intval($data[1]),
                 ];
                 $this->gilShop[] = $entry;
             }
             fclose($handle);
         }
+
     }
 
-    function findItemInShop($itemID) 
+
+    public function findItemInShop($itemID)
     {
         $this->loadGilShop();
         $result = [];
@@ -544,17 +595,19 @@ SQL;
             }
         }
         return $result;
+
     }
 
-    private function _loadRecipeLevelTable() 
+
+    private function loadRecipeLevelTable()
     {
-        if (count($this->_RecipeLevelTable) > 0) {
+        if (count($this->RecipeLevelTable) > 0) {
             return;
         }
-        if (!file_exists($this->baseData.$this->_RecipeLevelTableData)) {
-            $this->_getData($this->baseData.$this->_RecipeLevelTableData, $this->_RecipeLevelTableURL);
+        if (!file_exists($this->baseData.$this->RecipeLevelTableData)) {
+            $this->getData($this->baseData.$this->RecipeLevelTableData, $this->RecipeLevelTableURL);
         }
-        $handle = fopen($this->baseData.$this->_RecipeLevelTableData, "r");
+        $handle = fopen($this->baseData.$this->RecipeLevelTableData, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -563,22 +616,24 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'ClassJobLevel' => intval($data[1]),
-                    'Stars' => intval($data[2]),
-                    'SuggestedCraftsmanship' => intval($data[3]),
-                    'Difficulty' => intval($data[4]),
-                    'Quality' => intval($data[5]),
-                    'Durability' => intval($data[6]),
+                'ClassJobLevel' => intval($data[1]),
+                'Stars' => intval($data[2]),
+                'SuggestedCraftsmanship' => intval($data[3]),
+                'Difficulty' => intval($data[4]),
+                'Quality' => intval($data[5]),
+                'Durability' => intval($data[6]),
                 ];
-                $this->_RecipeLevelTable[$data[0]] = json_decode(
+                $this->RecipeLevelTable[$data[0]] = json_decode(
                     json_encode($entry)
                 );
             }
             fclose($handle);
         }
+
     }
 
-    function getFullRecipe($id, $count, &$output, $subrun, $preference)
+
+    public function getFullRecipe($id, $count, &$output, $subrun, $preference)
     {
         if ($output == null) {
             $output = array();
@@ -603,26 +658,30 @@ SQL;
                 $craftBy = $part->CraftTypeName;
                 $this->getFullRecipe(
                     $i->Item,
-                    ceil(($i->Amount* $count)/$result), $bits, true,
+                    ceil(($i->Amount * $count) / $result),
+                    $bits,
+                    true,
                     $preference
                 );
             }
             $ingred[] = [
-                         'id' => $i->Item,
-                         'name' => '',
-                         'count' => $i->Amount * $count,
-                         'marketCost' => 0,
-                         'marketHQ' => 0,
-                         'craftCost' => 0,
-                         'craftedBy' => $craftBy,
-                         'shopCost' => 0,
-                         'bits' => $bits
+            'id' => $i->Item,
+            'name' => '',
+            'count' => $i->Amount * $count,
+            'marketCost' => 0,
+            'marketHQ' => 0,
+            'craftCost' => 0,
+            'craftedBy' => $craftBy,
+            'shopCost' => 0,
+            'bits' => $bits
                         ];
         }
         return $output;
+
     }
 
-    function lookupMasterBook($name) 
+
+    public function lookupMasterBook($name)
     {
         $this->loadMasterBooks();
         if (is_numeric($name)) {
@@ -638,9 +697,11 @@ SQL;
             }
         }
         return null;
+
     }
 
-    function getMasterCraft($book=null) 
+
+    public function getMasterCraft($book = null)
     {
         $output = [];
         if ($book !== null) {
@@ -664,28 +725,32 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+
     }
 
-    function getMasterBookJob($name)
+
+    public function getMasterBookJob($name)
     {
         $craftMap = [
-            "Carpenter" => "Woodworking",
-            "Blacksmith" => "Smithing",
-            "Armorer" => "Armorcraft",
-            "Goldsmith" => "Goldsmithing",
-            "Leatherworker" => "Leatherworking",
-            "Weaver" => "Clothcraft",
-            "Alchemist" => "Alchemy",
-            "Culinarian" => "Cooking",
+        "Carpenter" => "Woodworking",
+        "Blacksmith" => "Smithing",
+        "Armorer" => "Armorcraft",
+        "Goldsmith" => "Goldsmithing",
+        "Leatherworker" => "Leatherworking",
+        "Weaver" => "Clothcraft",
+        "Alchemist" => "Alchemy",
+        "Culinarian" => "Cooking",
         ];
         $c = explode(" ", $name)[1];
         $crafter = trim($c, ':');
         return $craftMap[$crafter];
+
     }
 
-    function getItem($param)
+
+    public function getItem($param)
     {
-        $this->_checkItemTable();
+        $this->checkItemTable();
         if (is_numeric($param)) {
             $sql = "SELECT `Data` FROM `items` WHERE `ID` = $param;";
         } else {
@@ -697,11 +762,13 @@ SQL;
             return json_decode($value['Data']);
         }
         return null;
+
     }
 
-    function getItems($param)
+
+    public function getItems($param)
     {
-        $this->_checkItemTable();
+        $this->checkItemTable();
         if (is_numeric($param)) {
             $sql = "SELECT `ID` FROM `items` WHERE `ID` = $param;";
         } else {
@@ -719,14 +786,16 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+
     }
 
-    function _processRecipe($value, &$AllCraftTypes) 
+
+    private function processRecipe($value, &$AllCraftTypes)
     {
         $data = json_decode($value['Data']);
         $data->CraftTypeName = $this->craftType[$data->CraftType];
         $AllCraftTypes[] = $data->CraftTypeName;
-        $data->RecipeLevel = $this->_RecipeLevelTable[$data->RecipeLevelTable];
+        $data->RecipeLevel = $this->RecipeLevelTable[$data->RecipeLevelTable];
         if ($data->SecretRecipeBook > 0) {
             $this->loadMasterBooks();
             $data->Book = $this->lookupMasterBook($data->SecretRecipeBook);
@@ -734,12 +803,14 @@ SQL;
             $data->Book = null;
         }
         return $data;
+
     }
 
-    function getRecipe($param, $preference)
+
+    public function getRecipe($param, $preference)
     {
-        $this->_loadRecipeLevelTable();
-        $this->_checkRecipeTable();
+        $this->loadRecipeLevelTable();
+        $this->checkRecipeTable();
         $sql = "SELECT `Data` FROM `recipes` WHERE `item` = $param;";
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -749,12 +820,12 @@ SQL;
             if ($output === null) {
                 $output = [];
             }
-            $output[] = $this->_processRecipe($value, $AllCraftTypes);
+            $output[] = $this->processRecipe($value, $AllCraftTypes);
             $value = $result->fetch();
         }
         if ($output && $preference) {
             foreach ($output as $data) {
-                if (strcasecmp($data->CraftTypeName, $preference)==0) {
+                if (strcasecmp($data->CraftTypeName, $preference) == 0) {
                     $data->AllCraftTypes = $AllCraftTypes;
                     return $data;
                 }
@@ -764,12 +835,14 @@ SQL;
             return $data;
         }
         return $output;
+
     }
 
-    function getRecipeSet($crafter, $levelLow=0, $levelHigh=0)
+
+    public function getRecipeSet($crafter, $levelLow = 0, $levelHigh = 0)
     {
-        $this->_loadRecipeLevelTable();
-        $this->_checkRecipeTable();
+        $this->loadRecipeLevelTable();
+        $this->checkRecipeTable();
         if (!is_numeric($crafter)) {
             $crafter = array_search($crafter, $this->craftType);
             if ($crafter === false) {
@@ -799,7 +872,9 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+
     }
+
 
     /* Company Crafting Items */
     /*  CompanyCraftSequence.ResultItem Look at  CompanyCraftPart  (0-7) that
@@ -809,14 +884,14 @@ SQL;
         SupplyItem is found in CompanyCraftSupplyItem, which gives and
         ItemID! Finally */
 
-    private function _loadCompanyCraftSupplyItem() 
+    private function loadCompanyCraftSupplyItem()
     {
         $table = array();
 
-        if (!file_exists($this->baseData.$this->_CompanyCraftSupplyItem)) {
-            $this->_getData($this->baseData.$this->_CompanyCraftSupplyItem, $this->_CompanyCraftSupplyItemURL);
+        if (!file_exists($this->baseData.$this->CompanyCraftSupplyItem)) {
+            $this->getData($this->baseData.$this->CompanyCraftSupplyItem, $this->CompanyCraftSupplyItemURL);
         }
-        $handle = fopen($this->baseData.$this->_CompanyCraftSupplyItem, "r");
+        $handle = fopen($this->baseData.$this->CompanyCraftSupplyItem, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -828,24 +903,26 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Item' => intval($data[1])
+                'Index' => intval($data[0]),
+                'Item' => intval($data[1])
                 ];
                 $table[intval($data[0])] = json_decode(json_encode($entry));
             }
             fclose($handle);
         }
         return $table;
+
     }
 
-    private function _loadCompanyCraftProcess($item)
+
+    private function loadCompanyCraftProcess($item)
     {
         $table = array();
 
-        if (!file_exists($this->baseData.$this->_CompanyCraftProcess)) {
-            $this->_getData($this->baseData.$this->_CompanyCraftProcess, $this->_CompanyCraftProcessURL);
+        if (!file_exists($this->baseData.$this->CompanyCraftProcess)) {
+            $this->getData($this->baseData.$this->CompanyCraftProcess, $this->CompanyCraftProcessURL);
         }
-        $handle = fopen($this->baseData.$this->_CompanyCraftProcess, "r");
+        $handle = fopen($this->baseData.$this->CompanyCraftProcess, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -857,50 +934,50 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Set' => [
-                        ['Item' => $item[intval($data[1])],
-                         'Quantity' => intval($data[2]),
-                         'Required' => intval($data[3])],
-                        ['Item' => $item[intval($data[4])],
-                         'Quantity' => intval($data[5]),
-                         'Required' => intval($data[6])],
-                        ['Item' => $item[intval($data[7])],
-                         'Quantity' => intval($data[8]),
-                         'Required' => intval($data[9])],
-                        ['Item' => $item[intval($data[10])],
-                         'Quantity' => intval($data[11]),
-                         'Required' => intval($data[12])],
-                        ['Item' => $item[intval($data[13])],
-                         'Quantity' => intval($data[14]),
-                         'Required' => intval($data[15])],
-                        ['Item' => $item[intval($data[16])],
-                         'Quantity' => intval($data[17]),
-                         'Required' => intval($data[18])],
-                        ['Item' => $item[intval($data[19])],
-                         'Quantity' => intval($data[20]),
-                         'Required' => intval($data[21])],
-                        ['Item' => $item[intval($data[22])],
-                         'Quantity' => intval($data[23]),
-                         'Required' => intval($data[24])],
-                        ['Item' => $item[intval($data[25])],
-                         'Quantity' => intval($data[26]),
-                         'Required' => intval($data[27])],
-                        ['Item' => $item[intval($data[28])],
-                         'Quantity' => intval($data[29]),
-                         'Required' => intval($data[30])],
-                        ['Item' => $item[intval($data[31])],
-                         'Quantity' => intval($data[32]),
-                         'Required' => intval($data[33])],
-                        ['Item' => $item[intval($data[34])],
-                         'Quantity' => intval($data[35]),
-                         'Required' => intval($data[36])],
+                'Index' => intval($data[0]),
+                'Set' => [
+                ['Item' => $item[intval($data[1])],
+                'Quantity' => intval($data[2]),
+                'Required' => intval($data[3])],
+                ['Item' => $item[intval($data[4])],
+                'Quantity' => intval($data[5]),
+                'Required' => intval($data[6])],
+                ['Item' => $item[intval($data[7])],
+                'Quantity' => intval($data[8]),
+                'Required' => intval($data[9])],
+                ['Item' => $item[intval($data[10])],
+                'Quantity' => intval($data[11]),
+                'Required' => intval($data[12])],
+                ['Item' => $item[intval($data[13])],
+                'Quantity' => intval($data[14]),
+                'Required' => intval($data[15])],
+                ['Item' => $item[intval($data[16])],
+                'Quantity' => intval($data[17]),
+                'Required' => intval($data[18])],
+                ['Item' => $item[intval($data[19])],
+                'Quantity' => intval($data[20]),
+                'Required' => intval($data[21])],
+                ['Item' => $item[intval($data[22])],
+                'Quantity' => intval($data[23]),
+                'Required' => intval($data[24])],
+                ['Item' => $item[intval($data[25])],
+                'Quantity' => intval($data[26]),
+                'Required' => intval($data[27])],
+                ['Item' => $item[intval($data[28])],
+                'Quantity' => intval($data[29]),
+                'Required' => intval($data[30])],
+                ['Item' => $item[intval($data[31])],
+                'Quantity' => intval($data[32]),
+                'Required' => intval($data[33])],
+                ['Item' => $item[intval($data[34])],
+                'Quantity' => intval($data[35]),
+                'Required' => intval($data[36])],
                      ],
                 ];
 
                 $entry['Set'] = array_filter(
                     $entry['Set'],
-                    'FfxivDataSet::_filterCompanySet'
+                    'FfxivDataSet::filterCompanySet'
                 );
 
                 $table[intval($data[0])] = json_decode(json_encode($entry));
@@ -908,16 +985,18 @@ SQL;
             fclose($handle);
         }
         return $table;
+
     }
 
-    private function _loadCompanyCraftPart($process, $type)
+
+    private function loadCompanyCraftPart($process, $type)
     {
         $table = array();
 
-        if (!file_exists($this->baseData.$this->_CompanyCraftPart)) {
-            $this->_getData($this->baseData.$this->_CompanyCraftPart, $this->_CompanyCraftPartURL);
+        if (!file_exists($this->baseData.$this->CompanyCraftPart)) {
+            $this->getData($this->baseData.$this->CompanyCraftPart, $this->CompanyCraftPartURL);
         }
-        $handle = fopen($this->baseData.$this->_CompanyCraftPart, "r");
+        $handle = fopen($this->baseData.$this->CompanyCraftPart, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -929,18 +1008,18 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'CompanyCraftType' => $type[intval($data[2])]->Name,
-                    'CompanyCraftProcess' => [
-                        $process[intval($data[3])],
-                        $process[intval($data[4])],
-                        $process[intval($data[5])],
+                'Index' => intval($data[0]),
+                'CompanyCraftType' => $type[intval($data[2])]->Name,
+                'CompanyCraftProcess' => [
+                $process[intval($data[3])],
+                $process[intval($data[4])],
+                $process[intval($data[5])],
                      ],
                 ];
 
                 $entry['CompanyCraftProcess'] = array_filter(
                     $entry['CompanyCraftProcess'],
-                    'FfxivDataSet::_filterNull'
+                    'FfxivDataSet::filterNull'
                 );
 
                 $table[intval($data[0])] = json_decode(json_encode($entry));
@@ -948,16 +1027,18 @@ SQL;
             fclose($handle);
         }
         return $table;
+
     }
 
-    private function _loadCompanyCraftType()
+
+    private function loadCompanyCraftType()
     {
         $table = array();
 
-        if (!file_exists($this->baseData.$this->_CompanyCraftType)) {
-            $this->_getData($this->baseData.$this->_CompanyCraftType, $this->_CompanyCraftTypeURL);
+        if (!file_exists($this->baseData.$this->CompanyCraftType)) {
+            $this->getData($this->baseData.$this->CompanyCraftType, $this->CompanyCraftTypeURL);
         }
-        $handle = fopen($this->baseData.$this->_CompanyCraftType, "r");
+        $handle = fopen($this->baseData.$this->CompanyCraftType, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -969,8 +1050,8 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'Name' => $data[1]
+                'Index' => intval($data[0]),
+                'Name' => $data[1]
                 ];
 
                 $table[intval($data[0])] = json_decode(json_encode($entry));
@@ -978,16 +1059,18 @@ SQL;
             fclose($handle);
         }
         return $table;
+
     }
 
-    private function _loadCompanySequence($parts, $type) 
+
+    private function loadCompanySequence($parts, $type)
     {
         $table = array();
 
-        if (!file_exists($this->baseData.$this->_CompanyCraftSequence)) {
-            $this->_getData($this->baseData.$this->_CompanyCraftSequence, $this->_CompanyCraftSequenceURL);
+        if (!file_exists($this->baseData.$this->CompanyCraftSequence)) {
+            $this->getData($this->baseData.$this->CompanyCraftSequence, $this->CompanyCraftSequenceURL);
         }
-        $handle = fopen($this->baseData.$this->_CompanyCraftSequence, "r");
+        $handle = fopen($this->baseData.$this->CompanyCraftSequence, "r");
         $skip = 3;
         if (empty($handle) === false) {
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -999,23 +1082,23 @@ SQL;
                     continue;
                 }
                 $entry = [
-                    'Index' => intval($data[0]),
-                    'ResultItem' => intval($data[1]),
-                    'CompanyCraftDraftCategory' => intval($data[3]),
-                    'CompanyCraftType' => $type[intval($data[4])]->Name,
-                    'CompanyCraftDraft' => intval($data[5]),
-                    'CompanyCraftPart' => [
-                        $parts[intval($data[6])],
-                        $parts[intval($data[7])],
-                        $parts[intval($data[8])],
-                        $parts[intval($data[9])],
-                        $parts[intval($data[10])],
-                        $parts[intval($data[11])],
-                        $parts[intval($data[12])]]
+                'Index' => intval($data[0]),
+                'ResultItem' => intval($data[1]),
+                'CompanyCraftDraftCategory' => intval($data[3]),
+                'CompanyCraftType' => $type[intval($data[4])]->Name,
+                'CompanyCraftDraft' => intval($data[5]),
+                'CompanyCraftPart' => [
+                $parts[intval($data[6])],
+                $parts[intval($data[7])],
+                $parts[intval($data[8])],
+                $parts[intval($data[9])],
+                $parts[intval($data[10])],
+                $parts[intval($data[11])],
+                $parts[intval($data[12])]]
                 ];
                 $entry['CompanyCraftPart'] = array_filter(
                     $entry['CompanyCraftPart'],
-                    'FfxivDataSet::_filterNull'
+                    'FfxivDataSet::filterNull'
                 );
 
                 $table[intval($data[1])] = json_decode(json_encode($entry));
@@ -1023,30 +1106,38 @@ SQL;
             fclose($handle);
         }
         return $table;
+
     }
 
-    function loadCompanyCrafting()
+
+    public function loadCompanyCrafting()
     {
-        if (count($this->_companySequence) > 0) {
-            return $this->_companySequence;
+        if (count($this->companySequence) > 0) {
+            return $this->companySequence;
         }
-        $SupplyItem  = $this->_loadCompanyCraftSupplyItem();
-        $Process  = $this->_loadCompanyCraftProcess($SupplyItem);
-        $Type = $this->_loadCompanyCraftType();
-        $Parts = $this->_loadCompanyCraftPart($Process, $Type);
-        $this->_companySequence = $this->_loadCompanySequence($Parts, $Type);
+        $SupplyItem  = $this->loadCompanyCraftSupplyItem();
+        $Process  = $this->loadCompanyCraftProcess($SupplyItem);
+        $Type = $this->loadCompanyCraftType();
+        $Parts = $this->loadCompanyCraftPart($Process, $Type);
+        $this->companySequence = $this->loadCompanySequence($Parts, $Type);
 
-        return $this->_companySequence;
+        return $this->companySequence;
+
     }
 
-    function listCompanyItems()
+
+    public function listCompanyItems()
     {
         $this->loadCompanyCrafting();
         $items = array();
-        foreach ($this->_companySequence as $sequence) {
+        foreach ($this->companySequence as $sequence) {
             $items[] = $this->getItem($sequence->ResultItem);
         }
         usort($items, "_nameSort");
         return $items;
+
     }
+
+
+    /* End */
 }

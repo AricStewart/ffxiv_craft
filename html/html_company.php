@@ -24,12 +24,13 @@ require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
+
 function get_arguments($method, &$ffxiv_server, &$target, &$event)
 {
     $arguments = [
-        'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
-        'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-        'target'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
+    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'target'        => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -44,7 +45,9 @@ function get_arguments($method, &$ffxiv_server, &$target, &$event)
     }
 
     $target = $data['target'];
+
 }
+
 
 $output = array();
 $ffxiv_server = "";

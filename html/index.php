@@ -3,9 +3,9 @@ require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
 
 $arguments = [
-    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
-    'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
+'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
+'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
 ];
 
 $data = filter_input_array(INPUT_GET, $arguments);
@@ -20,7 +20,7 @@ if (isset($data['item'])) {
 if (isset($data['crafter'])) {
     $crafter = $data['crafter'];
 } else {
-    $crafter= "";
+    $crafter = "";
 }
 ?>
 <html>

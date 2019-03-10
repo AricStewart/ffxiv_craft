@@ -34,29 +34,36 @@ $xiv = new Xivapi($server, $xivapiKey, $marketboard);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
 
-function _sortByProfit($a, $b) 
+
+function _sortByProfit($a, $b)
 {
     $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
     $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
     return $p - $p2;
+
 }
 
-$i = 0; 
-function tick($stage, $data=null)
+
+$i = 0;
+
+
+function tick($stage, $data = null)
 {
     global $i;
     if ($stage != 'progress') {
         return;
     }
     $i++;
-    if ($i%10 == 0) {
+    if ($i % 10 == 0) {
         print '|';
-    } else if ($i%5 == 0) {
+    } elseif ($i % 5 == 0) {
         print '-';
     } else {
         print '.';
     }
+
 }
+
 
 $i = 1;
 if (count($argv) > 1) {
@@ -70,7 +77,7 @@ if (count($argv) > 1) {
         if (count($a) > 0) {
             $output = [];
             foreach ($a as $key => $i) {
-                print " $i (".($key+1)."|".count($a).") ";
+                print " $i (".($key + 1)."|".count($a).") ";
                 $output[] = doRecipie($i, $dataset, $xiv, 'tick');
             }
             usort($output, '_sortByProfit');
@@ -82,9 +89,9 @@ if (count($argv) > 1) {
     } elseif ($argv[1] == '-t') {
         $crafter = $argv[2];
         $tier = intval($argv[3]);
-        $set = $dataset->getRecipeSet($crafter, ($tier-1)*5, $tier*5);
+        $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tier * 5);
         foreach ($set as $i => $r) {
-            print " ".$r." (".($i+1)."|".count($set).") ";
+            print " ".$r." (".($i + 1)."|".count($set).") ";
             $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter);
         }
         usort($output, '_sortByProfit');

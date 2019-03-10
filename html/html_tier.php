@@ -24,13 +24,14 @@ require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
+
 function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
 {
     $arguments = [
-        'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
-        'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-        'tier'          => FILTER_SANITIZE_SPECIAL_CHARS,
-        'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
+    'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
+    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'tier'          => FILTER_SANITIZE_SPECIAL_CHARS,
+    'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -54,6 +55,7 @@ function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
 
 }
 
+
 $output = array();
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $tier, $event, $crafter);
@@ -67,7 +69,7 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $set = $dataset->getRecipeSet($crafter, (($tier-1)*5) + 1, $tier*5);
+    $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
     foreach ($set as $i) {
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
@@ -91,7 +93,7 @@ if (!empty($_POST)) {
     $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
     $xiv->silent = true;
 
-    $set = $dataset->getRecipeSet($crafter, (($tier-1)*5) + 1, $tier*5);
+    $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
     $size = 0;
     foreach ($set as $key => $i) {
         $data = getRecipe($i, $dataset, $crafter, 'http_progress');

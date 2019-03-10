@@ -22,6 +22,7 @@ require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
 require_once __DIR__."/apiData.inc";
 
+
 function printProfit($profit)
 {
     if ($profit['Profit'] > 0) {
@@ -31,13 +32,13 @@ function printProfit($profit)
         }
         print "\n\t$hq cheapest ".$profit['Cheapest']->PricePerUnit." gil\n";
         print "\t$hq Profit:".$profit['Profit']." gil\n";
-        print "\t$hq week (".$profit['Week']['Minimum'].' <- '.
-            $profit['Week']['Average'].' -> '.
-            $profit['Week']['Maximum'].' gil)';
+        print "\t$hq week (".$profit['Week']['Minimum'].' <- '.$profit['Week']['Average'].' -> '.$profit['Week']['Maximum'].' gil)';
 
         $profit[] = $profit;
     }
+
 }
+
 
 if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
     $marketboard = new Ffxivmb($server, $ffxivmbGuid);
@@ -111,10 +112,13 @@ foreach ($stuff as $item) {
 
 print "<===================================================================>\n";
 
-function _sortByOrder($a, $b) 
+
+function _sortByOrder($a, $b)
 {
     return $a['Profit'] - $b['Profit'];
+
 }
+
 
 usort($profit, '_sortByOrder');
 foreach ($profit as $p) {

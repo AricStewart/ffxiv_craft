@@ -25,15 +25,21 @@ require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
-function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter,
+
+function get_arguments(
+    $method,
+    &$ffxiv_server,
+    &$itemID,
+    &$event,
+    &$crafter,
     &$match
 ) {
     $arguments = [
-        'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
-        'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-        'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
-        'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
-        'match'         => FILTER_SANITIZE_SPECIAL_CHARS,
+    'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
+    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'item'          => FILTER_SANITIZE_SPECIAL_CHARS,
+    'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
+    'match'         => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -59,12 +65,13 @@ function get_arguments($method, &$ffxiv_server, &$itemID, &$event, &$crafter,
     }
 
     if (!isset($data['match'])) {
-        $match= true;
+        $match = true;
     } else {
         $match = ($data['match'] == 'exact');
     }
 
 }
+
 
 function getItemSet($dataset, $itemID, $match)
 {
@@ -97,7 +104,9 @@ function getItemSet($dataset, $itemID, $match)
 
         return $set;
     }
+
 }
+
 
 $crafter = "";
 $event = "";
@@ -130,7 +139,7 @@ if (!empty($_POST)) {
             $recp = doRecipie($i, $dataset, $xiv, 'http_progress', $crafter);
             array_unshift($output, $recp);
         } else {
-            http_progress("info", ($index+1)."/$size");
+            http_progress("info", ($index + 1)."/$size");
             $recp = doRecipie($i, $dataset, $xiv, null, $crafter);
             if ($recp['Info'] !== null) {
                 array_unshift($output, $recp);

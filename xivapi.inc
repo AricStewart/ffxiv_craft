@@ -28,17 +28,25 @@ use GuzzleHttp\Exception\ServerException;
 
 class Xivapi
 {
-    private $_server;
-    private $_xivapiKey;
-    private $_ffxivmb;
-    private $_base;
-    private $_client;
-    private $_promises;
-    private $_poolSize;
+
+    private $server;
+
+    private $xivapiKey;
+
+    private $ffxivmb;
+
+    private $base;
+
+    private $client;
+
+    private $promises;
+
+    private $poolSize;
 
     public $timeout;
 
-    private function _checkCacheTable() 
+
+    private function checkCacheTable()
     {
         $sql = "SHOW TABLES LIKE 'xivData';";
         $result = DB::run($sql);
@@ -53,44 +61,47 @@ class Xivapi
 SQL;
             DB::run($sql);
         }
+
     }
 
-    function __construct($server, $xivapiKey, $ffxivmb=null, $base='.') 
+
+    public function __construct($server, $xivapiKey, $ffxivmb = null, $base = '.')
     {
-        $this->_server = $server;
-        $this->_xivapiKey = $xivapiKey;
-        $this->_ffxivmb = $ffxivmb;
+        $this->server = $server;
+        $this->xivapiKey = $xivapiKey;
+        $this->ffxivmb = $ffxivmb;
         $this->timeout = 3600; /*  1 hour */
-        $this->_base = $base;
+        $this->base = $base;
 
-        $this->_poolSize = 5;
-        $this->_client = new Client(['base_uri' => "https://xivapi.com/"]);
-        $this->_promises = [];
+        $this->poolSize = 5;
+        $this->client = new Client(['base_uri' => "https://xivapi.com/"]);
+        $this->promises = [];
 
-        $this->_checkCacheTable();
+        $this->checkCacheTable();
+
     }
 
-    function flushPool($progress, $cnt=-1)
+
+    public function flushPool($progress, $cnt = -1)
     {
         $i = 0;
-        foreach ($this->_promises as $key => $promise) {
+        foreach ($this->promises as $key => $promise) {
             try {
                 $promise->wait();
                 $i++;
-                unset($this->_promises[$key]);
+                unset($this->promises[$key]);
                 if ($cnt > 0 && $i > $cnt) {
                     break;
                 }
             } catch (ClientException $e) {
-                unset($this->_promises[$key]);
-                $msg = "XIVAPI client error: ".
-                      $e->getResponse()->getStatusCode();
+                unset($this->promises[$key]);
+                $msg = "XIVAPI client error: ".$e->getResponse()->getStatusCode();
                 report_progress($progress, 'error', $msg);
             } catch (ServerException $e) {
-                unset($this->_promises[$key]);
+                unset($this->promises[$key]);
                 $code = $e->getResponse()->getStatusCode();
                 if ($code == 500) {
-                    $this->_client = null;
+                    $this->client = null;
                     $msg = "XIVAPI server error: ".$code.": Shutting down";
                     report_progress($progress, 'error', $msg);
                 } else {
@@ -99,91 +110,98 @@ SQL;
                 }
             }
         }
+
     }
 
-    function buildPath($type, $ID) 
+
+    private function buildPath($type, $ID)
     {
-        return $this->_server.".$type.$ID";
+        return $this->server.".$type.$ID";
+
     }
 
-    private function _fromCache($path) 
+
+    private function fromCache($path)
     {
-        $qpath = myPDO::quote($path);
-        $sql = "SELECT `Data` FROM `xivData` WHERE `Path` = $qpath AND ".
-               "Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
+        $qpath = MyPDO::quote($path);
+        $sql = "SELECT `Data` FROM `xivData` WHERE `Path` = $qpath AND "."Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
         $result = DB::run($sql);
         $value = $result->fetch();
         if ($value !== false) {
             return json_decode($value['Data']);
         }
         return null;
+
     }
 
-    private function _toCache($path, $entry) 
+
+    private function toCache($path, $entry)
     {
-        $name = myPDO::quote($path);
-        $data = myPDO::quote(json_encode($entry));
-        $sql = "INSERT INTO `xivData` (Path,Data,Date) ".
-               " VALUES ($name, $data, NOW()) ".
-               " ON DUPLICATE KEY UPDATE ".
-               " Data = $data, Date = NOW();";
+        $name = MyPDO::quote($path);
+        $data = MyPDO::quote(json_encode($entry));
+        $sql = "INSERT INTO `xivData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
         DB::run($sql);
+
     }
 
-    private function _getXIVdata($method, $ID, $url, $async, $progress,
-        $report=null
+
+    private function getXIVdata(
+        $method,
+        $ID,
+        $url,
+        $async,
+        $progress,
+        $report = null
     ) {
-        if ($this->_client === null) {
+        if ($this->client === null) {
             return null;
         }
         $path = $this->buildPath($method, $ID);
-        $data = $this->_fromCache($path);
+        $data = $this->fromCache($path);
         if ($data !== null) {
             return $data;
         }
 
-        if (!array_key_exists($path, $this->_promises)) {
+        if (!array_key_exists($path, $this->promises)) {
             report_progress($progress, 'info', "From $url...");
 
-            if ($this->_poolSize == 1
-                || count($this->_promises) > $this->_poolSize
+            if ($this->poolSize == 1
+                || count($this->promises) > $this->poolSize
             ) {
-                $this->flushPool($progress, $this->_poolSize/2);
+                $this->flushPool($progress, $this->poolSize / 2);
             }
 
             try {
-                if ($this->_client === null) {
+                if ($this->client === null) {
                     return null;
                 }
-                $promise = $this->_client->requestAsync(
+                $promise = $this->client->requestAsync(
                     'GET',
-                    "/$url?key=".$this->_xivapiKey
+                    "/$url?key=".$this->xivapiKey
                 );
                 $promise->then(
-                    function ($response) use ( $path, $ID, $report ) {
+                    function ($response) use ($path, $ID, $report) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
-                        $this->_toCache($path, $data);
-                        if ($report !== null && $this->_ffxivmb !== null) {
+                        $this->toCache($path, $data);
+                        if ($report !== null && $this->ffxivmb !== null) {
                             $time = microtime();
-                            $this->_ffxivmb->$report($ID, $data, $time);
+                            $this->ffxivmb->$report($ID, $data, $time);
                         }
                     },
-                    function (Exception $e) use ( $progress ) {
-                        $msg = "XIVAPI Promise Client Exception: ".
-                            $e->getResponse()->getStatusCode();
+                    function (Exception $e) use ($progress) {
+                        $msg = "XIVAPI Promise Client Exception: ".$e->getResponse()->getStatusCode();
                         report_progress($progress, 'error', $msg);
                         return null;
                     }
                 );
             } catch (Exception $e) {
-                $msg = "XIVAPI Promise Exception: ".
-                    $e->getResponse()->getStatusCode();
+                $msg = "XIVAPI Promise Exception: ".$e->getResponse()->getStatusCode();
                 report_progress($progress, 'error', $msg);
                 return null;
             }
 
-            $this->_promises[$path] = $promise;
+            $this->promises[$path] = $promise;
         }
 
         if ($async) {
@@ -192,39 +210,51 @@ SQL;
 
         $this->flushPool($progress);
 
-        $data = $this->_fromCache($path);
+        $data = $this->fromCache($path);
         return $data;
+
     }
 
-    function getHistory($ID, $async=false, $progress=null) 
+
+    public function getHistory($ID, $async = false, $progress = null)
     {
-        $history = $this->_getXIVdata(
-            'history', $ID,
-            "market/$this->_server/items/$ID/history",
-            $async, $progress, 'sendHistory'
+        $history = $this->getXIVdata(
+            'history',
+            $ID,
+            "market/$this->server/items/$ID/history",
+            $async,
+            $progress,
+            'sendHistory'
         );
         if ($async) {
             return;
         }
         report_progress($progress);
         return $history;
+
     }
 
-    function getMarket($ID, $async=false, $progress=null) 
+
+    public function getMarket($ID, $async = false, $progress = null)
     {
-        $market = $this->_getXIVdata(
-            'market', $ID,
-            "market/$this->_server/items/$ID",
-            $async, $progress, 'sendPrices'
+        $market = $this->getXIVdata(
+            'market',
+            $ID,
+            "market/$this->server/items/$ID",
+            $async,
+            $progress,
+            'sendPrices'
         );
         if ($async) {
             return;
         }
         report_progress($progress);
         return $market;
+
     }
 
-    function mostRecent($history, $HQ=null) 
+
+    public function mostRecent($history, $HQ = null)
     {
         if ($history === null) {
             return null;
@@ -241,9 +271,11 @@ SQL;
             }
         }
         return $winner;
+
     }
 
-    function currentCheapest($market, $HQ=null) 
+
+    public function currentCheapest($market, $HQ = null)
     {
         $count = 0;
         $quantity = 0;
@@ -274,9 +306,11 @@ SQL;
         } else {
             return null;
         }
+
     }
 
-    function weekAverage($history, $HQ=null) 
+
+    public function weekAverage($history, $HQ = null)
     {
         if ($history === null) {
             return array(
@@ -292,22 +326,22 @@ SQL;
         $min = 0;
         $max = 0;
         foreach ($history->History as $entry) {
-            if ($HQ !== null && $HQ != $entry->IsHQ ) {
+            if ($HQ !== null && $HQ != $entry->IsHQ) {
                 continue;
             }
             if ($entry->PurchaseDate >= $old) {
-                    $total[] = $entry->PricePerUnit * $entry->Quantity;
-                    $count += $entry->Quantity;
+                $total[] = $entry->PricePerUnit * $entry->Quantity;
+                $count += $entry->Quantity;
                 if ($min == 0) {
                     $min = $max = $entry->PricePerUnit;
                 }
-                    $min = min($min, $entry->PricePerUnit);
-                    $max = max($max, $entry->PricePerUnit);
+                $min = min($min, $entry->PricePerUnit);
+                $max = max($max, $entry->PricePerUnit);
             }
         }
         if ($count > 0) {
             $total = array_filter($total);
-            $average = intval(floor(array_sum($total)/$count));
+            $average = intval(floor(array_sum($total) / $count));
         } else {
             $average = 0;
         }
@@ -317,16 +351,18 @@ SQL;
                 'Average' => $average,
                 'Maximum' => $max
                 );
+
     }
 
-    function itemProfit($itemID, $HQ, $marketRate=1.06)
+
+    public function itemProfit($itemID, $HQ, $marketRate = 1.06)
     {
         $result = [
-            'ID' => 0,
-            'HQ' => false,
-            'Cheapest' => 0,
-            'Profit' => 0,
-            'Week' => null
+        'ID' => 0,
+        'HQ' => false,
+        'Cheapest' => 0,
+        'Profit' => 0,
+        'Week' => null
         ];
         $market = $this->getMarket($itemID);
         if ($market != null) {
@@ -336,10 +372,13 @@ SQL;
             $result['Cheapest'] = $this->currentCheapest($market, $HQ);
             if ($result['Cheapest'] !== null) {
                 $result['Week'] = $this->weekAverage($history, $HQ);
-                $result['Profit'] = $result['Week']['Average'] -
-                                    $result['Cheapest']['Item']->PricePerUnit;
+                $result['Profit'] = $result['Week']['Average'] - $result['Cheapest']['Item']->PricePerUnit;
             }
         }
         return $result;
+
     }
+
+
+    /*end*/
 }

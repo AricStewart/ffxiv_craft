@@ -24,12 +24,13 @@ require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 
+
 function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
 {
     $arguments = [
-        'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
-        'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
-        'book'          => FILTER_SANITIZE_SPECIAL_CHARS,
+    'event'         => FILTER_SANITIZE_SPECIAL_CHARS,
+    'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+    'book'          => FILTER_SANITIZE_SPECIAL_CHARS,
     ];
 
     $data = filter_input_array($method, $arguments);
@@ -45,6 +46,7 @@ function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
     $bookID = htmlspecialchars_decode($data['book'], ENT_QUOTES);
 
 }
+
 
 $output = array();
 if (!empty($_POST)) {

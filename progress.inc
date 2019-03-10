@@ -16,9 +16,10 @@
     require_module 'core';
 .*/
 
-function report_progress($progress, $type="progress", $message="") 
+function report_progress($progress, $type = "progress", $message = "")
 {
     if ($progress !== null) {
         $progress($type, $message);
     }
+
 }

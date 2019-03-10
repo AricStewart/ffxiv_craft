@@ -22,68 +22,81 @@ use GuzzleHttp\Client;
 
 class Ffxivmb
 {
-    private $_server = "";
-    private $_guid = "";
-    private $_client;
-    private $_cache;
 
-    function __construct($server, $guid) 
+    private $server = "";
+
+    private $guid = "";
+
+    private $client;
+
+    private $cache;
+
+
+    public function __construct($server, $guid)
     {
-        $this->_server = $server;
-        $this->_guid = $guid;
-        $this->_client = new Client(
+        $this->server = $server;
+        $this->guid = $guid;
+        $this->client = new Client(
             ['base_uri' => "https://ffxivmb.com/"]
         );
-        $this->_cache = [];
-    }
-
-    function _buildHistoryUrl($item) 
-    {
-        return "/public/api/History?Server=".
-            $this->_server."&SourceGuid=".$this->_guid."&ItemKey=".$item;
-    }
-
-    function _buildPriceUrl($item) 
-    {
-        return "/public/api/Prices?Server=".
-            $this->_server."&SourceGuid=".$this->_guid."&ItemKey=".$item;
+        $this->cache = [];
 
     }
 
-    function _sendBlock($url, $data) 
+
+    private function buildHistoryUrl($item)
     {
-        if (array_key_exists($url, $this->_cache)) {
+        return "/public/api/History?Server=".$this->server."&SourceGuid=".$this->guid."&ItemKey=".$item;
+
+    }
+
+
+    private function buildPriceUrl($item)
+    {
+        return "/public/api/Prices?Server=".$this->server."&SourceGuid=".$this->guid."&ItemKey=".$item;
+
+    }
+
+
+    private function sendBlock($url, $data)
+    {
+        if (array_key_exists($url, $this->cache)) {
             return;
         }
-        $this->_cache[$url] = $this->_client->request(
-            'POST', $url,
+        $this->cache[$url] = $this->client->request(
+            'POST',
+            $url,
             ['json' => $data]
         );
+
     }
 
-    function sendHistory($id, $data, $unused) 
+
+    public function sendHistory($id, $data, $unused)
     {
-        $url = $this->_buildHistoryUrl($id);
-        $this->_sendBlock($url, $data->History);
+        $url = $this->buildHistoryUrl($id);
+        $this->sendBlock($url, $data->History);
+
     }
 
-    function sendPrices($unused, $data, $time) 
+
+    public function sendPrices($unused, $data, $time)
     {
-        $url = $this->_buildPriceUrl($data->Item->ID);
+        $url = $this->buildPriceUrl($data->Item->ID);
         $output = array();
         foreach ($data->Prices as $item) {
             $item = [
-                        "CraftSignature"=>$item->CraftSignature,
-                        "IsCrafted"=>$item->IsCrafted,
-                        "Materia"=>[],
-                        'PricePerUnit'=>$item->PricePerUnit,
-                        'PriceTotal'=>$item->PriceTotal,
-                        'Quantity'=>$item->Quantity,
-                        'IsHQ'=>$item->IsHQ,
-                        "RetainerName"=>$item->RetainerName,
-                        "Stain"=>$item->Stain,
-                        "TownID"=> $item->Town->ID,
-                        "DateObtained"=>$time
+            "CraftSignature" => $item->CraftSignature,
+            "IsCrafted" => $item->IsCrafted,
+            "Materia" => [],
+            'PricePerUnit' => $item->PricePerUnit,
+            'PriceTotal' => $item->PriceTotal,
+            'Quantity' => $item->Quantity,
+            'IsHQ' => $item->IsHQ,
+            "RetainerName" => $item->RetainerName,
+            "Stain" => $item->Stain,
+            "TownID" => $item->Town->ID,
+            "DateObtained" => $time
                     ];
             if (!empty($data->Material)) {
                 foreach ($data->Materia as $materia) {
@@ -94,19 +107,23 @@ class Ffxivmb
         }
         if (empty($output)) {
             $output[] = [
-                        "CraftSignature"=>"",
-                        "IsCrafted"=>false,
-                        "Materia"=>[],
-                        'PricePerUnit'=>0,
-                        'PriceTotal'=>0,
-                        'Quantity'=>0,
-                        'IsHQ'=>false,
-                        "RetainerName"=>"",
-                        "Stain"=>0,
-                        "TownID"=>0,
-                        "DateObtained"=>$time
+            "CraftSignature" => "",
+            "IsCrafted" => false,
+            "Materia" => [],
+            'PricePerUnit' => 0,
+            'PriceTotal' => 0,
+            'Quantity' => 0,
+            'IsHQ' => false,
+            "RetainerName" => "",
+            "Stain" => 0,
+            "TownID" => 0,
+            "DateObtained" => $time
                         ];
         }
-        $this->_sendBlock($url, $output);
+        $this->sendBlock($url, $output);
+
     }
-};
+
+
+    /* end */
+}

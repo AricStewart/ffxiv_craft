@@ -19,7 +19,8 @@
 
 $_startSent = false;
 
-function http_progress($type="", $data="", $info=null)
+
+function http_progress($type = "", $data = "", $info = null)
 {
     global $_startSent;
     if ($type === "start") {
@@ -37,12 +38,14 @@ function http_progress($type="", $data="", $info=null)
     echo "\n\n";
     ob_flush();
     flush();
+
 }
+
 
 function sortByProfit($a, $b)
 {
     $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
     $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
     return $p2 - $p;
-}
 
+}
