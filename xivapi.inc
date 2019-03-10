@@ -169,7 +169,7 @@ SQL;
                             $this->_ffxivmb->$report($ID, $data, $time);
                         }
                     },
-                    function (ClientException $e) use ( $progress ) {
+                    function (Exception $e) use ( $progress ) {
                         $msg = "XIVAPI Promise Client Exception: ".
                             $e->getResponse()->getStatusCode();
                         report_progress($progress, 'error', $msg);
@@ -248,7 +248,7 @@ SQL;
         $count = 0;
         $quantity = 0;
         $winner = null;
-        if ($market->Prices !== null) {
+        if ($market !== null && $market->Prices !== null) {
             foreach ($market->Prices as $entry) {
                 if ($HQ !== null && $HQ != $entry->IsHQ) {
                     continue;
