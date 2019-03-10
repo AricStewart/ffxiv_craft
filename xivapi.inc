@@ -24,6 +24,7 @@ require __DIR__.'/vendor/autoload.php';
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 
 class Xivapi
 {
@@ -69,7 +70,7 @@ SQL;
         $this->_checkCacheTable();
     }
 
-    function flushPool($cnt=-1)
+    function flushPool($progress, $cnt=-1)
     {
         $i = 0;
         foreach ($this->_promises as $key => $promise) {
@@ -82,8 +83,20 @@ SQL;
                 }
             } catch (ClientException $e) {
                 unset($this->_promises[$key]);
-            } catch (Exception $e) {
+                $msg = "XIVAPI client error: ".
+                      $e->getResponse()->getStatusCode();
+                report_progress($progress, 'error', $msg);
+            } catch (ServerException $e) {
                 unset($this->_promises[$key]);
+                $code = $e->getResponse()->getStatusCode();
+                if ($code == 500) {
+                    $this->_client = null;
+                    $msg = "XIVAPI server error: ".$code.": Shutting down";
+                    report_progress($progress, 'error', $msg);
+                } else {
+                    $msg = "XIVAPI server error: ".$code;
+                    report_progress($progress, 'error', $msg);
+                }
             }
         }
     }
@@ -119,7 +132,10 @@ SQL;
 
     private function _getXIVdata($method, $ID, $url, $async, $progress,
         $report=null
-    ) { 
+    ) {
+        if ($this->_client === null) {
+            return null;
+        }
         $path = $this->buildPath($method, $ID);
         $data = $this->_fromCache($path);
         if ($data !== null) {
@@ -129,11 +145,16 @@ SQL;
         if (!array_key_exists($path, $this->_promises)) {
             report_progress($progress, 'info', "From $url...");
 
-            if (count($this->_promises) > $this->_poolSize) {
-                $this->flushPool($this->_poolSize/2);
+            if ($this->_poolSize == 1
+                || count($this->_promises) > $this->_poolSize
+            ) {
+                $this->flushPool($progress, $this->_poolSize/2);
             }
 
             try {
+                if ($this->_client === null) {
+                    return null;
+                }
                 $promise = $this->_client->requestAsync(
                     'GET',
                     "/$url?key=".$this->_xivapiKey
@@ -148,11 +169,17 @@ SQL;
                             $this->_ffxivmb->$report($ID, $data, $time);
                         }
                     },
-                    function (ClientException $e) {
+                    function (ClientException $e) use ( $progress ) {
+                        $msg = "XIVAPI Promise Client Exception: ".
+                            $e->getResponse()->getStatusCode();
+                        report_progress($progress, 'error', $msg);
                         return null;
                     }
                 );
             } catch (Exception $e) {
+                $msg = "XIVAPI Promise Exception: ".
+                    $e->getResponse()->getStatusCode();
+                report_progress($progress, 'error', $msg);
                 return null;
             }
 
@@ -163,7 +190,7 @@ SQL;
             return null;
         }
 
-        $this->flushPool();
+        $this->flushPool($progress);
 
         $data = $this->_fromCache($path);
         return $data;
@@ -199,6 +226,9 @@ SQL;
 
     function mostRecent($history, $HQ=null) 
     {
+        if ($history === null) {
+            return null;
+        }
         $winner = null;
         foreach ($history->History as $entry) {
             if ($HQ !== null && $HQ != $entry->IsHQ) {
@@ -248,6 +278,14 @@ SQL;
 
     function weekAverage($history, $HQ=null) 
     {
+        if ($history === null) {
+            return array(
+                    'Count' => 0,
+                    'Minimum' => 0,
+                    'Average' => 0,
+                    'Maximum' => 0
+                    );
+        }
         $old = strtotime("-1 week");
         $total = array();
         $count = 0;
