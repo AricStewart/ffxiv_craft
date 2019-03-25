@@ -74,7 +74,7 @@ SQL;
         $this->base = $base;
 
         $this->poolSize = 5;
-        $this->client = new Client(['base_uri' => "https://xivapi.com/"]);
+        $this->client = new Client(['base_uri' => "https://staging.xivapi.com/"]);
         $this->promises = [];
 
         $this->checkCacheTable();
@@ -128,7 +128,7 @@ SQL;
         $result = DB::run($sql);
         $value = $result->fetch();
         if ($value !== false) {
-            return json_decode($value['Data']);
+            return json_decode(gzuncompress(base64_decode($value['Data'])));
         }
         return null;
 
@@ -138,7 +138,7 @@ SQL;
     private function toCache($path, $entry)
     {
         $name = MyPDO::quote($path);
-        $data = MyPDO::quote(json_encode($entry));
+        $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
         $sql = "INSERT INTO `xivData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
         DB::run($sql);
 
@@ -175,15 +175,28 @@ SQL;
                 if ($this->client === null) {
                     return null;
                 }
+
                 $promise = $this->client->requestAsync(
                     'GET',
-                    "/$url?key=".$this->xivapiKey
+                    "/$url?private_key=".$this->xivapiKey
                 );
+
                 $promise->then(
                     function ($response) use ($path, $ID, $report) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
-                        $this->toCache($path, $data);
+                        $path = $this->buildPath("market", $ID);
+                        $this->toCache($path, ['Prices' => $data->Prices]);
+
+                        /* Prune history */
+                        $old = strtotime("-1 week");
+                        foreach($data->History as $key=>$entry) {
+                            if ($entry->PurchaseDate > $old) {
+                                unset($data->History[$key]);
+                            }
+                        }
+                        $path = $this->buildPath("history", $ID);
+                        $this->toCache($path, ['History' => $data->History]);
                         if ($report !== null && $this->ffxivmb !== null) {
                             $time = microtime();
                             $this->ffxivmb->$report($ID, $data, $time);
@@ -218,10 +231,10 @@ SQL;
 
     public function getHistory($ID, $async = false, $progress = null)
     {
-        $history = $this->getXIVdata(
+        $data = $this->getXIVdata(
             'history',
             $ID,
-            "market/$this->server/items/$ID/history",
+            "market/$this->server/items/$ID",
             $async,
             $progress,
             'sendHistory'
@@ -230,14 +243,14 @@ SQL;
             return;
         }
         report_progress($progress);
-        return $history;
+        return $data;
 
     }
 
 
     public function getMarket($ID, $async = false, $progress = null)
     {
-        $market = $this->getXIVdata(
+        $data = $this->getXIVdata(
             'market',
             $ID,
             "market/$this->server/items/$ID",
@@ -249,7 +262,7 @@ SQL;
             return;
         }
         report_progress($progress);
-        return $market;
+        return $data;
 
     }
 
@@ -329,7 +342,7 @@ SQL;
             if ($HQ !== null && $HQ != $entry->IsHQ) {
                 continue;
             }
-            if ($entry->PurchaseDate >= $old) {
+            if ($entry->PurchaseDate <= $old) {
                 $total[] = $entry->PricePerUnit * $entry->Quantity;
                 $count += $entry->Quantity;
                 if ($min == 0) {
