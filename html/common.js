@@ -34,6 +34,8 @@ function printLine(line, tab)
         if (l.marketCost > 0) {
             output += getBadge(low, l.marketCost);
             output += 'market</span>&nbsp;';
+            if (l.count > 1)
+                output += '('+(l.marketCost/l.count).toLocaleString()+' gil each) ';
             output += l.marketCost.toLocaleString() + " gil ";
             if (l.marketHQ) {
                 output += "<img src='hq.png'>";
@@ -43,14 +45,19 @@ function printLine(line, tab)
         }
         if (l.craftCost > 0) {
             output += '&nbsp;' + getBadge(low, l.craftCost);
-            output += 'crafted</span>&nbsp(' +
-              '<a href="index.php?server='+server+'&item='+l.id +
+            output += 'crafted</span>&nbsp';
+            if (l.count > 1)
+                output += '('+(l.craftCost/l.count).toLocaleString()+' gil each) ';
+            output +=
+              '(<a href="index.php?server='+server+'&item='+l.id +
               '&crafter='+l.craftedBy+'" target="_blank">'+ l.craftedBy +
               '</a>) ' + l.craftCost.toLocaleString() + " gil";
         }
         if (l.shopCost > 0) {
             output += '&nbsp;' + getBadge(low, l.shopCost);
             output += 'vendor</span>&nbsp;';
+            if (l.count > 1)
+                output += '('+(l.shopCost/l.count).toLocaleString()+' gil each) ';
             output +='<a href="http://www.garlandtools.org/db/#item/' +
                     l.id + '" target="_blank">' +
                     l.shopCost.toLocaleString() + "</a> gil";
