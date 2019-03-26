@@ -658,7 +658,7 @@ SQL;
                 $craftBy = $part->CraftTypeName;
                 $this->getFullRecipe(
                     $i->Item,
-                    ceil(($i->Amount * $count) / $result),
+                    round(($i->Amount * $count) / $result, 2),
                     $bits,
                     true,
                     $preference
