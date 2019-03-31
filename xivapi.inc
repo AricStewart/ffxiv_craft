@@ -193,6 +193,10 @@ SQL;
                         foreach($data->History as $key=>$entry) {
                             if ($entry->PurchaseDate < $old) {
                                 unset($data->History[$key]);
+                            } else {
+                                unset($data->History[$key]->ID);
+                                unset($data->History[$key]->CharacterID);
+                                unset($data->History[$key]->CharacterName);
                             }
                         }
                         $path = $this->buildPath("history", $ID);
