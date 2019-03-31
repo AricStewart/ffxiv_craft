@@ -191,7 +191,7 @@ SQL;
                         /* Prune history */
                         $old = strtotime("-1 week");
                         foreach($data->History as $key=>$entry) {
-                            if ($entry->PurchaseDate > $old) {
+                            if ($entry->PurchaseDate < $old) {
                                 unset($data->History[$key]);
                             }
                         }
@@ -342,7 +342,7 @@ SQL;
             if ($HQ !== null && $HQ != $entry->IsHQ) {
                 continue;
             }
-            if ($entry->PurchaseDate <= $old) {
+            if ($entry->PurchaseDate >= $old) {
                 $total[] = $entry->PricePerUnit * $entry->Quantity;
                 $count += $entry->Quantity;
                 if ($min == 0) {
