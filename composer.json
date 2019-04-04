@@ -1,0 +1,24 @@
+{
+    "name": "aricstewart/ffxiv_craft",
+    "description": "Various FFXIV APIs available and applied to the area of economic crafting and gathering.",
+    "keywords": [
+        "ffxiv"
+    ],
+    "type": "project",
+    "homepage": "https://github.com/AricStewart/ffxiv_craft",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Aric Stewart",
+            "email": "aricstewart@gmail.com"
+        }
+    ],
+    "support": {
+        "source": "https://github.com/AricStewart/ffxiv_craft"
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.6",
+        "guzzlehttp/guzzle": "~5.3.1|~6.0"
+    }
+}
