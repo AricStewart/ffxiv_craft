@@ -34,7 +34,9 @@ function preDownloadData($input, $xiv, $progress)
 {
     foreach ($input as $bit) {
         $xiv->getMarket($bit['id'], true, $progress);
+        report_progress($progress);
         $xiv->getHistory($bit['id'], true, $progress);
+        report_progress($progress);
         if ($bit['bits']) {
             preDownloadData($bit['bits'], $xiv, $progress);
         }
@@ -201,7 +203,7 @@ function getRecipe($itemID, $dataset, $preference = 'Armorcraft', $progress = nu
     report_progress($progress, "partial", json_encode($recipe));
     $size = 0;
     countItems($recipe['Recipe'], $size);
-    $recipe['Size'] = ($size * 2) + 4;
+    $recipe['Size'] = ($size * 4) + 4;
 
     return $recipe;
 
