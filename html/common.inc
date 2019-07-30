@@ -23,14 +23,15 @@ $_startSent = false;
 function http_progress($type = "", $data = "", $info = null)
 {
     global $_startSent;
+    $data = array( "type" => $type,
+                   "data" => $data);
     if ($type === "start") {
         if ($_startSent) {
             return;
         }
         $_startSent = true;
+        $data['retry'] = 10000;
     }
-    $data = array( "type" => $type,
-                   "data" => $data);
     if ($info !== null) {
         $data = array_merge($data, $info);
     }
