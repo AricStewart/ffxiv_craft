@@ -17,12 +17,15 @@
 .*/
 
 header('Cache-Control: no-cache');
-require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
 require_once __DIR__."/../ffxivmb.inc";
 require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
+require __DIR__.'/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
 
 
 function get_arguments($method, &$ffxiv_server, &$bookID, &$event)
@@ -52,13 +55,13 @@ $output = array();
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $bookID, $event);
 
-    if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
-        $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
+        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
     } else {
         $marketboard = null;
     }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
+    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
     $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);
@@ -77,13 +80,13 @@ if (!empty($_POST)) {
         http_progress("done", json_encode([]));
     }
 
-    if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
-        $marketboard = new Ffxivmb($ffxiv_server, $ffxivmbGuid);
+    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
+        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
     } else {
         $marketboard = null;
     }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $xivapiKey, $marketboard, "..");
+    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
     $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);

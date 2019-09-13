@@ -6,8 +6,11 @@
     require_module 'filter';
 .*/
 
-require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
+require __DIR__.'/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
 
 $arguments = [
 'server'        => FILTER_SANITIZE_SPECIAL_CHARS,

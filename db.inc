@@ -4,7 +4,6 @@
     require_module 'pdo';
  .*/
 
-require_once __DIR__."/apiData.inc";
 require_once __DIR__."/pdo.inc";
 
 class DB

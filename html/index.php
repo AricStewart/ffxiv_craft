@@ -1,6 +1,10 @@
 <?php
-require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
+require __DIR__.'/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
+
 
 $arguments = [
 'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
@@ -10,7 +14,7 @@ $arguments = [
 
 $data = filter_input_array(INPUT_GET, $arguments);
 if (isset($data['server'])) {
-    $server = $data['server'];
+    $ENV['server'] = $data['server'];
 }
 if (isset($data['item'])) {
     $item = $data['item'];
@@ -74,7 +78,7 @@ if (isset($data['crafter'])) {
     $dataset = new FfxivDataSet('..');
     $dataset->loadWorld();
     foreach ($dataset->world as $entry) {
-        if (strcasecmp($entry->Name, $server) == 0) {
+        if (strcasecmp($entry->Name, $_ENV['server']) == 0) {
             echo "<option selected>";
         } else {
             echo "<option>";

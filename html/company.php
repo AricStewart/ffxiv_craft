@@ -1,6 +1,9 @@
 <?php
-require_once __DIR__."/../apiData.inc";
 require_once __DIR__."/../ffxivData.inc";
+require __DIR__.'/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
 ?>
 <html>
 <head>
@@ -54,7 +57,7 @@ require_once __DIR__."/../ffxivData.inc";
 $dataset = new FfxivDataSet('..');
 $dataset->loadWorld();
 foreach ($dataset->world as $entry) {
-    if (strcasecmp($entry->Name, $server) == 0) {
+    if (strcasecmp($entry->Name, $_ENV['server']) == 0) {
         echo "<option selected>";
     } else {
         echo "<option>";

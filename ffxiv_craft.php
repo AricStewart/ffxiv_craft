@@ -20,17 +20,20 @@
 require_once __DIR__."/ffxivData.inc";
 require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
-require_once __DIR__."/apiData.inc";
 require_once __DIR__."/craft.inc";
+require __DIR__.'/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
 
 /*  Archive using xivapi data */
 
-if ($ffxivmbGuid && !empty($ffxivmbGuid)) {
-    $marketboard = new Ffxivmb($server, $ffxivmbGuid);
+if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
+    $marketboard = new Ffxivmb($_ENV['server'], $_ENV['ffxivmbGuid']);
 } else {
     $marketboard = null;
 }
-$xiv = new Xivapi($server, $xivapiKey, $marketboard);
+$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey'], $marketboard);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
 

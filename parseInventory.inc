@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/apiData.inc";
 
 function parse_file($dataset, $file, &$inventory=[])
 {

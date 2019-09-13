@@ -4,7 +4,11 @@
     require_module 'pdo';
  .*/
 
-require_once __DIR__."/apiData.inc";
+require __DIR__.'/vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
+
 
 class MyPDO
 {
@@ -22,12 +26,12 @@ class MyPDO
             PDO::ATTR_EMULATE_PREPARES => 1,
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ];
-            $username = $GLOBALS['DBUSER'];
-            $password = $GLOBALS['DBPASS'];
+            $username = $_ENV['DBUSER'];
+            $password = $_ENV['DBPASS'];
             $charset = 'utf8';
             $dsn = 'mysql:';
-            $dsn .= 'host='.$GLOBALS['DBHOST'];
-            $dsn .= ';dbname='.$GLOBALS['DBNAME'];
+            $dsn .= 'host='.$_ENV['DBHOST'];
+            $dsn .= ';dbname='.$_ENV['DBNAME'];
             $dsn .= ';charset='.$charset;
             try {
                 self::$my_instance = new PDO($dsn, $username, $password, $options);

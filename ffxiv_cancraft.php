@@ -2,7 +2,6 @@
 <?php
 
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/apiData.inc";
 require_once __DIR__."/parseInventory.inc";
 
 function sortByLevel($a, $b) {

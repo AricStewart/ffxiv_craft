@@ -2,7 +2,6 @@
 <?php
 
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/apiData.inc";
 
 $dataset = new FfxivDataSet();
 
@@ -32,6 +31,7 @@ function doit($itemID, $d=0, $max_depth=-1)
     $result = array();
     $ds = $dataset->listRecipiesUsingItem($itemID);
     foreach ($ds as $i) {
+        print('.');
         $itm = $dataset->getItem($i['Recipe']);
         $result[] = ['item' => $itm->Name,
                      'level'=> $i['Level'],
@@ -54,6 +54,7 @@ function sortByLevel($a, $b) {
 }
 
 $result = doit($itemID, 0, $depth);
+print("\n");
 usort($result, sortBylevel);
 foreach ($result as $i) {
     for ($j = 0; $j < $i['depth']; $j++)

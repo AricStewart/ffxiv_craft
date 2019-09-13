@@ -1,2 +1,4 @@
 vendor
+inventory
 .env
+html/.env
