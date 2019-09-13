@@ -415,6 +415,15 @@ SQL;
 
                 $sql = "INSERT INTO `recipes` (Id, Item, CraftType,"."RecipeLevel, Book, Data) "."VALUES ($id, $item, $type, $level, $book, $data); ";
                 DB::run($sql);
+
+                foreach ($entry['Ingredients'] as $ingred) {
+                    if ($ingred['Item'] > 0) {
+                        $i = strval($ingred['Item']);
+                        $a = strval($ingred['Amount']);
+                        $sql = "INSERT INTO `ingredients` (Id, Recipe, Item, Amount, Level) VALUES ($id, $item, $i, $a, $level);";
+                        DB::run($sql);
+                    }
+                }
             }
             fclose($handle);
         }
@@ -424,6 +433,7 @@ SQL;
 
     private function checkRecipeTable()
     {
+        $force = false;
         $sql = "SHOW TABLES LIKE 'recipes';";
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -441,10 +451,26 @@ SQL;
 SQL;
             DB::run($sql);
         }
-        $this->loadRecipes();
-
+        $sql = "SHOW TABLES LIKE 'ingredients';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE ingredients(
+                    Id INT UNSIGNED NOT NULL,
+                    Recipe INT UNSIGNED NOT NULL,
+                    Item INT UNSIGNED NOT NULL,
+                    Amount INT UNSIGNED NOT NULL,
+                    Level INT UNSIGNED NOT NULL,
+                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY(Id,Recipe,Item)
+                );
+SQL;
+            DB::run($sql);
+            $force = true;
+        }
+        $this->loadRecipes($force);
     }
-
 
     public function __construct($baseData = '.')
     {
@@ -754,7 +780,8 @@ SQL;
         if (is_numeric($param)) {
             $sql = "SELECT `Data` FROM `items` WHERE `ID` = $param;";
         } else {
-            $sql = "SELECT `Data` FROM `items` WHERE lower(Name) = '$param';";
+            $p = MyPDO::quote($param);
+            $sql = "SELECT `Data` FROM `items` WHERE lower(Name) = $p;";
         }
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -1138,6 +1165,20 @@ SQL;
 
     }
 
+    public function listRecipiesUsingItem($item)
+    {
+        $this->checkItemTable();
+        $this->checkRecipeTable();
+        $output = [];
+        $sql = "SELECT * FROM `ingredients` WHERE Item = $item;";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        while ($value !== false) {
+            $output[] = $value;
+            $value = $result->fetch();
+        }
+        return $output;
+    }
 
     /* End */
 }

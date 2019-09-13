@@ -74,8 +74,12 @@ SQL;
         $this->base = $base;
 
         $this->poolSize = 5;
-        $this->client = new Client(['base_uri' => "https://staging.xivapi.com/"]);
         $this->promises = [];
+        if ($xivapiKey) {
+            $this->client = new Client(['base_uri' => "https://staging.xivapi.com/"]);
+        } else {
+            $this->client = null;
+        }
 
         $this->checkCacheTable();
 
