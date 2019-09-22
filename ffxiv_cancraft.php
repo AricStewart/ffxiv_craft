@@ -243,15 +243,16 @@ function getRecipeSet($dataset, $crafter, $levelLow = 0, $levelHigh = 0)
 
 }
 
-function updateAlmost($item_id, $plan, $inventory, &$missing)
+function updateAlmost($item_id, $plan, $inventory, &$missing, $dataset = NULL)
 {
     foreach($plan['details'] as  $partID=>$part) {
         if ($part['have'] >= $part['need']) continue;
         if ($part['make'] != NULL && $part['make']['details'] != NULL) {
             if ($part['have'] + $part['make']['result'] >= $part['need']) continue;
-            updateAlmost($item_id, $part['make'], $inventory, $missing);
+            updateAlmost($item_id, $part['make'], $inventory, $missing, $dataset);
             continue;
         }
+        if ($dataset !== NULL && $dataset->gather[$partID] == NULL) continue;
         if ($missing[$partID]) {
             array_push($missing[$partID]['recipe'], $item_id);
             $missing[$partID]['number'] = min($missing[$partID]['number'], ($part['need'] - $part['have']));
@@ -265,7 +266,7 @@ function updateAlmost($item_id, $plan, $inventory, &$missing)
     }
 }
 
-function almost($inventory, $recipe, $dataset, $level)
+function almostItems($inventory, $recipe, $dataset, $level, $gatherOnly = false)
 {
     $missing = [];
     $data = getRecipeSet($dataset, 'Cooking', $levelLow = $level, $levelHigh = 80);
@@ -283,7 +284,10 @@ function almost($inventory, $recipe, $dataset, $level)
             continue;
         }
         print('o');
-        updateAlmost($item_id, $plan, $inventory, $missing);
+        if ($gatherOnly)
+            updateAlmost($item_id, $plan, $inventory, $missing, $dataset);
+        else
+            updateAlmost($item_id, $plan, $inventory, $missing);
     }
     return $missing;
 }
@@ -294,8 +298,8 @@ function sortByCnt($a, $b)
     return count($a['recipe']) - count($b['recipe']);
 }
 
-$dataset = new FfxivDataSet();
 print("Begin\n");
+$dataset = new FfxivDataSet();
 $inventory = load_inventory($dataset);
 print("Loaded Inventory\n");
 $recipe = load_recipes();
@@ -303,8 +307,11 @@ print("Loaded Recipies\n");
 
 if (count($argv) > 1 && $argv[1] == '-n') {
     $bottom = intval($argv[2]);
+    $gatheronly = (count($argv) > 3 && $argv[3] == '-c');
+    if ($gatheronly)
+        $dataset->loadGathering();
     figure_all($inventory, $recipe, $dataset);
-    $almost = almost($inventory, $recipe, $dataset, $bottom);
+    $almost = almostItems($inventory, $recipe, $dataset, $bottom, $gatheronly);
     usort($almost,'sortByCnt');
     print("\n");
     for ($i = 0; $i < 20; $i++)  {
