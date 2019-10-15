@@ -4,11 +4,15 @@
 require_once __DIR__."/ffxivData.inc";
 require_once __DIR__."/parseInventory.inc";
 
-function sortByLevel($a, $b) {
+
+function sortByLevel($a, $b)
+{
     return $a['level'] - $b['level'];
 }
 
-function canCraftItem($level, $inventory, $recipe, $dataset, $item_id, $quantity=1)
+
+function canCraftItem($level, $inventory, $recipe, $dataset, $item_id,
+                      $cache=null, $quantity=1)
 {
     $entry = $recipe[$item_id];
     if ($entry === null)
@@ -22,14 +26,24 @@ function canCraftItem($level, $inventory, $recipe, $dataset, $item_id, $quantity
     foreach($entry['Ingred'] as $ingred_id => $ingred) {
         $need = intval($ingred['need']) * $quantity;
         $have = intval($inventory[$ingred_id]['count']);
-        $make = canCraftItem(1, $inventory, $recipe, $dataset, $ingred_id, ($need-$have));
+        $make = canCraftItem(1, $inventory, $recipe, $dataset, $ingred_id, $cache, ($need-$have));
         $count = intval(floor(($have + $make['result']) / $need)) * $quantity;
         if ($count < 1)
         {
             $cancraft = 0;
         }
         $pieces[$ingred_id] = $count;
-        $name = $dataset->getItem($ingred_id)->Name;
+        if ($cache && array_key_exists($ingred_id, $cache))
+        {
+            $name =  $cache[$ingred_id];
+        }
+        else
+        {
+            $name = $dataset->getItem($ingred_id)->Name;
+            if ($cache) {
+                $cache[$ingred_id] = $name;
+            }
+        }
         $details[$ingred_id] = ['name'=>$name, 'qty'=>$quantity, 'need'=>$need, 'have'=>$have, 'make'=>$make];
     }
     $result = 0;
@@ -43,7 +57,8 @@ function canCraftItem($level, $inventory, $recipe, $dataset, $item_id, $quantity
     return ['result'=>$result, 'details' => $details];
 }
 
-function load_inventory($dataset) {
+function load_inventory($dataset)
+{
     $inventory = [];
     $inv = false;
     $inv1 = false;
@@ -92,7 +107,7 @@ function load_recipes() {
     return $recipe;
 }
 
-function figure_all(&$inventory, $recipe, $dataset)
+function figure_all(&$inventory, $recipe, $dataset, $cache)
 {
     $pass = 0;
     do {
@@ -126,9 +141,16 @@ function figure_all(&$inventory, $recipe, $dataset)
                 if (array_key_exists($item_id, $inventory)) {
                     $inventory[$item_id]['count'] += $cancraft;
                 } else {
-                    $item = $dataset->getItem($item_id);
+                    if ($cache && array_key_exists($item_id, $cache)) {
+                        $name = $cache[$item_id];
+                    } else {
+                        $name = $dataset->getItem($item_id)->Name;
+                        if ($cache) {
+                            $cache[$item_id] = $name;
+                        }
+                    }
                     $inventory[$item_id] = [
-                        'name' => $item->Name,
+                    'name' => $name,
                         'level' => $entry['Level'],
                         'count' => $cancraft
                     ];
@@ -209,7 +231,7 @@ function show_plan($item, $plan)
 }
 
 
-function getRecipeSet($dataset, $crafter, $levelLow = 0, $levelHigh = 0)
+function getRecipeSet($dataset, $crafter, $cache, $levelLow = 0, $levelHigh = 0)
 {
     if (!is_numeric($crafter)) {
         $crafter = array_search($crafter, $dataset->craftType);
@@ -229,6 +251,9 @@ function getRecipeSet($dataset, $crafter, $levelLow = 0, $levelHigh = 0)
     $output = null;
     while ($value !== false) {
         $item = $dataset->getItem($value['Item']);
+        if ($cache) {
+            $cache[$value['Item']] = $item->Name;
+        }
         if ($item->IsUntradable || $item->IsIndisposable) {
             $value = $result->fetch();
             continue;
@@ -266,10 +291,10 @@ function updateAlmost($item_id, $plan, $inventory, &$missing, $dataset = NULL)
     }
 }
 
-function almostItems($inventory, $recipe, $dataset, $level, $gatherOnly = false)
+function almostItems($inventory, $recipe, $dataset, $level, $cache, $gatherOnly = false)
 {
     $missing = [];
-    $data = getRecipeSet($dataset, 'Cooking', $levelLow = $level, $levelHigh = 80);
+    $data = getRecipeSet($dataset, 'Cooking', $cache, $levelLow = $level, $levelHigh = 80);
     foreach($data as $item_id) {
         $entry = $recipe[$item_id];
         if (array_key_exists($item_id, $inventory))
@@ -277,7 +302,7 @@ function almostItems($inventory, $recipe, $dataset, $level, $gatherOnly = false)
             print('.');
             continue;
         }
-        $plan = canCraftItem(0, $inventory, $recipe, $dataset, $item_id);
+        $plan = canCraftItem(0, $inventory, $recipe, $dataset, $item_id, $cache);
         if ($plan['result'])
         {
             print('.');
@@ -298,6 +323,8 @@ function sortByCnt($a, $b)
     return count($a['recipe']) - count($b['recipe']);
 }
 
+
+$cache = [];
 print("Begin\n");
 $dataset = new FfxivDataSet();
 $inventory = load_inventory($dataset);
@@ -310,8 +337,8 @@ if (count($argv) > 1 && $argv[1] == '-n') {
     $gatheronly = (count($argv) > 3 && $argv[3] == '-c');
     if ($gatheronly)
         $dataset->loadGathering();
-    figure_all($inventory, $recipe, $dataset);
-    $almost = almostItems($inventory, $recipe, $dataset, $bottom, $gatheronly);
+    figure_all($inventory, $recipe, $dataset, $cache);
+    $almost = almostItems($inventory, $recipe, $dataset, $bottom, $cache, $gatheronly);
     usort($almost,'sortByCnt');
     print("\n");
     for ($i = 0; $i < 20; $i++)  {
@@ -339,7 +366,7 @@ if (count($argv) > 1) {
 }
 
 if ($itemID === null) {
-    figure_all($inventory, $recipe, $dataset);
+    figure_all($inventory, $recipe, $dataset, $cache);
     show_all($inventory, $recipe, $dataset);
 }
 else {
