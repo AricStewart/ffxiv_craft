@@ -1,0 +1,14 @@
+name: PHP Linting
+
+on: pull_request
+
+jobs:
+  phpcs:
+
+    runs-on: ubuntu-latest
+
+    steps:
+        - uses: actions/checkout@v1
+        - uses: michaelw90/php-lint@master
+          env:
+            GH_BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
