@@ -9,6 +9,6 @@ jobs:
 
     steps:
         - uses: actions/checkout@v1
-        - uses: michaelw90/php-lint@master
+        - uses: AricStewart/php-lint@new_composer
           env:
             GH_BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
