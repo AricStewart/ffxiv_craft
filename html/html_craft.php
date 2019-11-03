@@ -28,6 +28,7 @@ require __DIR__.'/../vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::create(__DIR__);
 $dotenv->load();
 
+
 function get_arguments(
     $method,
     &$ffxiv_server,

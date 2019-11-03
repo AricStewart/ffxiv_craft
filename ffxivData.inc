@@ -470,7 +470,9 @@ SQL;
             $force = true;
         }
         $this->loadRecipes($force);
+
     }
+
 
     public function __construct($baseData = '.')
     {
@@ -1165,6 +1167,7 @@ SQL;
 
     }
 
+
     public function listRecipiesUsingItem($item)
     {
         $this->checkItemTable();
@@ -1178,7 +1181,9 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+
     }
+
 
     /* End */
 }

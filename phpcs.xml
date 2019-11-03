@@ -53,5 +53,6 @@
  <rule ref="Squiz.Strings.ConcatenationSpacing"/>
 
  <exclude-pattern>*/vendor/**</exclude-pattern>
+ <exclude-pattern>*.js</exclude-pattern>
  <file>./</file>
 </ruleset>

@@ -1,17 +1,18 @@
 <?php
 require_once __DIR__."/ffxivData.inc";
 
-function parse_file($dataset, $file, &$inventory=[])
+
+function parse_file($dataset, $file, &$inventory = [])
 {
     $needle = "item-list__list";
     $lastPos = 0;
     $content = file_get_contents($file);
-    while (($lastPos = strpos($content, $needle, $lastPos))!== false) {
+    while (($lastPos = strpos($content, $needle, $lastPos)) !== false) {
         $stack = strpos($content, 'data-stack', $lastPos);
         $sub = substr($content, $stack);
-        $preg="/data-stack=\"(.*?)\"/si";
+        $preg = "/data-stack=\"(.*?)\"/si";
         preg_match($preg, $sub, $ui);
-        $preg="/db-tooltip__item__name[^>]*>(.*?)</si";
+        $preg = "/db-tooltip__item__name[^>]*>(.*?)</si";
         preg_match($preg, $sub, $name);
         $name = html_entity_decode($name[1]);
         $item = $dataset->getItem($name);
@@ -19,14 +20,16 @@ function parse_file($dataset, $file, &$inventory=[])
             $inventory[$item->Index]['count'] += $ui[1];
         } else {
             $inventory[$item->Index] = [
-                'name' => $item->Name,
-                'count' => $ui[1]
+            'name' => $item->Name,
+            'count' => $ui[1]
             ];
         }
         $lastPos = $lastPos + strlen($needle);
     }
     return $inventory;
+
 }
+
 
 /*
 $dataset = new FfxivDataSet();

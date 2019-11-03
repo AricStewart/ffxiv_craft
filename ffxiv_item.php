@@ -25,7 +25,8 @@ if (!is_numeric($itemID)) {
     $itemID = $result->Index;
 }
 
-function doit($itemID, $d=0, $max_depth=-1)
+
+function doit($itemID, $d = 0, $max_depth = -1)
 {
     global $dataset;
     $result = array();
@@ -34,30 +35,34 @@ function doit($itemID, $d=0, $max_depth=-1)
         print('.');
         $itm = $dataset->getItem($i['Recipe']);
         $result[] = ['item' => $itm->Name,
-                     'level'=> $i['Level'],
-                     'depth' => $d
+        'level' => $i['Level'],
+        'depth' => $d
                     ];
-        if ($itm->Index)
-        {
-            if ($max_depth < 0 || $d+1 <= $max_depth)
-            {
-                $next = doit($itm->Index, $d+1, $max_depth);
+        if ($itm->Index) {
+            if ($max_depth < 0 || $d + 1 <= $max_depth) {
+                $next = doit($itm->Index, $d + 1, $max_depth);
                 $result = array_merge($result, $next);
             }
         }
     }
     return $result;
+
 }
 
-function sortByLevel($a, $b) {
+
+function sortByLevel($a, $b)
+{
     return $a['level'] - $b['level'];
+
 }
+
 
 $result = doit($itemID, 0, $depth);
 print("\n");
 usort($result, sortBylevel);
 foreach ($result as $i) {
-    for ($j = 0; $j < $i['depth']; $j++)
+    for ($j = 0; $j < $i['depth']; $j++) {
         print '.';
+    }
     print $i['item'].":".$i['level']."\n";
 }

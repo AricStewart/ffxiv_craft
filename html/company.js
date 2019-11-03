@@ -1,15 +1,20 @@
 /* jshint browser: true */
 
-function getDataBlock() {
+function getDataBlock()
+{
   var server = encodeURI(document.getElementById('server').value);
   var target = document.getElementById('target').value;
-  getDataBlockCore('html_company.php',
-    'target=' + target + '&server=' + server);
+  getDataBlockCore(
+    'html_company.php',
+    'target=' + target + '&server=' + server
+  );
+
 }
 
-function getDataEvent() {
+function getDataEvent()
+{
   var server = encodeURI(document.getElementById('server').value);
   var target = document.getElementById('target').value;
-  getDataStreamCore("html_company.php?event=1&target=" + target +
-                    "&server=" + server);
+  getDataStreamCore('html_company.php?event=1&target=' + target + '&server=' + server);
+
 }
