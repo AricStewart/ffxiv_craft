@@ -1,0 +1,24 @@
+{
+  "name": "ffxiv",
+  "version": "0.0.0",
+  "description": "This is primarily an exploration of some of the various FFXIV APIs available and applied to the area of economic crafting and gathering.",
+  "homepage": "https://github.com/AricStewart/ffxiv_craft#readme",
+  "license": "Apache",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AricStewart/ffxiv_craft.git"
+  },
+  "author": "Aric Stewart",
+  "bugs": {
+    "url": "https://github.com/AricStewart/ffxiv_craft/issues"
+  },
+  "devDependencies": {
+    "eslint": "^3.2.2",
+    "eslint-plugin-lodash": "^1.10.1",
+    "eslint-plugin-node": "^2.0.0"
+  },
+  "scripts": {
+    "lint": "node_modules/eslint/bin/eslint.js html"
+  }
+}
