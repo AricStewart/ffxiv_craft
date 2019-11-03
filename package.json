@@ -14,7 +14,7 @@
     "url": "https://github.com/AricStewart/ffxiv_craft/issues"
   },
   "devDependencies": {
-    "eslint": "^3.2.2",
+    "eslint": "^6.6.0",
     "eslint-plugin-lodash": "^1.10.1",
     "eslint-plugin-node": "^2.0.0"
   },
