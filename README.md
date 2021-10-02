@@ -5,13 +5,11 @@ This is primarily an exploration of some of the various FFXIV APIs available and
 ### APIs used by this project
 First of all I have to give thanks to the various projects being made use of here.
 
-* XIVAPI <https://xivapi.com/>
 * XIV-Datamining <https://github.com/viion/ffxiv-datamining>
 
 The idea is to make use of all three of these projects to bring together a useful tool for crafters to figure out what to make in the most economical way possible.
 
 **If you use this** ***PLEASE*** **consider donating to these free API projects. They are providing a great service to tools like this one.**
-* [XIVAPI (Patreon)](https://www.patreon.com/bePatron?u=13230932)
 * [Me](https://www.patreon.com/join/aricstewart)
 
 ### Why PHP?
