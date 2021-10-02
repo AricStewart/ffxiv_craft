@@ -18,7 +18,6 @@
 .*/
 
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/ffxivmb.inc";
 require_once __DIR__."/xivapi.inc";
 require __DIR__.'/vendor/autoload.php';
 
@@ -43,12 +42,7 @@ function printProfit($profit)
 }
 
 
-if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-    $marketboard = new Ffxivmb($_ENV['server'], $_ENV['ffxivmbGuid']);
-} else {
-    $marketboard = null;
-}
-$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey'], $marketboard);
+$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey']);
 $xiv->verbose = false;
 
 print "Intializing...\n";

@@ -5,14 +5,12 @@ This is primarily an exploration of some of the various FFXIV APIs available and
 ### APIs used by this project
 First of all I have to give thanks to the various projects being made use of here.
 
-* FFXIV Market <https://www.ffxivmb.com>
 * XIVAPI <https://xivapi.com/>
 * XIV-Datamining <https://github.com/viion/ffxiv-datamining>
 
 The idea is to make use of all three of these projects to bring together a useful tool for crafters to figure out what to make in the most economical way possible.
 
 **If you use this** ***PLEASE*** **consider donating to these free API projects. They are providing a great service to tools like this one.**
-* [FFXIV Market (Patreon)](https://www.patreon.com/bePatron?u=10361611)
 * [XIVAPI (Patreon)](https://www.patreon.com/bePatron?u=13230932)
 * [Me](https://www.patreon.com/join/aricstewart)
 
@@ -24,7 +22,7 @@ To setup you will need to acquire API keys from FFXIV Market and XIVAPI. Both ar
 
 ### How do I find that Item ID you talk about?
 
-If you are on FFXIV Market <https://www.ffxivmb.com> then you can see it in the url for the item.  If you look at the Garland Database <https://garlandtools.org/db/#> then click on the gear on the item and look at the item #. 
+If you look at the Garland Database <https://garlandtools.org/db/#> then click on the gear on the item and look at the item #.
 
 ### Command Line Usage
 

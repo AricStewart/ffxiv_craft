@@ -33,8 +33,6 @@ class Xivapi
 
     private $xivapiKey;
 
-    private $ffxivmb;
-
     private $base;
 
     private $client;
@@ -65,11 +63,10 @@ SQL;
     }
 
 
-    public function __construct($server, $xivapiKey, $ffxivmb = null, $base = '.')
+    public function __construct($server, $xivapiKey, $base = '.')
     {
         $this->server = $server;
         $this->xivapiKey = $xivapiKey;
-        $this->ffxivmb = $ffxivmb;
         $this->timeout = 3600; /*  1 hour */
         $this->base = $base;
 
@@ -205,10 +202,6 @@ SQL;
                         }
                         $path = $this->buildPath("history", $ID);
                         $this->toCache($path, ['History' => $data->History]);
-                        if ($report !== null && $this->ffxivmb !== null) {
-                            $time = microtime();
-                            $this->ffxivmb->$report($ID, $data, $time);
-                        }
                     },
                     function (Exception $e) use ($progress) {
                         $msg = "XIVAPI Promise Client Exception: ".$e->getResponse()->getStatusCode();
