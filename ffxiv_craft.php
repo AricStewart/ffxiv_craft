@@ -18,16 +18,12 @@
 .*/
 
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/xivapi.inc";
 require_once __DIR__."/craft.inc";
 require __DIR__.'/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::create(__DIR__);
 $dotenv->load();
 
-/*  Archive using xivapi data */
-
-$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey']);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
 
@@ -75,7 +71,7 @@ if (count($argv) > 1) {
             $output = [];
             foreach ($a as $key => $i) {
                 print " $i (".($key + 1)."|".count($a).") ";
-                $output[] = doRecipie($i, $dataset, $xiv, 'tick');
+                $output[] = doRecipie($i, $dataset, 'tick');
             }
             usort($output, '_sortByProfit');
             foreach ($output as $recipe) {
@@ -89,7 +85,7 @@ if (count($argv) > 1) {
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tier * 5);
         foreach ($set as $i => $r) {
             print " ".$r." (".($i + 1)."|".count($set).") ";
-            $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter);
+            $output[] = doRecipie($r, $dataset, 'tick', $crafter);
         }
         usort($output, '_sortByProfit');
         foreach ($output as $recipe) {
@@ -99,7 +95,7 @@ if (count($argv) > 1) {
     } elseif ($argv[1] == '-x') {
         $company = $dataset->loadCompanyCrafting();
         $recipe = getCompanyRecipe($argv[2], $dataset, 'tick');
-        $output = doCompanyRecipe($recipe, $dataset, $xiv, 'tick');
+        $output = doCompanyRecipe($recipe, $dataset, 'tick');
         printCompanyRecipe($output);
         exit();
     } else {
@@ -125,5 +121,5 @@ if (!is_numeric($itemID)) {
 }
 
 $data = getRecipe($itemID, $dataset, $crafter, 'tick');
-$output = doRecipieFromRecipe($data, $dataset, $xiv, 'tick', $crafter);
+$output = doRecipieFromRecipe($data, $dataset, 'tick');
 printRecipe($output);
