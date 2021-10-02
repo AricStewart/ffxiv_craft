@@ -19,8 +19,6 @@
 
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
-require_once __DIR__."/../ffxivmb.inc";
-require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
@@ -114,20 +112,12 @@ function getItemSet($dataset, $itemID, $match)
 $crafter = "";
 $event = "";
 $itemID = "";
-$ffxiv_server = "";
 $match = true;
 
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event, $crafter, $match);
 
-    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
-    } else {
-        $marketboard = null;
-    }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
-    $xiv->silent = true;
 
     $set = getItemSet($dataset, $itemID, $match);
     if ($set === null) {
@@ -139,11 +129,11 @@ if (!empty($_POST)) {
     $size = count($set);
     foreach ($set as $index => $i) {
         if ($size == 1) {
-            $recp = doRecipie($i, $dataset, $xiv, 'http_progress', $crafter);
+            $recp = doRecipie($i, $dataset, 'http_progress', $crafter);
             array_unshift($output, $recp);
         } else {
             http_progress("info", ($index + 1)."/$size");
-            $recp = doRecipie($i, $dataset, $xiv, null, $crafter);
+            $recp = doRecipie($i, $dataset, null, $crafter);
             if ($recp['Info'] !== null) {
                 array_unshift($output, $recp);
             }
@@ -159,14 +149,7 @@ if (!empty($_POST)) {
         http_progress("done", json_encode([]));
     }
 
-    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
-    } else {
-        $marketboard = null;
-    }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
-    $xiv->silent = true;
 
     $set = getItemSet($dataset, $itemID, $match);
     if ($set === null) {
@@ -186,7 +169,7 @@ if (!empty($_POST)) {
 
     foreach ($output as $index => $i) {
         unset($output[$index]);
-        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
+        $recp = doRecipieFromRecipe($i, $dataset, 'http_progress');
         array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');

@@ -18,8 +18,6 @@
 
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
-require_once __DIR__."/../ffxivmb.inc";
-require_once __DIR__."/../xivapi.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
@@ -55,19 +53,12 @@ $output = array();
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $bookID, $event);
 
-    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
-    } else {
-        $marketboard = null;
-    }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
-    $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
     foreach ($a as $key => $i) {
-        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
+        $output[] = doRecipie($i, $dataset, null, $crafter);
     }
     usort($output, 'sortByProfit');
     print json_encode($output);
@@ -80,14 +71,7 @@ if (!empty($_POST)) {
         http_progress("done", json_encode([]));
     }
 
-    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
-    } else {
-        $marketboard = null;
-    }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
-    $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
@@ -102,7 +86,7 @@ if (!empty($_POST)) {
 
     foreach ($output as $index => $i) {
         unset($output[$index]);
-        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
+        $recp = doRecipieFromRecipe($i, $dataset, 'http_progress');
         array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');

@@ -79,7 +79,7 @@ if (isset($data['item'])) {
 $dataset = new FfxivDataSet('..');
 $dataset->loadWorld();
 foreach ($dataset->world as $entry) {
-    if (strcasecmp($entry->Name, $server) == 0) {
+    if (strcasecmp($entry->Name, $_ENV['server']) == 0) {
         echo "<option selected>";
     } else {
         echo "<option>";
