@@ -2,3 +2,4 @@ vendor
 inventory
 .env
 html/.env
+html/tag.php

@@ -97,4 +97,6 @@ foreach ($set as $item) {
   </div>
 </footer>
 
+<?php include __DIR__.'/tag.php'; ?>
+
 </body>

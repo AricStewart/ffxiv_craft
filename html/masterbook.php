@@ -124,4 +124,6 @@ foreach ($dataset->master as $book) {
   </div>
 </footer>
 
+<?php include __DIR__.'/tag.php'; ?>
+
 </body>

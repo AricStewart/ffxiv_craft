@@ -122,4 +122,6 @@ foreach ($dataset->world as $entry) {
   </div>
 </footer>
 
+<?php include __DIR__.'/tag.php'; ?>
+
 </body>

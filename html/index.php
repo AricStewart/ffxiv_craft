@@ -138,4 +138,6 @@ if (isset($data['server']) && isset($data['item'])) {
   </div>
 </footer>
 
+<?php include __DIR__.'/tag.php'; ?>
+
 </body>
