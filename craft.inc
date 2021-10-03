@@ -19,7 +19,9 @@
 
 require_once __DIR__."/progress.inc";
 
-$SHARD_DEFAULT = 60;
+$SHARD_DEFAULT = 20;
+$CRYSTAL_DEFAULT = 20;
+$CLUSTER_DEFAULT = 20;
 
 function countItems($recipe, &$i)
 {
@@ -33,7 +35,7 @@ function countItems($recipe, &$i)
 
 function priceRecipe(&$input, $dataset, $progress, $recipe, $priceList)
 {
-    global $SHARD_DEFAULT;
+    global $SHARD_DEFAULT, $CRYSTAL_DEFAULT, $CLUSTER_DEFAULT;
 
     $listCost = 0;
     $optimalCost = 0;
@@ -51,6 +53,10 @@ function priceRecipe(&$input, $dataset, $progress, $recipe, $priceList)
             $cheap = null;
             if (strstr($bit['name'], " Shard")) {
                 $cheap = $SHARD_DEFAULT;
+            } elseif (strstr($bit['name'], " Crystal")) {
+                $cheap = $CRYSTAL_DEFAULT;
+            } elseif (strstr($bit['name'], " Cluster")) {
+                $cheap = $CLUSTER_DEFAULT;
             }
         }
         if ($cheap != null) {

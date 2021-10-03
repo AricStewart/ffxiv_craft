@@ -57,6 +57,13 @@ function tick($stage, $data = null)
 
 }
 
+$priceList = array();
+if (file_exists(__DIR__."/item.cost.csv")) {
+    $handle = fopen(__DIR__."/item.cost.csv", "r");
+    while (($data = fgetcsv($handle, 2000, ",")) !== false) {
+        $priceList[$data[0]] = $data[1];
+    }
+}
 
 $i = 1;
 if (count($argv) > 1) {
@@ -71,7 +78,7 @@ if (count($argv) > 1) {
             $output = [];
             foreach ($a as $key => $i) {
                 print " $i (".($key + 1)."|".count($a).") ";
-                $output[] = doRecipie($i, $dataset, 'tick');
+                $output[] = doRecipie($i, $dataset, 'tick', $priceList);
             }
             usort($output, '_sortByProfit');
             foreach ($output as $recipe) {
@@ -85,7 +92,7 @@ if (count($argv) > 1) {
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tier * 5);
         foreach ($set as $i => $r) {
             print " ".$r." (".($i + 1)."|".count($set).") ";
-            $output[] = doRecipie($r, $dataset, 'tick', $crafter);
+            $output[] = doRecipie($r, $dataset, 'tick', $crafter, $priceList);
         }
         usort($output, '_sortByProfit');
         foreach ($output as $recipe) {
@@ -121,5 +128,5 @@ if (!is_numeric($itemID)) {
 }
 
 $data = getRecipe($itemID, $dataset, $crafter, 'tick');
-$output = doRecipieFromRecipe($data, $dataset, 'tick');
+$output = doRecipieFromRecipe($data, $dataset, 'tick', $priceList);
 printRecipe($output);
