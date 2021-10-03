@@ -18,7 +18,7 @@
     require_module 'file';
     require_module 'phpinfo';
     require_module 'json';
-e*/
+.*/
 
 require_once __DIR__.'/db.inc';
 require __DIR__.'/vendor/autoload.php';
@@ -457,13 +457,13 @@ SQL;
         if ($value === false) {
             $sql = <<<SQL
                 CREATE TABLE ingredients(
+                    Idx INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
                     Id INT UNSIGNED NOT NULL,
                     Recipe INT UNSIGNED NOT NULL,
                     Item INT UNSIGNED NOT NULL,
                     Amount INT UNSIGNED NOT NULL,
                     Level INT UNSIGNED NOT NULL,
-                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY(Id,Recipe,Item)
+                    Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
 SQL;
             DB::run($sql);
@@ -1180,6 +1180,22 @@ SQL;
             $value = $result->fetch();
         }
         return $output;
+
+    }
+
+    public function resetAndReload()
+    {
+        $sql = "DROP TABLE IF EXISTS `recipes`;";
+        DB::run($sql);
+        $sql = "DROP TABLE IF EXISTS `ingredients`;";
+        DB::run($sql);
+        $sql = "DROP TABLE IF EXISTS `items`;";
+        DB::run($sql);
+
+        $this->checkItemTable();
+        $this->checkRecipeTable();
+        $this->loadItems(true);
+        $this->loadRecipes(true);
 
     }
 
