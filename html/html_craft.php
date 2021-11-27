@@ -19,6 +19,7 @@
 
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
+require_once __DIR__."/../universalis.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
@@ -113,11 +114,13 @@ $crafter = "";
 $event = "";
 $itemID = "";
 $match = true;
+$ffxiv_server = "";
 
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $itemID, $event, $crafter, $match);
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
 
     $set = getItemSet($dataset, $itemID, $match);
     if ($set === null) {
@@ -129,11 +132,11 @@ if (!empty($_POST)) {
     $size = count($set);
     foreach ($set as $index => $i) {
         if ($size == 1) {
-            $recp = doRecipie($i, $dataset, 'http_progress', $crafter);
+            $recp = doRecipie($i, $dataset, $xiv, 'http_progress', $crafter);
             array_unshift($output, $recp);
         } else {
             http_progress("info", ($index + 1)."/$size");
-            $recp = doRecipie($i, $dataset, null, $crafter);
+            $recp = doRecipie($i, $dataset, $xiv, null, $crafter);
             if ($recp['Info'] !== null) {
                 array_unshift($output, $recp);
             }
@@ -150,6 +153,7 @@ if (!empty($_POST)) {
     }
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
 
     $set = getItemSet($dataset, $itemID, $match);
     if ($set === null) {
@@ -169,7 +173,7 @@ if (!empty($_POST)) {
 
     foreach ($output as $index => $i) {
         unset($output[$index]);
-        $recp = doRecipieFromRecipe($i, $dataset, 'http_progress');
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
         array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');

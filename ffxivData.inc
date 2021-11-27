@@ -696,6 +696,8 @@ SQL;
             'id' => $i->Item,
             'name' => '',
             'count' => $i->Amount * $count,
+            'marketCost' => 0,
+            'marketHQ' => 0,
             'listCost' => 0,
             'craftCost' => 0,
             'craftedBy' => $craftBy,

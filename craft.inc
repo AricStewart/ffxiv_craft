@@ -33,34 +33,51 @@ function countItems($recipe, &$i)
 }
 
 
-function priceRecipe(&$input, $dataset, $progress, $recipe, $priceList)
+function preDownloadData($input, $xiv, $progress)
+{
+    foreach ($input as $bit) {
+        $xiv->getMarket($bit['id'], true, $progress);
+        report_progress($progress);
+        $xiv->getHistory($bit['id'], true, $progress);
+        report_progress($progress);
+        if ($bit['bits']) {
+            preDownloadData($bit['bits'], $xiv, $progress);
+        }
+    }
+
+}
+
+
+function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
 {
     global $SHARD_DEFAULT, $CRYSTAL_DEFAULT, $CLUSTER_DEFAULT;
 
+    $marketCost = 0;
     $listCost = 0;
     $optimalCost = 0;
     foreach ($input as &$bit) {
         report_progress($progress, "info", $bit['name']);
         report_progress($progress, "partial", json_encode($recipe));
+        $market = $xiv->getMarket($bit['id'], false, $progress);
         report_progress($progress, "info", $bit['name'].' market');
         report_progress($progress, "partial", json_encode($recipe));
+        $xiv->getHistory($bit['id'], false, $progress);
         report_progress($progress, "info", $bit['name'].' history');
         report_progress($progress, "partial", json_encode($recipe));
 
+        $cheap = null;
+        $listcheap = null;
         if ($priceList && array_key_exists($bit['id'], $priceList)) {
-            $cheap = $priceList[$bit['id']];
+            $listcheap = $priceList[$bit['id']];
         } else {
-            $cheap = null;
-            if (strstr($bit['name'], " Shard")) {
-                $cheap = $SHARD_DEFAULT;
-            } elseif (strstr($bit['name'], " Crystal")) {
-                $cheap = $CRYSTAL_DEFAULT;
-            } elseif (strstr($bit['name'], " Cluster")) {
-                $cheap = $CLUSTER_DEFAULT;
-            }
+            $cheap = $xiv->currentCheapest($market);
         }
         if ($cheap != null) {
-            $bit['listCost'] = $cheap * $bit['count'];
+            $bit['marketCost'] = $cheap['Item']->pricePerUnit * $bit['count'];
+            $bit['marketHQ'] = $cheap['Item']->hq;
+        }
+        if ($listCheap !== null) {
+            $bit['listCost'] = $listcheap * $bit['count'];
         }
 
         if (count($dataset->findItemInShop($bit['id'])) > 0) {
@@ -69,18 +86,25 @@ function priceRecipe(&$input, $dataset, $progress, $recipe, $priceList)
             $bit['shopCost'] = 0;
         }
 
+        $bitOptimal = -1;
+        if ($bit['marketCost'] == 0) {
+            $marketCost = -1;
+        } else {
+            $marketCost += $bit['marketCost'];
+            $bitOptimal = $bit['marketCost'];
+        }
         if ($bit['listCost'] == 0) {
             $listCost = -1;
-            $bitOptimal = -1;
         } else {
-            if ($listCost != -1) {
-                $listCost += $bit['listCost'];
+            $listCost += $bit['listCost'];
+            if ($bitOptimal == -1 || $listCost <  $bitOptimal) {
+                $bitOptimal = $bit['listCost'];
             }
-            $bitOptimal = $bit['listCost'];
         }
         if ($bit['bits']) {
             $partCost = priceRecipe(
                 $bit['bits'],
+                $xiv,
                 $dataset,
                 $progress,
                 $recipe,
@@ -107,7 +131,52 @@ function priceRecipe(&$input, $dataset, $progress, $recipe, $priceList)
         }
         report_progress($progress, "partial", json_encode($recipe));
     }
-    return ['List' => $listCost, 'Optimal' => $optimalCost];
+    return ['Market' => $marketCost, 'List' => $listCost, 'Optimal' => $optimalCost];
+
+}
+
+function calculateProfit(&$recipe)
+{
+    $Price = ['HQ' => null, 'LQ' => null];
+    if ($recipe['Recent']['LQ']) {
+        $Price['LQ'] = $recipe['Recent']['LQ']->pricePerUnit;
+    }
+    if ($recipe['Recent']['HQ']) {
+        $Price['HQ'] = $recipe['Recent']['HQ']->pricePerUnit;
+    }
+    if ($recipe['Cheap']['LQ']) {
+        $Price['LQ'] = min(
+            $Price['LQ'],
+            $recipe['Cheap']['LQ']['Item']->pricePerUnit
+        );
+    }
+    if ($recipe['Cheap']['HQ']) {
+        $Price['HQ'] = min(
+            $Price['HQ'],
+            $recipe['Cheap']['HQ']['Item']->pricePerUnit
+        );
+    }
+    if ($recipe['Week']['LQ']['Average']) {
+        $Price['LQ'] = min($Price['LQ'], $recipe['Week']['LQ']['Average']);
+    }
+    if ($recipe['Week']['HQ']['Average']) {
+        $Price['HQ'] = min($Price['HQ'], $recipe['Week']['HQ']['Average']);
+    }
+
+    $Price['LQ'] *= $recipe['Info']->Result->Amount;
+    $Price['HQ'] *= $recipe['Info']->Result->Amount;
+
+    if ($recipe['Cost']['Optimal']) {
+        $Price['LQ%'] = ($Price['LQ'] / $recipe['Cost']['Optimal']) - 1.0;
+        $Price['HQ%'] = ($Price['HQ'] / $recipe['Cost']['Optimal']) - 1.0;
+    }
+
+    $Price['LQ'] -= $recipe['Cost']['Optimal'];
+    $Price['HQ'] -= $recipe['Cost']['Optimal'];
+
+    $recipe['Profit'] = $Price;
+
+    return $Price;
 
 }
 
@@ -162,32 +231,59 @@ function getRecipe($itemID, $dataset, $preference = 'Armorcraft', $progress = nu
 }
 
 
-function doRecipieFromRecipe($recipe, $dataset, $progress = null, $priceList = null)
+function doRecipieFromRecipe($recipe, $dataset, $xiv, $progress = null, $priceList = null)
 {
     if ($recipe == null) {
         $recipe['error'] = "No Recipe";
         return $recipe;
     }
 
+    preDownloadData($recipe['Recipe'], $xiv, $progress);
     report_progress($progress, "partial", json_encode($recipe));
 
     $itemID = $recipe['ID'];
     /* Pre Download */
+    $xiv->getHistory($itemID, true, $progress);
+    $xiv->getMarket($itemID, true, $progress);
+    $xiv->flushPool($progress);
     report_progress($progress, "partial", json_encode($recipe));
 
     $item = $dataset->getItem($recipe['ID']);
-    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $dataset, $progress, $recipe, $priceList);
+    $recipe['Cost'] = priceRecipe($recipe['Recipe'], $xiv, $dataset, $progress, $recipe, $priceList);
     if (count($dataset->findItemInShop($itemID)) > 0) {
         $recipe['Cost']['Shop'] = $item->PriceMid * $recipe['Count'];
     } else {
         $recipe['Cost']['Shop'] = 0;
     }
     report_progress($progress, "partial", json_encode($recipe));
+    $history = $xiv->getHistory($itemID, false, $progress);
+    $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history, false),
+    'HQ' => $xiv->mostRecent($history, true)];
+    $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
+    'HQ' => $xiv->weekAverage($history, true)];
     report_progress($progress, "partial", json_encode($recipe));
+    $market = $xiv->getMarket($itemID, false, $progress);
+    $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
+    'HQ' => $xiv->currentCheapest($market, true)];
 
-    $recipe['Cost']['Marketboard'] = null;
+    $c = -1;
+    if ($recipe['Cheap']['LQ'] !== null) {
+        $c = $recipe['Cheap']['LQ']['Item']->pricePerUnit;
+    }
+    if ($recipe['Cheap']['HQ'] !== null) {
+        if ($c > -1) {
+            $c = min($c, $recipe['Cheap']['HQ']['Item']->pricePerUnit);
+        } else {
+            $c = $recipe['Cheap']['HQ']['Item']->pricePerUnit;
+        }
+    }
+    if ($c != -1) {
+        $c *= $recipe['Count'];
+    }
+    $recipe['Cost']['Marketboard'] = $c;
 
     report_progress($progress, "partial", json_encode($recipe));
+    calculateProfit($recipe);
 
     return $recipe;
 
@@ -197,6 +293,7 @@ function doRecipieFromRecipe($recipe, $dataset, $progress = null, $priceList = n
 function doRecipie(
     $itemID,
     $dataset,
+    $xiv,
     $progress = null,
     $preference = 'Armorcraft',
     $priceList = null
@@ -208,7 +305,7 @@ function doRecipie(
     }
     report_progress($progress, "start", $recipe['Size']);
     report_progress($progress, "partial", json_encode($recipe));
-    return doRecipieFromRecipe($recipe, $dataset, $progress, $priceList);
+    return doRecipieFromRecipe($recipe, $dataset, $xiv, $progress, $priceList);
 
 }
 
@@ -256,7 +353,7 @@ function getCompanyRecipe($itemID, $dataset, $progress = null)
 }
 
 
-function doCompanyRecipe($target, $dataset, $progress = null, $priceList = null)
+function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList = null)
 {
     if ($target == null) {
         $target['error'] = "No Recipe";
@@ -264,14 +361,28 @@ function doCompanyRecipe($target, $dataset, $progress = null, $priceList = null)
     }
 
     $target['listCost'] = -1;
-    $target['Cost'] = array('Optimal' => 0, 'List' => 0, 'Marketboard' => 0);
+    $target['marketCost'] = -1;
+    $market = $xiv->getMarket($target['ID'], false, $progress);
+    $target['MarketNumber'] = count($market);
+    $cheap = $xiv->currentCheapest($market);
+    if ($cheap != null) {
+        $target['marketCost'] = $cheap['Item']->pricePerUnit;
+    } else {
+        $target['marketCost'] = -1;
+    }
+    $history = $xiv->getHistory($target['ID'], false, $progress);
+    $target['Recent'] = $xiv->mostRecent($history, false);
+    $target['Week'] = $xiv->weekAverage($history, false);
+
+    $target['Cost'] = array('Optimal' => 0, 'List' => 0, 'Market' => 0, 'Marketboard' => 0);
     foreach ($target['Parts'] as &$part) {
-        $part['Cost'] = array('Optimal' => 0, 'List' => 0, 'Marketboard' => 0);
+        $part['Cost'] = array('Optimal' => 0, 'List' => 0, 'Market' => 0, 'Marketboard' => 0);
         foreach ($part['Process'] as &$process) {
             $process['Cost'] = array('Optimal' => 0, 'List' => 0, 'Marketboard' => 0);
             foreach ($process['Set'] as &$item) {
-                $recipe = doRecipieFromRecipe($item['Recipe'], $dataset, $progress, $priceList);
+                $recipe = doRecipieFromRecipe($item['Recipe'], $dataset, $xiv, $progress, $priceList);
                 $process['Cost']['Optimal'] += $recipe['Cost']['Optimal'];
+                $process['Cost']['Market'] += $recipe['Cost']['Market'];
                 $process['Cost']['List'] += $recipe['Cost']['List'];
                 if ($process['Cost']['Marketboard'] >= 0) {
                     if ($recipe['Cost']['Marketboard'] > 0) {
@@ -283,6 +394,7 @@ function doCompanyRecipe($target, $dataset, $progress = null, $priceList = null)
                 $item['Recipe'] = $recipe;
             }
             $part['Cost']['Optimal'] += $process['Cost']['Optimal'];
+            $part['Cost']['Market'] += $process['Cost']['Market'];
             $part['Cost']['List'] += $process['Cost']['List'];
             if ($part['Cost']['Marketboard'] >= 0) {
                 if ($process['Cost']['Marketboard'] > 0) {
@@ -294,6 +406,7 @@ function doCompanyRecipe($target, $dataset, $progress = null, $priceList = null)
         }
         $target['Cost']['Optimal'] += $part['Cost']['Optimal'];
         $target['Cost']['List'] += $part['Cost']['List'];
+        $target['Cost']['Market'] += $part['Cost']['Market'];
         if ($target['Cost']['Marketboard'] >= 0) {
             if ($part['Cost']['Marketboard'] > 0) {
                 $target['Cost']['Marketboard'] += $part['Cost']['Marketboard'];
@@ -315,7 +428,13 @@ function line($line, $tab)
             print "\t";
         }
         print $bit['name']."(".$bit['id'].") (x".$bit['count'].") -> ";
-        if ($bit['listCost'] > 0) {
+        if ($bit['marketCost'] > 0) {
+            print number_format($bit['marketCost']);
+            if ($bit['marketHQ']) {
+                print "(*)";
+            }
+        }
+        elseif ($bit['listCost'] > 0) {
             print number_format($bit['listCost']);
             print " gil ";
         } else {
@@ -387,9 +506,9 @@ function printRecipe($recipe)
 }
 
 
-function test($dataset)
+function test($dataset, $xiv)
 {
-    $o = doRecipie(23815, $dataset);
+    $o = doRecipie(23815, $dataset, $xiv);
     printRecipe($o);
 
 }
@@ -405,23 +524,27 @@ function printCompanyRecipe($target)
             print "<><><><><><><><><><><><> Stage ".($index + 1)." <><><><><><><><><><><><>\n";
             print "Cost Craft Optimal: ".number_format($process['Cost']['Optimal'])." gil \n";
             print "Cost Craft List: ".number_format($process['Cost']['List'])." gil \n";
+            print "Cost Craft Market: ".number_format($process['Cost']['Market'])." gil \n";
             print "Cost Marketboard: ".number_format($process['Cost']['Marketboard'])." gil \n";
             print "<><><><><><><><><><><><><><><><><><><><><><><><><><><><><>\n";
         }
         print "[][][][][][][][][][][][][] Part ".($pindex + 1)." [][][][][][][][][][][][][]\n";
         print "Part Cost Craft Optimal: ".number_format($part['Cost']['Optimal'])." gil \n";
         print "Part Cost Craft List: ".number_format($part['Cost']['List'])." gil \n";
+        print "Part Cost Craft Market: ".number_format($part['Cost']['Market'])." gil \n";
         print "Part Cost Marketboard: ".number_format($part['Cost']['Marketboard'])." gil \n";
         print "[][][][][][][][][][][][][][][][][][][][][][][][][][][][][][][]\n";
     }
     print "===>   ".$target['Name']."(".$target['ID'].")\n";
     print "Total Cost Craft Optimal: ".number_format($target['Cost']['Optimal'])." gil \n";
     print "Total Cost Craft List: ".number_format($target['Cost']['List'])." gil \n";
+    print "Total Cost Craft Market: ".number_format($target['Cost']['Market'])." gil \n";
     print "Total Cost MarketBoard: ".number_format($target['Cost']['Marketboard'])." gil \n";
     print "Current List: ".number_format($target['listCost'])." gil";
+    print "Current Market: ".number_format($target['marketCost'])." gil";
     print " (".$target['MarketNumber']." sellers)\n";
-    print "Recent: ".number_format($target['Recent']->PricePerUnit)." gil on ";
+    print "Recent: ".number_format($target['Recent']->pricePerUnit)." gil on ";
     print date('l jS \of F Y h:i:s A', $target['Recent']->PurchaseDate)." \n";
-    print "Week: ".number_format($target['Week']->PricePerUnit)." gil\n";
+    print "Week: ".number_format($target['Week']->pricePerUnit)." gil\n";
 
 }

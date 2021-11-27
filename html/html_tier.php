@@ -18,6 +18,7 @@
 
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
+require_once __DIR__."/../universalis.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
@@ -62,10 +63,12 @@ if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $tier, $event, $crafter);
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
+    $xiv->silent = true;
 
     $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
     foreach ($set as $i) {
-        $output[] = doRecipie($i, $dataset, null, $crafter);
+        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
     usort($output, 'sortByProfit');
     print json_encode($output);
@@ -79,6 +82,8 @@ if (!empty($_POST)) {
     }
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
+    $xiv->silent = true;
 
     $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
     $size = count($set) * 2;
@@ -87,7 +92,7 @@ if (!empty($_POST)) {
         $data = getRecipe($i, $dataset, $crafter);
         report_progress('http_progress', "partial", json_encode($data));
         report_progress('http_progress');
-        $recp = doRecipieFromRecipe($data, $dataset);
+        $recp = doRecipieFromRecipe($data, $dataset, $xiv);
         report_progress('http_progress', "partial", json_encode($recp));
         report_progress('http_progress');
         array_unshift($output, $recp);

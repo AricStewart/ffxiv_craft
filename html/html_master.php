@@ -19,6 +19,7 @@
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
 require_once __DIR__."/../craft.inc";
+require_once __DIR__."/../universalis.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
 
@@ -54,11 +55,13 @@ if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $bookID, $event);
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
+    $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
     foreach ($a as $key => $i) {
-        $output[] = doRecipie($i, $dataset, null, $crafter);
+        $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
     usort($output, 'sortByProfit');
     print json_encode($output);
@@ -72,6 +75,8 @@ if (!empty($_POST)) {
     }
 
     $dataset = new FfxivDataSet('..');
+    $xiv = new Universalis($ffxiv_server);
+    $xiv->silent = true;
 
     $a = $dataset->getMasterCraft($bookID);
     $crafter = $dataset->getMasterBookJob($bookID);
@@ -86,7 +91,7 @@ if (!empty($_POST)) {
 
     foreach ($output as $index => $i) {
         unset($output[$index]);
-        $recp = doRecipieFromRecipe($i, $dataset, 'http_progress');
+        $recp = doRecipieFromRecipe($i, $dataset, $xiv, 'http_progress');
         array_unshift($output, $recp);
     }
     usort($output, 'sortByProfit');

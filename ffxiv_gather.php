@@ -18,6 +18,7 @@
 .*/
 
 require_once __DIR__."/ffxivData.inc";
+require_once __DIR__."/xivapi.inc";
 require __DIR__.'/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::create(__DIR__);
@@ -40,6 +41,9 @@ function printProfit($profit)
 
 }
 
+
+$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey']);
+$xiv->verbose = false;
 
 print "Intializing...\n";
 $data = new FfxivDataSet();
@@ -87,6 +91,18 @@ foreach ($stuff as $item) {
         }
         $added = false;
         print "($count/$limit): ".$idb->Name.'('.$item['Item'].') ';
+
+        $profitLQ = $xiv->itemProfit($item['Item'], false);
+        printProfit($profitLQ);
+        if ($profitLQ['Profit'] > 0) {
+            $profit[] = $profitLQ;
+        }
+
+        $profitHQ = $xiv->itemProfit($item['Item'], true);
+        printProfit($profitHQ);
+        if ($profitHQ['Profit'] > 0) {
+            $profit[] = $profitHQ;
+        }
         print "\n";
     }
 }
