@@ -1,0 +1,56 @@
+version: "3.2"
+services:
+  php:
+    build: './docker/php/'
+    depends_on:
+      - mysql
+    networks:
+      - backend
+    volumes:
+      - .:/var/www/html/
+    environment:
+        # To more nearly simulate Production, comment all but `DOCKER` out and rely on `.env`
+        DBHOST: 'mysql'
+        DBNAME: ${DBNAME}
+        DBPASS: ${DBPASS}
+        DBUSER: ${DBUSER}
+        TEST_DBNAME: ${TEST_DBNAME}
+        DB_BACKEND: ${DB_BACKEND}
+        API_SERVER: "http://apache"
+        DOCKER: 1
+  composer:
+    restart: 'no'
+    image: "composer"
+    command: install
+    volumes:
+      - .:/app
+  apache:
+    build: './docker/apache/'
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "8081:80"
+    volumes:
+      - .:/var/www/html/
+  mysql:
+    image: mysql:5.6.40
+    networks:
+      - backend
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DBROOTPW}
+      MYSQL_DATABASE: ${DBNAME}
+      MYSQL_PASSWORD: ${DBPASS}
+      MYSQL_USER: ${DBUSER}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql:/var/lib/mysql
+networks:
+  frontend:
+  backend:
+volumes:
+  mysql:
