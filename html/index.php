@@ -132,7 +132,7 @@ if (isset($data['server']) && isset($data['item'])) {
 
 <footer class="page-footer font-small blue pt-4">
   <div class="footer-copyright text-center py-3">
-    &copy; 2019 Copyright: Aric Stewart
+    &copy; 2021 Copyright: Aric Stewart
     &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AricStewart/ffxiv_craft"><img src="GitHub-Mark-32px.png"> Check the project out on GitHub</a></span>
   </div>

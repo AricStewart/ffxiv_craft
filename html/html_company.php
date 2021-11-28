@@ -18,8 +18,7 @@
 
 header('Cache-Control: no-cache');
 require_once __DIR__."/../ffxivData.inc";
-require_once __DIR__."/../ffxivmb.inc";
-require_once __DIR__."/../xivapi.inc";
+require_once __DIR__."/../universalis.inc";
 require_once __DIR__."/../craft.inc";
 require_once __DIR__."/common.inc";
 require __DIR__.'/../vendor/autoload.php';
@@ -58,13 +57,9 @@ $target = 0;
 $event = false;
 if (!empty($_POST)) {
     get_arguments(INPUT_POST, $ffxiv_server, $target, $event);
-    if ($_ENV['ffxivmbGuid'] && !empty($_ENV['ffxivmbGuid'])) {
-        $marketboard = new Ffxivmb($ffxiv_server, $_ENV['ffxivmbGuid']);
-    } else {
-        $marketboard = null;
-    }
+    $marketboard = null;
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
+    $xiv = new Universalis($ffxiv_server);
     $xiv->silent = true;
     $company = $dataset->loadCompanyCrafting();
     $recipe = getCompanyRecipe($target, $dataset, 'http_progress');
@@ -84,7 +79,7 @@ if (!empty($_POST)) {
         $marketboard = null;
     }
     $dataset = new FfxivDataSet('..');
-    $xiv = new Xivapi($ffxiv_server, $_ENV['xivapiKey'], $marketboard, "..");
+    $xiv = new Universalis($ffxiv_server);
     $xiv->silent = true;
     $company = $dataset->loadCompanyCrafting();
     http_progress("info", $target);

@@ -76,7 +76,7 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
             $bit['marketCost'] = $cheap['Item']->pricePerUnit * $bit['count'];
             $bit['marketHQ'] = $cheap['Item']->hq;
         }
-        if ($listCheap !== null) {
+        if ($listcheap !== null) {
             $bit['listCost'] = $listcheap * $bit['count'];
         }
 

@@ -4,6 +4,21 @@ require __DIR__.'/../vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::create(__DIR__);
 $dotenv->load();
+
+$arguments = [
+'server'        => FILTER_SANITIZE_SPECIAL_CHARS,
+'crafter'       => FILTER_SANITIZE_SPECIAL_CHARS,
+];
+
+$data = filter_input_array(INPUT_GET, $arguments);
+if (isset($data['server'])) {
+    $ENV['server'] = $data['server'];
+}
+if (isset($data['crafter'])) {
+    $crafter = $data['crafter'];
+} else {
+    $crafter = "";
+}
 ?>
 <html>
 <head>
@@ -116,7 +131,7 @@ foreach ($dataset->world as $entry) {
 
 <footer class="page-footer font-small blue pt-4">
   <div class="footer-copyright text-center py-3">
-    &copy; 2019 Copyright: Aric Stewart
+    &copy; 2021 Copyright: Aric Stewart
     &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://github.com/AricStewart/ffxiv_craft"><img src="GitHub-Mark-32px.png"> Check the project out on GitHub</a></span>
   </div>
