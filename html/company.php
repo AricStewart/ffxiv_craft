@@ -18,6 +18,7 @@ $dotenv->load();
 <!-- End Bootstrap -->
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="style.css">
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
 <script src="company.js?version=<?php echo hash_file('sha256', 'company.js');?>"></script>
 <script src="clipboard.min.js"></script>

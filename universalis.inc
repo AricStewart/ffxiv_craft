@@ -178,7 +178,7 @@ SQL;
                         /* Prune history */
                         $old = strtotime("-1 week");
                         foreach ($data->recentHistory as $key => $entry) {
-                            if ($entry->timestamp< $old) {
+                            if ($entry->timestamp < $old) {
                                 unset($data->recentHistory[$key]);
                             } else {
                                 unset($data->recentHistory[$key]->buyerName);

@@ -697,6 +697,7 @@ SQL;
             'name' => '',
             'count' => $i->Amount * $count,
             'marketCost' => 0,
+            'lastUpdate' => null,
             'marketHQ' => 0,
             'listCost' => 0,
             'craftCost' => 0,

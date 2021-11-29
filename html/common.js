@@ -46,6 +46,7 @@ function printLine(line, tab)
       if (l.count > 1) {
         output += '(' + (l.marketCost / l.count).toLocaleString() + ' gil each) ';
       }
+      output += makeDot(l.lastUpdate);
       output += l.marketCost.toLocaleString() + ' gil ';
       if (l.marketHQ) {
         output += '<img src=\'hq.png\'>';
@@ -103,6 +104,32 @@ function fillRecipe(data, open)
 
 }
 
+function secondsToHms(d) {
+  d = Number(d);
+  var q = Math.floor(d / (24 * 3600));
+  var h = Math.floor(d / 3600);
+  var m = Math.floor(d % 3600 / 60);
+  var s = Math.floor(d % 3600 % 60);
+
+  var dDisplay = q > 0 ? q + (q == 1 ? " day, " : " days, ") : "";
+  var hDisplay = h > 0 ? h + (h == 1 ? " hour, " : " hours, ") : "";
+  var mDisplay = m > 0 ? m + (m == 1 ? " minute, " : " minutes, ") : "";
+  var sDisplay = s > 0 ? s + (s == 1 ? " second" : " seconds") : "";
+  return dDisplay + hDisplay + mDisplay + sDisplay;
+}
+
+function makeDot(age)
+{
+  var tt = secondsToHms(age);
+  if (age < 60 * 60) {
+    return '<span class="green_dot" title="' + tt + '"></span>&nbsp;';
+  } else if (age < 24 * 60 * 60) {
+    return '<span class="yellow_dot" title="' + tt + '"></span>&nbsp;';
+  } else {
+    return '<span class="red_dot" title="' + tt + '"></span>&nbsp;';
+  }
+}
+
 function fillRecipeFrame(data, linkback, profit, marketboard)
 {
   if (data === null) {
@@ -149,11 +176,13 @@ function fillRecipeFrame(data, linkback, profit, marketboard)
     cheap = 'UNAVAILABLE';
   } else {
     cheap = data.Cheap.LQ.Item.pricePerUnit.toLocaleString() + ' gil';
+    cheap += '&nbsp;' + makeDot((Date.now() / 1000) - data.Cheap.LQ.Item.lastReviewTime);
     cheap += ' (' + data.Cheap.LQ.Count + ' listings)';
   }
   if (data.Cheap !== undefined && data.Cheap.HQ !== null) {
     cheap += ' / <img src=\'hq.png\'>';
     cheap += data.Cheap.HQ.Item.pricePerUnit.toLocaleString() + ' gil';
+    cheap += '&nbsp;' + makeDot((Date.now() / 1000) - data.Cheap.HQ.Item.lastReviewTime);
     cheap += ' (' + data.Cheap.HQ.Count + ' listings)';
   }
 
@@ -163,10 +192,12 @@ function fillRecipeFrame(data, linkback, profit, marketboard)
     recent = 'UNAVAILABLE';
   } else {
     recent = data.Recent.LQ.pricePerUnit.toLocaleString() + ' gil';
+    recent += '&nbsp;' + makeDot((Date.now() / 1000) - data.Recent.LQ.timestamp);
   }
   if (data.Recent !== undefined && data.Recent.HQ !== null) {
     recent += ' / <img src=\'hq.png\'>';
     recent += data.Recent.HQ.pricePerUnit.toLocaleString() + ' gil';
+    recent += '&nbsp;' + makeDot((Date.now() / 1000) - data.Recent.HQ.timestamp);
   }
 
   if (data.Week === undefined) {

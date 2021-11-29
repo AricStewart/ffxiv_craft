@@ -75,6 +75,7 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
         if ($cheap != null) {
             $bit['marketCost'] = $cheap['Item']->pricePerUnit * $bit['count'];
             $bit['marketHQ'] = $cheap['Item']->hq;
+            $bit['lastUpdate'] = time() - $cheap['Item']->lastReviewTime;
         }
         if ($listcheap !== null) {
             $bit['listCost'] = $listcheap * $bit['count'];
@@ -420,6 +421,11 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 
 }
 
+function secondsToTime($seconds) {
+    $dtF = new \DateTime('@0');
+    $dtT = new \DateTime("@$seconds");
+    return $dtF->diff($dtT)->format('%a days, %h hours, %i minutes and %s seconds');
+}
 
 function line($line, $tab)
 {
@@ -450,6 +456,7 @@ function line($line, $tab)
         if ($bit['shopCost'] > 0) {
             print "/ vendor ".number_format($bit['shopCost'])." gil";
         }
+        print(' ('.secondsToTime($ $bit['lastUpdate']).')');
         print "\n";
         line($bit['bits'], $tab + 1);
     }
