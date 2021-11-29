@@ -288,7 +288,9 @@ class FfxivDataSet
                 );
 
                 $id = $entry['Index'];
-                $name = MyPDO::quote($entry['Name']);
+                $name = strip_tags($entry['Name']);
+                $name = preg_replace('/[^A-Za-z0-9 \'\-]/', '', $name);
+                $name = MyPDO::quote($name);
                 $data = MyPDO::quote(json_encode($entry));
 
                 $sql = "INSERT INTO `items` (Id, Name, Data) "."VALUES ($id, $name, $data); ";
