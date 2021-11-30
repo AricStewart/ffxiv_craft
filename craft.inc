@@ -422,9 +422,17 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 }
 
 function secondsToTime($seconds) {
-    $dtF = new \DateTime('@0');
-    $dtT = new \DateTime("@$seconds");
-    return $dtF->diff($dtT)->format('%a days, %h hours, %i minutes and %s seconds');
+    $d = $seconds;
+    $q = floor($d / (24 * 3600));
+    $h = floor($d / 3600);
+    $m = floor($d % 3600 / 60);
+    $s = floor($d % 3600 % 60);
+
+    $dDisplay = $q > 0 ? $q . ($q == 1 ? " day, " : " days, ") : "";
+    $hDisplay = $h > 0 ? $h . ($h == 1 ? " hour, " : " hours, ") : "";
+    $mDisplay = $m > 0 ? $m . ($m == 1 ? " minute, " : " minutes, ") : "";
+    $sDisplay = $s > 0 ? $s . ($s == 1 ? " second" : " seconds") : "";
+    return $dDisplay . $hDisplay . $mDisplay . $sDisplay;
 }
 
 function line($line, $tab)
@@ -456,7 +464,7 @@ function line($line, $tab)
         if ($bit['shopCost'] > 0) {
             print "/ vendor ".number_format($bit['shopCost'])." gil";
         }
-        print(' ('.secondsToTime($ $bit['lastUpdate']).')');
+        print(' ('.secondsToTime($bit['lastUpdate']).')');
         print "\n";
         line($bit['bits'], $tab + 1);
     }
