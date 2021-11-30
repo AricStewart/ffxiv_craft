@@ -18,7 +18,7 @@
 .*/
 
 require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/xivapi.inc";
+require_once __DIR__."/universalis.inc";
 require __DIR__.'/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::create(__DIR__);
@@ -32,8 +32,8 @@ function printProfit($profit)
         if ($profit['HQ']) {
             $hq = '(*)';
         }
-        print "\n\t$hq cheapest ".$profit['Cheapest']->PricePerUnit." gil\n";
-        print "\t$hq Profit:".$profit['Profit']." gil\n";
+        print "\n\t$hq cheapest: ".$profit['Cheapest']['Item']->pricePerUnit." gil\n";
+        print "\t$hq Profit: ".$profit['Profit']." gil\n";
         print "\t$hq week (".$profit['Week']['Minimum'].' <- '.$profit['Week']['Average'].' -> '.$profit['Week']['Maximum'].' gil)';
 
         $profit[] = $profit;
@@ -42,7 +42,7 @@ function printProfit($profit)
 }
 
 
-$xiv = new Xivapi($_ENV['server'], $_ENV['xivapiKey']);
+$xiv = new Universalis($_ENV['server']);
 $xiv->verbose = false;
 
 print "Intializing...\n";
