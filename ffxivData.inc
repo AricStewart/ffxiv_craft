@@ -198,6 +198,7 @@ class FfxivDataSet
                 'Plural' => $data[3],
                 'PossessivePronoun' => intval($data[4]),
                 'StartsWithVowel' => intval($data[5]),
+                /* data[6] */
                 'Pronoun' => intval($data[7]),
                 'Article' => intval($data[8]),
                 'Description' => $data[9],
@@ -210,43 +211,48 @@ class FfxivDataSet
                 'ItemUICategory' => intval($data[16]),
                 'ItemSearchCategory' => intval($data[17]),
                 'EquipSlotCategory' => intval($data[18]),
-                'StackSize' => intval($data[20]),
-                'IsUnique' => $this->isTrue($data[21]),
-                'IsUntradable' => $this->isTrue($data[22]),
-                'IsIndisposable' => $this->isTrue($data[23]),
-                'IsEquippable' => $this->isTrue($data[24]),
-                'PriceMid' => intval($data[25]),
-                'PriceLow' => intval($data[26]),
-                'CanBeHq' => $this->isTrue($data[27]),
-                'IsDyeable' => $this->isTrue($data[28]),
-                'IsCrestWorthy' => $this->isTrue($data[29]),
-                'ItemAction' => intval($data[30]),
-                'Cooldown<s>' => intval($data[32]),
-                'ClassJob{Repair}' => intval($data[33]),
-                'Item{Repair}' => intval($data[34]),
-                'Item{Glamour}' => intval($data[35]),
-                'Salvage' => intval($data[36]),
-                'IsCollectable' => $this->isTrue($data[37]),
-                'AetherialReduce' => intval($data[38]),
-                'Level{Equip}' => intval($data[39]),
-                'EquipRestriction' => intval($data[41]),
-                'ClassJobCategory' => intval($data[42]),
-                'GrandCompany' => intval($data[43]),
-                'ItemSeries' => intval($data[44]),
-                'BaseParamModifier' => intval($data[45]),
-                'Model{Main}' => $data[46],
-                'Model{Sub}' => $data[47],
-                'ClassJob{Use}' => intval($data[48]),
-                'Damage{Phys}' => intval($data[50]),
-                'Damage{Mag}' => intval($data[51]),
-                'Delay<ms>' => intval($data[52]),
-                'BlockRate' => intval($data[54]),
-                'Block' => intval($data[55]),
-                'Defense{Phys}' => intval($data[56]),
-                'Defense{Mag}' => intval($data[57]),
+                'ItemSortCategory' => intval($data[19]),
+                /* $data[20] */
+                'StackSize' => intval($data[21]),
+                'IsUnique' => $this->isTrue($data[22]),
+                'IsUntradable' => $this->isTrue($data[23]),
+                'IsIndisposable' => $this->isTrue($data[24]),
+                'Lot' => $this->isTrue($data[25]),
+                'PriceMid' => intval($data[26]),
+                'PriceLow' => intval($data[27]),
+                'CanBeHq' => $this->isTrue($data[28]),
+                'IsDyeable' => $this->isTrue($data[29]),
+                'IsCrestWorthy' => $this->isTrue($data[30]),
+                'ItemAction' => intval($data[31]),
+                /* $data[32] */
+                'Cooldown<s>' => intval($data[33]),
+                'ClassJob{Repair}' => intval($data[34]),
+                'Item{Repair}' => intval($data[35]),
+                'Item{Glamour}' => intval($data[36]),
+                'Salvage' => intval($data[37]),
+                'IsCollectable' => $this->isTrue($data[38]),
+                'AlwaysCollectable' => $this->isTrue($data[39]),
+                'AetherialReduce' => intval($data[40]),
+                'Level{Equip}' => intval($data[41]),
+                /* $data[42] */
+                'EquipRestriction' => intval($data[43]),
+                'ClassJobCategory' => intval($data[44]),
+                'GrandCompany' => intval($data[45]),
+                'ItemSeries' => intval($data[46]),
+                'BaseParamModifier' => intval($data[47]),
+                'Model{Main}' => $data[48],
+                'Model{Sub}' => $data[49],
+                'ClassJob{Use}' => intval($data[50]),
+                /* data[51] */
+                'Damage{Phys}' => intval($data[52]),
+                'Damage{Mag}' => intval($data[53]),
+                'Delay<ms>' => intval($data[54]),
+                /* data[55] */
+                'BlockRate' => intval($data[56]),
+                'Block' => intval($data[57]),
+                'Defense{Phys}' => intval($data[58]),
+                'Defense{Mag}' => intval($data[59]),
                 'BaseParam' => [
-                ['Param' => intval($data[58]),
-                'Value' => intval($data[59])],
                 ['Param' => intval($data[60]),
                 'Value' => intval($data[61])],
                 ['Param' => intval($data[62]),
@@ -256,12 +262,12 @@ class FfxivDataSet
                 ['Param' => intval($data[66]),
                 'Value' => intval($data[67])],
                 ['Param' => intval($data[68]),
-                'Value' => intval($data[69])]],
-                'ItemSpecialBonus' => intval($data[70]),
-                'ItemSpecialBonus{Param}' => intval($data[71]),
+                'Value' => intval($data[69])],
+                ['Param' => intval($data[70]),
+                'Value' => intval($data[71])]],
+                'ItemSpecialBonus' => intval($data[72]),
+                'ItemSpecialBonus{Param}' => intval($data[73]),
                 'BaseParam{Special}' => [
-                ['Param' => intval($data[72]),
-                'Value' => intval($data[73])],
                 ['Param' => intval($data[74]),
                 'Value' => intval($data[75])],
                 ['Param' => intval($data[76]),
@@ -271,12 +277,15 @@ class FfxivDataSet
                 ['Param' => intval($data[80]),
                 'Value' => intval($data[81])],
                 ['Param' => intval($data[82]),
-                'Value' => intval($data[83])]],
-                'MaterializeType' => intval($data[84]),
-                'MateriaSlotCount' => intval($data[85]),
-                'IsAdvancedMeldingPermitted' => $this->isTrue($data[86]),
-                'IsPvP' => $this->isTrue($data[87]),
-                'IsGlamourous' => $this->isTrue($data[89])
+                'Value' => intval($data[83])],
+                ['Param' => intval($data[84]),
+                'Value' => intval($data[85])]],
+                'MaterializeType' => intval($data[86]),
+                'MateriaSlotCount' => intval($data[87]),
+                'IsAdvancedMeldingPermitted' => $this->isTrue($data[88]),
+                'IsPvP' => $this->isTrue($data[89]),
+                'SubStatCategory' => intval($data[90]),
+                'IsGlamourous' => $this->isTrue($data[91])
                 ];
                 $entry['BaseParam'] = array_filter(
                     $entry['BaseParam'],
@@ -780,14 +789,16 @@ SQL;
     }
 
 
-    public function getItem($param)
+    public function getItem($param = null)
     {
         $this->checkItemTable();
         if (is_numeric($param)) {
             $sql = "SELECT `Data` FROM `items` WHERE `ID` = $param;";
-        } else {
+        } elseif ($param) {
             $p = MyPDO::quote($param);
             $sql = "SELECT `Data` FROM `items` WHERE lower(Name) = $p;";
+        } else {
+            $sql = "SELECT `Data` FROM `items`;";
         }
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -799,14 +810,16 @@ SQL;
     }
 
 
-    public function getItems($param)
+    public function getItems($param = null)
     {
         $this->checkItemTable();
         if (is_numeric($param)) {
             $sql = "SELECT `ID` FROM `items` WHERE `ID` = $param;";
-        } else {
+        } elseif($param) {
             $param = strtolower($param);
             $sql = "SELECT `ID` FROM `items` WHERE lower(Name) LIKE '%$param%';";
+        } else {
+            $sql = "SELECT * FROM `items`;";
         }
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -815,7 +828,11 @@ SQL;
             if ($output === null) {
                 $output = [];
             }
-            $output[] = $value['ID'];
+            if ($param) {
+                $output[] = $value['ID'];
+            } else {
+                $output[] = json_decode($value['Data']);
+            }
             $value = $result->fetch();
         }
         return $output;
