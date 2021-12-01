@@ -14,10 +14,8 @@ services:
         DBNAME: ${DBNAME}
         DBPASS: ${DBPASS}
         DBUSER: ${DBUSER}
-        TEST_DBNAME: ${TEST_DBNAME}
-        DB_BACKEND: ${DB_BACKEND}
+        DBPORT: ${DBPORT}
         API_SERVER: "http://apache"
-        DOCKER: 1
   composer:
     restart: 'no'
     image: "composer"
@@ -45,8 +43,11 @@ services:
       MYSQL_DATABASE: ${DBNAME}
       MYSQL_PASSWORD: ${DBPASS}
       MYSQL_USER: ${DBUSER}
+      MYSQL_TCP_PORT: ${DBPORT}
     ports:
-      - "3306:3306"
+      - "${DBPORT}:${DBPORT}"
+    expose:
+      - ${DBPORT}
     volumes:
       - mysql:/var/lib/mysql
 networks:
