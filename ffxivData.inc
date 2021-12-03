@@ -182,7 +182,10 @@ class FfxivDataSet
         DB::run($sql);
         $handle = fopen($this->baseData.$this->itemData, "r");
         $skip = 3;
+        $max_batch = 1000;
         if (empty($handle) === false) {
+            $batch = $max_batch;
+            $sql = '';
             while (($data = fgetcsv($handle, 2000, ",")) !== false) {
                 if ($skip) {
                     $skip--;
@@ -302,9 +305,17 @@ class FfxivDataSet
                 $name = MyPDO::quote($name);
                 $data = MyPDO::quote(json_encode($entry));
 
-                $sql = "INSERT INTO `items` (Id, Name, Data) "."VALUES ($id, $name, $data); ";
-                DB::run($sql);
+                $sql .= "INSERT INTO `items` (Id, Name, Data) "."VALUES ($id, $name, $data); ";
+                $batch -= 1;
+                if ($batch <= 0) {
+                    DB::run($sql);
+                    $batch = $max_batch;
+                    $sql = '';
+                    print('.');
+                }
             }
+            DB::run($sql);
+            print(".\n");
             fclose($handle);
         }
 
@@ -313,6 +324,7 @@ class FfxivDataSet
 
     private function checkItemTable()
     {
+        $force = false;
         $sql = "SHOW TABLES LIKE 'items';";
         $result = DB::run($sql);
         $value = $result->fetch();
@@ -326,8 +338,9 @@ class FfxivDataSet
                 );
 SQL;
             DB::run($sql);
+            $force = true;
         }
-        $this->loadItems();
+        $this->loadItems($force);
 
     }
 
@@ -354,7 +367,10 @@ SQL;
 
         $handle = fopen($this->baseData.$this->recipeData, "r");
         $skip = 3;
+        $max_batch = 500;
         if (empty($handle) === false) {
+            $batch = $max_batch;
+            $sql = '';
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
                 if ($skip) {
                     $skip--;
@@ -424,18 +440,26 @@ SQL;
                 $data = MyPDO::quote(json_encode($entry));
                 $level = $this->RecipeLevelTable[$entry['RecipeLevelTable']]->ClassJobLevel;
 
-                $sql = "INSERT INTO `recipes` (Id, Item, CraftType,"."RecipeLevel, Book, Data) "."VALUES ($id, $item, $type, $level, $book, $data); ";
-                DB::run($sql);
+                $sql .= "INSERT INTO `recipes` (Id, Item, CraftType,"."RecipeLevel, Book, Data) "."VALUES ($id, $item, $type, $level, $book, $data); ";
 
                 foreach ($entry['Ingredients'] as $ingred) {
                     if ($ingred['Item'] > 0) {
                         $i = strval($ingred['Item']);
                         $a = strval($ingred['Amount']);
-                        $sql = "INSERT INTO `ingredients` (Id, Recipe, Item, Amount, Level) VALUES ($id, $item, $i, $a, $level);";
-                        DB::run($sql);
+                        $sql .= "INSERT INTO `ingredients` (Id, Recipe, Item, Amount, Level) VALUES ($id, $item, $i, $a, $level); ";
                     }
                 }
+
+                $batch -= 1;
+                if ($batch <= 0) {
+                    DB::run($sql);
+                    $batch = $max_batch;
+                    $sql = '';
+                    print(".");
+                }
             }
+            DB::run($sql);
+            print(".\n");
             fclose($handle);
         }
 
@@ -461,6 +485,7 @@ SQL;
                 );
 SQL;
             DB::run($sql);
+            $force = true;
         }
         $sql = "SHOW TABLES LIKE 'ingredients';";
         $result = DB::run($sql);
@@ -1216,9 +1241,6 @@ SQL;
 
         $this->checkItemTable();
         $this->checkRecipeTable();
-        $this->loadItems(true);
-        $this->loadRecipes(true);
-
     }
 
 
