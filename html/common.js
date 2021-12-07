@@ -22,7 +22,7 @@ function printLine(line, tab)
     if (l.craftCost > 0) {
       output += '<a href="index.php?server=' + server + '&item=' + l.id + '&crafter=' + l.craftedBy + '" target="_blank">';
     } else {
-      output += '<a href="https://mogboard.com/market/' + l.id + '" target="_blank">';
+      output += '<a href="https://universalis.app/market/' + l.id + '" target="_blank">';
     }
     output += l.name + '</a> (x' + l.count + ') -> ';
 

@@ -101,6 +101,8 @@ foreach ($dataset->world as $entry) {
     <option value=14>level 66-70</option>
     <option value=15>level 71-75</option>
     <option value=16>level 76-80</option>
+    <option value=17>level 81-85</option>
+    <option value=18>level 86-90</option>
 </select>
       <div class="input-group-append">
         <select class="custom-select" id="crafter">
