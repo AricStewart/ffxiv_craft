@@ -270,6 +270,10 @@ SQL;
 
     }
 
+    private function timeCloseEnough($item1, $item2)
+    {
+        return (abs($item1->lastReviewTime - $item2->lastReviewTime)) < 3600;
+    }
 
     public function currentCheapest($market, $HQ = null)
     {
@@ -278,6 +282,16 @@ SQL;
         $winner = null;
         if ($market !== null && $market->Prices !== null) {
             foreach ($market->Prices as $entry) {
+                if ($winner === null) {
+                    $winner = $entry;
+                    $quantity = $entry->quantity;
+                } elseif ($entry->lastReviewTime > $winner->lastReviewTime) {
+                    $winner = $entry;
+                    $quantity = $entry->quantity;
+                }
+            }
+
+            foreach ($market->Prices as $entry) {
                 if ($HQ !== null && $HQ != $entry->hq) {
                     continue;
                 }
@@ -285,11 +299,13 @@ SQL;
                 if ($winner === null) {
                     $winner = $entry;
                     $quantity = $entry->quantity;
-                } elseif ($entry->pricePerUnit === $winner->pricePerUnit) {
-                    $quantity += $entry->quantity;
-                } elseif ($entry->pricePerUnit < $winner->pricePerUnit) {
-                    $winner = $entry;
-                    $quantity = $entry->quantity;
+                } elseif ($this->timeCloseEnough($entry, $winner)) {
+                    if ($entry->pricePerUnit === $winner->pricePerUnit) {
+                        $quantity += $entry->quantity;
+                    } elseif ($entry->pricePerUnit < $winner->pricePerUnit) {
+                        $winner = $entry;
+                        $quantity = $entry->quantity;
+                    }
                 }
             }
         }
