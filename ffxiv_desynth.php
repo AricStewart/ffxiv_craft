@@ -78,8 +78,13 @@ foreach ($result as $idx => &$i) {
     $data = $xiv->getMarket($i->Index, false, 'noop');
     if (!$data) {
         unset($result[$idx]);
+        continue;
     }
     $cheap = $xiv->currentCheapest($data);
+    if (!$cheap) {
+        unset($result[$idx]);
+        continue;
+    }
     $i->Cost = $cheap['Item']->pricePerUnit;
 }
 usort($result, "sortMe");
