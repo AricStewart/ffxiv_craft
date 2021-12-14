@@ -44,6 +44,7 @@ if (isset($data['crafter'])) {
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
 <script src="crafting.js?version=<?php echo hash_file('sha256', 'crafting.js');?>"></script>
 <script src="clipboard.min.js"></script>
+<?php include __DIR__.'/ads.php'; ?>
 </head>
 <body>
 

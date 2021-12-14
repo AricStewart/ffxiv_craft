@@ -37,6 +37,7 @@ if (isset($data['crafter'])) {
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
 <script src="tier.js?version=<?php echo hash_file('sha256', 'tier.js');?>"></script>
 <script src="clipboard.min.js"></script>
+<?php include __DIR__.'/ads.php'; ?>
 </head>
 <body>
 

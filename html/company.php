@@ -22,6 +22,7 @@ $dotenv->load();
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
 <script src="company.js?version=<?php echo hash_file('sha256', 'company.js');?>"></script>
 <script src="clipboard.min.js"></script>
+<?php include __DIR__.'/ads.php'; ?>
 </head>
 <body>
 

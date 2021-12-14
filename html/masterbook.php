@@ -44,6 +44,7 @@ if (isset($data['item'])) {
 <script src="common.js?version=<?php echo hash_file('sha256', 'common.js');?>"></script>
 <script src="master.js?version=<?php echo hash_file('sha256', 'master.js');?>"></script>
 <script src="clipboard.min.js"></script>
+<?php include __DIR__.'/ads.php'; ?>
 </head>
 <body>
 
