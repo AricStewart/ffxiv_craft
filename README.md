@@ -23,6 +23,12 @@ To setup you will need to acquire API keys from FFXIV Market and XIVAPI. Both ar
 
 If you look at the Garland Database <https://garlandtools.org/db/#> then click on the gear on the item and look at the item #.
 
+### Getting Started
+
+You need a `.env` file to show the environment. `.env.sample` is an example.
+
+If you are running in docker, which is the fastest startup path, you can start the docker backend using  `docker-compose -f docker-compose.yml up`
+
 ### Command Line Usage
 
 There are 2 main tools, without much in the way of usage statements. These can mostly be seen as templates to build your own tools but they also should serve as being usable for the average non-programmers also, so a quick explanation here.
