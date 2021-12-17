@@ -273,6 +273,113 @@ function fillRecipeFrame(data, linkback, profit, marketboard)
 
 }
 
+function fillRecipeLine(data, linkback)
+{
+  if (data === null) {
+    return;
+  }
+  var marketCost = 'CALCULATING...';
+  if (data.Cost.Market <= 0) {
+    marketCost = 'UNAVAILABLE';
+  } else {
+    marketCost = data.Cost.Market.toLocaleString() + ' gil';
+  }
+
+  var optimalCost = 'CALCULATING...';
+  if (data.Cost.Optimal <= 0) {
+    optimalCost = 'UNAVAILABLE';
+  } else {
+    optimalCost = data.Cost.Optimal.toLocaleString() + ' gil';
+  }
+
+  var dataName = '';
+  var server = encodeURI(document.getElementById('server').value);
+  if (linkback) {
+    if (data.Info !== null) {
+      var item = encodeURI(data.ID);
+      dataName = '<a href="index.php?server=' + server + '&item=' + item +
+        '&crafter=' + data.Info.CraftTypeName + '" target="_blank">' +
+        data.Name + '</a>';
+      if (data.Info.Result.Amount > 1 || data.Count > 1) {
+        dataName += ' x' + data.Info.Result.Amount * data.Count;
+      }
+    } else {
+      dataName = data.Name;
+    }
+  } else {
+    dataName = '<a href="http://www.garlandtools.org/db/#item/' + data.ID +
+        '" target="_blank">' + data.Name + '</a>';
+    if (data.Info !== null && data.Info.Result.Amount > 1) {
+      dataName += ' x' + data.Info.Result.Amount;
+    }
+  }
+
+  var recent = 'CALCULATING...';
+  if (data.Recent === undefined || data.Recent.LQ === null) {
+    recent = 'UNAVAILABLE';
+  } else {
+    recent = data.Recent.LQ.pricePerUnit.toLocaleString() + ' gil';
+    recent += '&nbsp;' + makeDot((Date.now() / 1000) -
+              data.Recent.LQ.timestamp);
+  }
+  if (data.Recent.HQ !== null) {
+    if (data.Recent.LQ === null ||
+        data.Recent.HQ.pricePerUnit > data.Recent.LQ.pricePerUnit) {
+      recent = data.Recent.HQ.pricePerUnit.toLocaleString() + ' gil';
+      recent += '&nbsp;<img src=\'hq.png\'>';
+      recent += '&nbsp;' + makeDot((Date.now() / 1000) -
+                data.Recent.HQ.timestamp);
+    }
+  }
+
+  var weekly = 'CALCULATING...';
+  if (data.Week === undefined || data.Week.LQ === null) {
+    weekly = 'UNAVAILABLE';
+  } else {
+    weekly = data.Week.LQ.Average.toLocaleString() + ' gil';
+  }
+  if (data.Week.HQ !== null) {
+    if (data.Week.LQ === null ||
+        data.Week.HQ.Average > data.Week.LQ.Average) {
+      weekly = data.Week.HQ.Average.toLocaleString() + ' gil';
+      weekly += '&nbsp;<img src=\'hq.png\'>';
+    }
+  }
+
+  var cheap = 'CALCULATING...';
+  if (data.Cheap.LQ === null) {
+    cheap = 'UNAVAILABLE';
+  } else {
+    cheap = data.Cheap.LQ.Item.pricePerUnit.toLocaleString() + ' gil';
+    cheap += '&nbsp;' + makeDot((Date.now() / 1000) -
+             data.Cheap.LQ.Item.lastReviewTime);
+  }
+  if (data.Cheap !== undefined && data.Cheap.HQ !== null) {
+    cheap += ' / <img src=\'hq.png\'>';
+    cheap += data.Cheap.HQ.Item.pricePerUnit.toLocaleString() + ' gil';
+    cheap += '&nbsp;' + makeDot((Date.now() / 1000) -
+             data.Cheap.HQ.Item.lastReviewTime);
+  }
+
+  var sect = '<tr><td>' + dataName + '</td><td>' + marketCost +
+             '</td><td>' + optimalCost + '</td><td>' + recent +
+             '</td><td>' + weekly + '</td><td>' + cheap + '</td>';
+
+  if (data.Profit !== undefined) {
+    var profitVal = data.Profit.LQ.toLocaleString() + ' gil';
+    var profitPer = Math.round(data.Profit['LQ%'] * 100) + '%';
+    if (data.Profit.HQ > data.Profit.LQ) {
+      profitVal = data.Profit.HQ.toLocaleString() + ' gil';
+      profitVal += '&nbsp;<img src=\'hq.png\'>';
+      profitPer = Math.round(data.Profit['HQ%'] * 100) + '%';
+    }
+    sect += '<td>' + profitVal + '</td><td>' + profitPer + '</td>';
+  }
+  sect += '</tr>';
+  return sect;
+
+}
+
 function recipeCard(data, linkback, open)
 {
   var sect = '<div class="card m-5 shadow-lg" id="RecipeParent' + data.ID + '"> <div class="card-body">';
@@ -475,18 +582,36 @@ function fillOutputFrame(dataset)
     if (dataset.length == 1) {
       return fillOutputFrame(dataset[0]);
     }
-    dataset.forEach(function(data) {
-      updateCrafter(data);
-      sect = '<div class="card m-5 shadow-lg" id="RecipeParent' + data.ID + '"> <div class="card-body">';
-      sect += recipeCard(data, true, false);
-      document.getElementById('output').innerHTML += sect;
+
+    dataset.sort(function(a, b) {
+      var z = function(data) {
+        var profitPer = 0;
+        if (data.Profit !== undefined) {
+          profitPer = data.Profit['LQ%'];
+          if (data.Profit['HQ%'] > data.Profit['LQ%']) {
+            profitPer = data.Profit['HQ%'];
+          }
+        }
+        return profitPer;
+      }
+      return z(b) - z(a);
     });
+
+    sect = '<div class="card m-5 shadow-lg" id="RecipeParent"> ' +
+           '<div class="card-body"><table class="table-striped ' +
+           'table-bordered table">';
+    sect += '<tr><th>Recipe</th><th>Market Cost</th><th>Optimal Cost</th>' +
+            '<th>Recent Sale</th><th>Weekly Average</th>' +
+            '<th>Current Listings</th><th>Profit</th><th>Profit %</th><tr>';
     dataset.forEach(function(data) {
-      setupCollapse(data);
+      sect += fillRecipeLine(data, true);
     });
+    sect += '</table></div></div>';
+    document.getElementById('output').innerHTML += sect;
   } else {
     updateCrafter(dataset);
-    sect = '<div class="card m-5" id="RecipeParent' + dataset.ID + '"> <div class="card-body">';
+    sect = '<div class="card m-5" id="RecipeParent' + dataset.ID +
+           '"> <div class="card-body">';
     sect += recipeCard(dataset, false, true);
     document.getElementById('output').innerHTML += sect;
 
