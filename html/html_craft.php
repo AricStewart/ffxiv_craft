@@ -77,12 +77,16 @@ function get_arguments(
 
 function getItemSet($dataset, $itemID, $match)
 {
+    $output = array();
     if ($match) {
-        $item = $dataset->getItem($itemID);
-        if ($item !== null) {
-            return array($item->Index);
+        $set = explode(',', $itemID);
+        foreach($set as $i) {
+            $item = $dataset->getItem(trim($i));
+            if ($item !== null) {
+                $output[] = $item->Index;
+            }
         }
-        return null;
+        return $output;
     } else {
         $set = $dataset->getItems($itemID);
         if ($set === null) {
@@ -91,7 +95,6 @@ function getItemSet($dataset, $itemID, $match)
 
         $size = count($set);
         if ($size > 1) {
-            $output = array();
             foreach ($set as $index => $i) {
                 $r = $dataset->getRecipe($i, null);
                 if ($r !== null) {
