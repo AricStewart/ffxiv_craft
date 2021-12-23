@@ -333,16 +333,19 @@ function fillRecipeLine(data, linkback)
   }
 
   var weekly = 'CALCULATING...';
+  var weekCount = 0;
   if (data.Week === undefined || data.Week.LQ === null) {
     weekly = 'UNAVAILABLE';
   } else {
     weekly = data.Week.LQ.Average.toLocaleString() + ' gil';
+    weekCount = data.Week.LQ.Count;
   }
   if (data.Week.HQ !== null) {
     if (data.Week.LQ === null ||
         data.Week.HQ.Average > data.Week.LQ.Average) {
       weekly = data.Week.HQ.Average.toLocaleString() + ' gil';
       weekly += '&nbsp;<img src=\'hq.png\'>';
+      weekCount = data.Week.HQ.Count;
     }
   }
 
@@ -361,9 +364,11 @@ function fillRecipeLine(data, linkback)
              data.Cheap.HQ.Item.lastReviewTime);
   }
 
-  var sect = '<tr><td>' + dataName + '</td><td>' + marketCost +
+  var sect = '<tr><td>' + dataName + '</td><td>' +
+             data.Info.RecipeLevel.ClassJobLevel + '</td><td>' + marketCost +
              '</td><td>' + optimalCost + '</td><td>' + recent +
-             '</td><td>' + weekly + '</td><td>' + cheap + '</td>';
+             '</td><td>' + weekly + '</td><td>' + weekCount +
+             '</td><td>' + cheap + '</td>';
 
   if (data.Profit !== undefined) {
     var profitVal = data.Profit.LQ.toLocaleString() + ' gil';
@@ -600,8 +605,9 @@ function fillOutputFrame(dataset)
     sect = '<div class="card m-5 shadow-lg" id="RecipeParent"> ' +
            '<div class="card-body"><table class="table-striped ' +
            'table-bordered table">';
-    sect += '<tr><th>Recipe</th><th>Market Cost</th><th>Optimal Cost</th>' +
-            '<th>Recent Sale</th><th>Weekly Average</th>' +
+    sect += '<tr><th>Recipe</th><th>Level</th><th>Market Cost</th>' +
+            '<th>Optimal Cost</th><th>Recent Sale</th>' +
+            '<th>Weekly Average</th><th>Weekly Sales</th>' +
             '<th>Current Listings</th><th>Profit</th><th>Profit %</th><tr>';
     dataset.forEach(function(data) {
       sect += fillRecipeLine(data, true);
