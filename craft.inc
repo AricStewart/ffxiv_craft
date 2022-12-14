@@ -185,18 +185,15 @@ function calculateProfit(&$recipe)
         $Price['HQ%'] = ($Price['HQ'] / $recipe['Cost']['Optimal']) - 1.0;
     }
 
-    if ($recipe['Cost']['Marketboard']) {
-        $Price['Market_LQ'] = $Price['LQ'] - $recipe['Cost']['Marketboard'];
-        $Price['Market_HQ'] = $Price['HQ'] - $recipe['Cost']['Marketboard'];
-        $Price['Market_LQ%'] = ($Price['LQ'] / $recipe['Cost']['Marketboard']) - 1.0;
-        $Price['Market_HQ%'] = ($Price['HQ'] / $recipe['Cost']['Marketboard']) - 1.0;
+    if ($recipe['Cost']['Market']) {
+        $Price['Market_LQ'] = $Price['LQ'] - $recipe['Cost']['Market'];
+        $Price['Market_HQ'] = $Price['HQ'] - $recipe['Cost']['Market'];
+        $Price['Market_LQ%'] = ($Price['LQ'] / $recipe['Cost']['Market']) - 1.0;
+        $Price['Market_HQ%'] = ($Price['HQ'] / $recipe['Cost']['Market']) - 1.0;
     }
 
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
-
-    if ($recipe['Cost']['Marketboard']) {
-    }
 
     $recipe['Profit'] = $Price;
 
@@ -537,7 +534,7 @@ function printRecipe($recipe)
 
     print "Craft at Market Board: ";
     if ($recipe['Cost']['Market'] > 0) {
-        print number_format($recipe['Cost']['Marketboard'])." gil \n";
+        print number_format($recipe['Cost']['Market'])." gil \n";
     } else {
         print "UNAVLIABLE\n";
     }
@@ -553,22 +550,22 @@ function printRecipe($recipe)
     if ($recipe['Recent']['HQ']) {
         print "\tRecent:\t\tHQ ".number_format($recipe['Recent']['HQ']->pricePerUnit).' gil';
     } else {
-        print "\tRecent:\t\tHQ NONE";
+        print "\tRecent:\t\tHQ NONE    ";
     }
     if ($recipe['Recent']['LQ']) {
         print "\tLQ ".number_format($recipe['Recent']['LQ']->pricePerUnit)." gil\n";
     } else {
-        print "\tLQ NONE\n";
+        print "\tLQ NONE    \n";
     }
     if ($recipe['Week']['HQ']) {
         print "\tWeekly Average:\tHQ ".number_format($recipe['Week']['HQ']['Average']).' gil';
     } else {
-        print "\tWeekly Average:\tHQ NONE";
+        print "\tWeekly Average:\tHQ NONE    ";
     }
     if ($recipe['Week']['LQ']['Average']) {
         print "\tLQ ".number_format($recipe['Week']['LQ']['Average'])." gil\n";
     } else {
-        print "\tLQ NONE\n";
+        print "\tLQ NONE    \n";
     }
 
     print "====================================\n";
