@@ -39,6 +39,7 @@ class Universalis
 
     public int $timeout = 3600;
 
+    private array $localCache;
 
     private function checkCacheTable()
     {
@@ -77,6 +78,7 @@ SQL;
         $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
         $this->checkCacheTable();
+        $this->localCache = [];
 
     }
 
@@ -122,6 +124,11 @@ SQL;
 
     private function fromCache($path)
     {
+        if (array_key_exists($path, $this->localCache)) {
+            if ($this->localCache[$path] !== null)
+                return json_decode($this->localCache[$path]);
+            return null;
+        }
         $qpath = MyPDO::quote($path);
         $sql = "SELECT `Data` FROM `universalisData` WHERE `Path` = $qpath AND "."Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
         $result = DB::run($sql);
@@ -136,6 +143,7 @@ SQL;
 
     private function toCache($path, $entry)
     {
+        $this->localCache[$path] = json_encode($entry);
         $name = MyPDO::quote($path);
         $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
         $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
@@ -185,25 +193,32 @@ SQL;
                     return null;
                 }
 
+                $url .= implode(',',$ids);
                 $promise = $this->client->requestAsync('GET', $url);
 
-                $base = $this;
                 $promise->then(
-                    function ($response) use ($base, $ids) {
-                            $contents = $response->getBody();
-                            $data = json_decode($contents);
+                    function ($response) use ($ids) {
+                        $contents = $response->getBody();
+                        $data = json_decode($contents);
                         if (count($ids) < 2) {
                             $output = new stdClass();
                             $output->itemIDs = $ids;
                             $output->items = new stdClass();
-                            $output->items->${ids[0]} = $data;
+                            $output->items->{$ids[0]} = $data;
                         } else {
                             $output = $data;
                         }
                         foreach ($output->itemIDs as $id) {
+                            if (!property_exists($output->items, $id)) {
+                                $path = $this->buildPath("market", $id);
+                                $this->localCache[$path] = null;
+                                $path = $this->buildPath("history", $id);
+                                $this->localCache[$path] = null;
+                                continue;
+                            }
                             $item = $output->items->$id;
-                            $path = $base->buildPath("market", $id);
-                            $base->toCache($path, ['Prices' => $item->listings]);
+                            $path = $this->buildPath("market", $id);
+                            $this->toCache($path, ['Prices' => $item->listings]);
 
                             /* Prune history */
                             $old = strtotime("-1 week");
@@ -214,8 +229,8 @@ SQL;
                                     unset($item->recentHistory[$key]->buyerName);
                                 }
                             }
-                            $path = $base->buildPath("history", $id);
-                            $base->toCache($path, ['History' => $item->recentHistory]);
+                            $path = $this->buildPath("history", $id);
+                            $this->toCache($path, ['History' => $item->recentHistory]);
                         }
                     },
                     function (Exception $e) use ($progress) {
@@ -256,7 +271,7 @@ SQL;
         $data = $this->getUniversalisData(
             'history',
             $ID,
-            "$this->server/".implode(',', $ID),
+            "$this->server/",
             $async,
             $progress
         );
@@ -277,7 +292,7 @@ SQL;
         $data = $this->getUniversalisData(
             'market',
             $ID,
-            "$this->server/".implode(',', $ID),
+            "$this->server/",
             $async,
             $progress
         );
