@@ -607,14 +607,17 @@ SQL;
                     $skip--;
                     continue;
                 }
-                if (!$this->isTrue($data[4])) {
+                if (!$this->isTrue($data[6])) {
                     continue;
                 }
                 $entry = [
-                'Index' => intval($data[0]),
-                'Name' => $data[1],
-                'DataCenter' => intval($data[3]),
-                'Public' => $this->isTrue($data[3]),
+                    'Index' => intval($data[0]),
+                    'InternalName' => $data[1],
+                    'Name' => $data[2],
+                    'Region' => intval($data[3]),
+                    'UserType' => intval($data[4]),
+                    'DataCenter' => intval($data[5]),
+                    'Public' => $this->isTrue($data[6]),
                 ];
                 $this->world[] = json_decode(json_encode($entry));
             }
