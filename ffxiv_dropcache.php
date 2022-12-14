@@ -17,12 +17,10 @@
     require_module 'standard';
 .*/
 
-require_once __DIR__."/ffxivData.inc";
-require_once __DIR__."/craft.inc";
+require_once __DIR__."/universalis.inc";
 require __DIR__.'/vendor/autoload.php';
 
 $dotenv = Dotenv\Dotenv::create(__DIR__);
 $dotenv->load();
 
-$dataset = new FfxivDataSet();
-$dataset->resetAndReload();
+Universalis::dropCacheTable();

@@ -47,6 +47,7 @@ if (!is_numeric($typeID)) {
     $typeID = 8 + $result;
 }
 
+
 function doit($target, $type)
 {
     global $dataset, $limit;
@@ -62,6 +63,7 @@ function doit($target, $type)
 
 }
 
+
 function sortMe($a, $b)
 {
     return $a->Cost - $b->Cost;
@@ -71,7 +73,9 @@ function sortMe($a, $b)
 
 function noop($stage, $data = null)
 {
+
 }
+
 
 $result = doit($target, $typeID);
 foreach ($result as $idx => &$i) {
@@ -80,7 +84,7 @@ foreach ($result as $idx => &$i) {
         unset($result[$idx]);
         continue;
     }
-    $cheap = $xiv->currentCheapest($data);
+    $cheap = $xiv->currentCheapest($data[$i->Index]);
     if (!$cheap) {
         unset($result[$idx]);
         continue;

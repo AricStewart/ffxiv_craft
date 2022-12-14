@@ -23,6 +23,7 @@ $SHARD_DEFAULT = 20;
 $CRYSTAL_DEFAULT = 20;
 $CLUSTER_DEFAULT = 20;
 
+
 function countItems($recipe, &$i)
 {
     $i += count($recipe);
@@ -33,17 +34,28 @@ function countItems($recipe, &$i)
 }
 
 
-function preDownloadData($input, $xiv, $progress)
+function buildIdArray($bits, &$ids)
 {
-    foreach ($input as $bit) {
-        $xiv->getMarket($bit['id'], true, $progress);
-        report_progress($progress);
-        $xiv->getHistory($bit['id'], true, $progress);
-        report_progress($progress);
+    foreach ($bits as $bit) {
+        if (!in_array($bit['id'], $ids)) {
+            $ids[] = $bit['id'];
+        }
         if ($bit['bits']) {
-            preDownloadData($bit['bits'], $xiv, $progress);
+            buildIdArray($bit['bits'], $ids);
         }
     }
+    return $ids;
+
+}
+
+
+function preDownloadData($itemId, $input, $xiv, $progress)
+{
+    $ids = [$itemId];
+    buildIdArray($input, $ids);
+    $xiv->getMarket($ids, true, $progress);
+    report_progress($progress);
+    $xiv->flushPool($progress);
 
 }
 
@@ -70,7 +82,7 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
         if ($priceList && array_key_exists($bit['id'], $priceList)) {
             $listcheap = $priceList[$bit['id']];
         } else {
-            $cheap = $xiv->currentCheapest($market);
+            $cheap = $xiv->currentCheapest($market[$bit['id']]);
         }
         if ($cheap != null) {
             $bit['marketCost'] = $cheap['Item']->pricePerUnit * $bit['count'];
@@ -98,7 +110,7 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
             $listCost = -1;
         } else {
             $listCost += $bit['listCost'];
-            if ($bitOptimal == -1 || $listCost <  $bitOptimal) {
+            if ($bitOptimal == -1 || $listCost < $bitOptimal) {
                 $bitOptimal = $bit['listCost'];
             }
         }
@@ -136,6 +148,7 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
 
 }
 
+
 function calculateProfit(&$recipe)
 {
     $Price = ['HQ' => null, 'LQ' => null];
@@ -172,8 +185,18 @@ function calculateProfit(&$recipe)
         $Price['HQ%'] = ($Price['HQ'] / $recipe['Cost']['Optimal']) - 1.0;
     }
 
+    if ($recipe['Cost']['Marketboard']) {
+        $Price['Market_LQ'] = $Price['LQ'] - $recipe['Cost']['Marketboard'];
+        $Price['Market_HQ'] = $Price['HQ'] - $recipe['Cost']['Marketboard'];
+        $Price['Market_LQ%'] = ($Price['LQ'] / $recipe['Cost']['Marketboard']) - 1.0;
+        $Price['Market_HQ%'] = ($Price['HQ'] / $recipe['Cost']['Marketboard']) - 1.0;
+    }
+
     $Price['LQ'] -= $recipe['Cost']['Optimal'];
     $Price['HQ'] -= $recipe['Cost']['Optimal'];
+
+    if ($recipe['Cost']['Marketboard']) {
+    }
 
     $recipe['Profit'] = $Price;
 
@@ -239,14 +262,9 @@ function doRecipieFromRecipe($recipe, $dataset, $xiv, $progress = null, $priceLi
         return $recipe;
     }
 
-    preDownloadData($recipe['Recipe'], $xiv, $progress);
-    report_progress($progress, "partial", json_encode($recipe));
-
     $itemID = $recipe['ID'];
     /* Pre Download */
-    $xiv->getHistory($itemID, true, $progress);
-    $xiv->getMarket($itemID, true, $progress);
-    $xiv->flushPool($progress);
+    preDownloadData($itemID, $recipe['Recipe'], $xiv, $progress);
     report_progress($progress, "partial", json_encode($recipe));
 
     $item = $dataset->getItem($recipe['ID']);
@@ -258,14 +276,14 @@ function doRecipieFromRecipe($recipe, $dataset, $xiv, $progress = null, $priceLi
     }
     report_progress($progress, "partial", json_encode($recipe));
     $history = $xiv->getHistory($itemID, false, $progress);
-    $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history, false),
-    'HQ' => $xiv->mostRecent($history, true)];
-    $recipe['Week'] = ['LQ' => $xiv->weekAverage($history, false),
-    'HQ' => $xiv->weekAverage($history, true)];
+    $recipe['Recent'] = ['LQ' => $xiv->mostRecent($history[$itemID], false),
+    'HQ' => $xiv->mostRecent($history[$itemID], true)];
+    $recipe['Week'] = ['LQ' => $xiv->weekAverage($history[$itemID], false),
+    'HQ' => $xiv->weekAverage($history[$itemID], true)];
     report_progress($progress, "partial", json_encode($recipe));
     $market = $xiv->getMarket($itemID, false, $progress);
-    $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market, false),
-    'HQ' => $xiv->currentCheapest($market, true)];
+    $recipe['Cheap'] = ['LQ' => $xiv->currentCheapest($market[$itemID], false),
+    'HQ' => $xiv->currentCheapest($market[$itemID], true)];
 
     $c = -1;
     if ($recipe['Cheap']['LQ'] !== null) {
@@ -365,15 +383,15 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
     $target['marketCost'] = -1;
     $market = $xiv->getMarket($target['ID'], false, $progress);
     $target['MarketNumber'] = count($market);
-    $cheap = $xiv->currentCheapest($market);
+    $cheap = $xiv->currentCheapest($market[$target['ID']]);
     if ($cheap != null) {
         $target['marketCost'] = $cheap['Item']->pricePerUnit;
     } else {
         $target['marketCost'] = -1;
     }
     $history = $xiv->getHistory($target['ID'], false, $progress);
-    $target['Recent'] = $xiv->mostRecent($history, false);
-    $target['Week'] = $xiv->weekAverage($history, false);
+    $target['Recent'] = $xiv->mostRecent($history[$target['ID']], false);
+    $target['Week'] = $xiv->weekAverage($history[$target['ID']], false);
 
     $target['Cost'] = array('Optimal' => 0, 'List' => 0, 'Market' => 0, 'Marketboard' => 0);
     foreach ($target['Parts'] as &$part) {
@@ -421,19 +439,23 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 
 }
 
-function secondsToTime($seconds) {
+
+function secondsToTime($seconds)
+{
     $d = $seconds;
     $q = floor($d / (24 * 3600));
     $h = floor($d / 3600);
     $m = floor($d % 3600 / 60);
     $s = floor($d % 3600 % 60);
 
-    $dDisplay = $q > 0 ? $q . ($q == 1 ? " day, " : " days, ") : "";
-    $hDisplay = $h > 0 ? $h . ($h == 1 ? " hour, " : " hours, ") : "";
-    $mDisplay = $m > 0 ? $m . ($m == 1 ? " minute, " : " minutes, ") : "";
-    $sDisplay = $s > 0 ? $s . ($s == 1 ? " second" : " seconds") : "";
-    return $dDisplay . $hDisplay . $mDisplay . $sDisplay;
+    $dDisplay = $q > 0 ? $q.($q == 1 ? " day, " : " days, ") : "";
+    $hDisplay = $h > 0 ? $h.($h == 1 ? " hour, " : " hours, ") : "";
+    $mDisplay = $m > 0 ? $m.($m == 1 ? " minute, " : " minutes, ") : "";
+    $sDisplay = $s > 0 ? $s.($s == 1 ? " second" : " seconds") : "";
+    return $dDisplay.$hDisplay.$mDisplay.$sDisplay;
+
 }
+
 
 function line($line, $tab)
 {
@@ -447,8 +469,7 @@ function line($line, $tab)
             if ($bit['marketHQ']) {
                 print "(*)";
             }
-        }
-        elseif ($bit['listCost'] > 0) {
+        } elseif ($bit['listCost'] > 0) {
             print number_format($bit['listCost']);
             print " gil ";
         } else {
@@ -512,6 +533,42 @@ function printRecipe($recipe)
         print number_format($recipe['Cost']['Optimal'])." gil \n";
     } else {
         print "UNAVLIABLE\n";
+    }
+
+    print "Craft at Market Board: ";
+    if ($recipe['Cost']['Market'] > 0) {
+        print number_format($recipe['Cost']['Marketboard'])." gil \n";
+    } else {
+        print "UNAVLIABLE\n";
+    }
+
+    print "Possible Profit:\n";
+    print "\tHQ ".($recipe['Profit']['HQ'])." gil (".floor($recipe['Profit']['HQ%'] * 100.0)."%)";
+    print "\tLQ ".($recipe['Profit']['LQ'])." gil (".floor($recipe['Profit']['LQ%'] * 100.0)."%)\n";
+    print "Marketboard Profit:\n";
+    print "\tHQ ".($recipe['Profit']['Market_HQ'])." gil (".floor($recipe['Profit']['Market_HQ%'] * 100.0)."%)";
+    print "\tLQ ".($recipe['Profit']['Market_LQ'])." gil (".floor($recipe['Profit']['Market_LQ%'] * 100.0)."%)\n";
+
+    print "Sales:\n";
+    if ($recipe['Recent']['HQ']) {
+        print "\tRecent:\t\tHQ ".number_format($recipe['Recent']['HQ']->pricePerUnit).' gil';
+    } else {
+        print "\tRecent:\t\tHQ NONE";
+    }
+    if ($recipe['Recent']['LQ']) {
+        print "\tLQ ".number_format($recipe['Recent']['LQ']->pricePerUnit)." gil\n";
+    } else {
+        print "\tLQ NONE\n";
+    }
+    if ($recipe['Week']['HQ']) {
+        print "\tWeekly Average:\tHQ ".number_format($recipe['Week']['HQ']['Average']).' gil';
+    } else {
+        print "\tWeekly Average:\tHQ NONE";
+    }
+    if ($recipe['Week']['LQ']['Average']) {
+        print "\tLQ ".number_format($recipe['Week']['LQ']['Average'])." gil\n";
+    } else {
+        print "\tLQ NONE\n";
     }
 
     print "====================================\n";

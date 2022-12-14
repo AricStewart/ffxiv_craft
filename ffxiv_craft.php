@@ -29,6 +29,7 @@ $xiv = new Universalis($_ENV['server']);
 $dataset = new FfxivDataSet();
 $fullHistory = true;
 
+
 function _sortByProfit($a, $b)
 {
     $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
@@ -57,6 +58,7 @@ function tick($stage, $data = null)
     }
 
 }
+
 
 $priceList = array();
 if (file_exists(__DIR__."/item.cost.csv")) {

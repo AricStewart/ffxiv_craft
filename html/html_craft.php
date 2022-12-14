@@ -80,7 +80,7 @@ function getItemSet($dataset, $itemID, $match)
     $output = array();
     if ($match) {
         $set = explode(',', $itemID);
-        foreach($set as $i) {
+        foreach ($set as $i) {
             $item = $dataset->getItem(trim($i));
             if ($item !== null) {
                 $output[] = $item->Index;

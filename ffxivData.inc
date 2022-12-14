@@ -227,7 +227,7 @@ class FfxivDataSet
                 'IsDyeable' => $this->isTrue($data[29]),
                 'IsCrestWorthy' => $this->isTrue($data[30]),
                 'ItemAction' => intval($data[31]),
-                /* $data[32] */
+                'CastTime<s>' => $data[32],
                 'Cooldown<s>' => intval($data[33]),
                 'ClassJob{Repair}' => intval($data[34]),
                 'Item{Repair}' => intval($data[35]),
@@ -406,23 +406,27 @@ SQL;
                 'Amount' => intval($data[23])],
                 ['Item' => intval($data[24]),
                 'Amount' => intval($data[25]),]],
-                'RecipeElement' => $data[26],
-                'IsSecondary' => $this->isTrue($data[28]),
+                'RecipeNotebookList' => $data[26],
+                'IsSecondary' => $this->isTrue($data[27]),
+                'MaterialQualityFactor' => $data[28],
                 'DifficultyFactor' => $data[29],
                 'QualityFactor' => $data[30],
                 'DurabilityFactor' => $data[31],
-                'RequiredCraftsmanship' => $data[33],
-                'RequiredControl' => $data[34],
-                'QuickSynthCraftsmanship' => $data[35],
-                'QuickSynthControl' => $data[36],
-                'SecretRecipeBook' => $data[37],
-                'CanQuickSynth' => $this->isTrue($data[38]),
-                'CanHq' => $this->isTrue($data[39]),
-                'ExpRewarded' => $this->isTrue($data[40]),
-                'Status{Required}' => $data[41],
-                'Item{Required}' => $data[42],
-                'IsSpecializationRequired' => $this->isTrue($data[43]),
-                'PatchNumber' => $data[45]
+                'RequiredQuality' => $data[33],
+                'RequiredCraftsmanship' => $data[34],
+                'RequiredControl' => $data[35],
+                'QuickSynthCraftsmanship' => $data[36],
+                'QuickSynthControl' => $data[37],
+                'SecretRecipeBook' => $data[38],
+                'Quest' => $data[39],
+                'CanQuickSynth' => $this->isTrue($data[40]),
+                'CanHq' => $this->isTrue($data[41]),
+                'ExpRewarded' => $this->isTrue($data[42]),
+                'Status{Required}' => $data[43],
+                'Item{Required}' => $data[44],
+                'IsSpecializationRequired' => $this->isTrue($data[45]),
+                'IsExpert' => $this->isTrue($data[46]),
+                'PatchNumber' => $data[49]
                     ];
                 $entry['Ingredients'] = array_filter(
                     $entry['Ingredients'],
@@ -703,6 +707,9 @@ SQL;
             $output = array();
         }
         $tgt = $this->getRecipe($id, $preference);
+        if (is_array($tgt)) {
+            $tgt = $tgt[0];
+        }
         $ingred = &$output;
         if (!$subrun) {
             $output['Info'] = $tgt;
@@ -716,6 +723,9 @@ SQL;
         foreach ($tgt->Ingredients as $i) {
             $bits = [];
             $part = $this->getRecipe($i->Item, $preference);
+            if (is_array($part)) {
+                $part = $part[0];
+            }
             $craftBy = null;
             if ($part !== null) {
                 $result = $part->Result->Amount;
@@ -840,7 +850,7 @@ SQL;
         $this->checkItemTable();
         if (is_numeric($param)) {
             $sql = "SELECT `ID` FROM `items` WHERE `ID` = $param;";
-        } elseif($param) {
+        } elseif ($param) {
             $param = strtolower($param);
             $sql = "SELECT `ID` FROM `items` WHERE lower(Name) LIKE '%$param%';";
         } else {
@@ -931,6 +941,7 @@ SQL;
         if ($levelHigh > 0) {
             $sql .= " AND `RecipeLevel` <= $levelHigh";
         }
+        $sql .= " AND `Book` IS NULL";
         $result = DB::run($sql);
         $value = $result->fetch();
         $output = null;
@@ -1230,6 +1241,7 @@ SQL;
 
     }
 
+
     public function resetAndReload()
     {
         $sql = "DROP TABLE IF EXISTS `recipes`;";
@@ -1241,6 +1253,7 @@ SQL;
 
         $this->checkItemTable();
         $this->checkRecipeTable();
+
     }
 
 

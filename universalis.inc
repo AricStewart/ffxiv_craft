@@ -29,15 +29,15 @@ use GuzzleHttp\Exception\ServerException;
 class Universalis
 {
 
-    private $server;
+    private string $server;
 
-    private $client;
+    private object $client;
 
-    private $promises;
+    private array $promises;
 
-    private $poolSize;
+    private int $poolSize = 5;
 
-    public $timeout;
+    public int $timeout = 3600;
 
 
     private function checkCacheTable()
@@ -59,21 +59,29 @@ SQL;
     }
 
 
-    public function __construct($server)
+    public static function dropCacheTable()
+    {
+        $sql = "DROP TABLE IF EXISTS `universalisData`;";
+        DB::run($sql);
+
+    }
+
+
+    public function __construct(string $server)
     {
         $this->server = $server;
         $this->timeout = 3600; /*  1 hour */
 
         $this->poolSize = 5;
         $this->promises = [];
-        $this->client = new Client(['base_uri' => "https://universalis.app/api/"]);
+        $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
         $this->checkCacheTable();
 
     }
 
 
-    public function flushPool($progress, $cnt = -1)
+    public function flushPool(string $progress, int $cnt = -1)
     {
         $i = 0;
         foreach ($this->promises as $key => $promise) {
@@ -105,7 +113,7 @@ SQL;
     }
 
 
-    private function buildPath($type, $ID)
+    private function buildPath($type, $ID): string
     {
         return $this->server.".$type.$ID";
 
@@ -137,22 +145,33 @@ SQL;
 
 
     private function getUniversalisData(
-        $method,
-        $ID,
-        $url,
-        $async,
-        $progress
-    ) {
+        string $method,
+        array $IDs,
+        string $url,
+        bool $async,
+        string $progress
+    ): ?array {
         if ($this->client === null) {
             return null;
         }
-        $path = $this->buildPath($method, $ID);
-        $data = $this->fromCache($path);
-        if ($data !== null) {
+
+        $data = [];
+        $ids = [];
+        foreach ($IDs as $id) {
+            $path = $this->buildPath($method, $id);
+            $d = $this->fromCache($path);
+            if ($d !== null) {
+                $data[$id] = $d;
+            } else {
+                $ids[] = $id;
+            }
+        }
+        if (empty($ids)) {
             return $data;
         }
 
-        if (!array_key_exists($path, $this->promises)) {
+        $basePath = $this->buildPath($method, implode(',', $ids));
+        if (!array_key_exists($basePath, $this->promises)) {
             report_progress($progress, 'info', "From $url...");
 
             if ($this->poolSize == 1
@@ -168,24 +187,36 @@ SQL;
 
                 $promise = $this->client->requestAsync('GET', $url);
 
+                $base = $this;
                 $promise->then(
-                    function ($response) use ($path, $ID) {
-                        $contents = $response->getBody();
-                        $data = json_decode($contents);
-                        $path = $this->buildPath("market", $ID);
-                        $this->toCache($path, ['Prices' => $data->listings]);
-
-                        /* Prune history */
-                        $old = strtotime("-1 week");
-                        foreach ($data->recentHistory as $key => $entry) {
-                            if ($entry->timestamp < $old) {
-                                unset($data->recentHistory[$key]);
-                            } else {
-                                unset($data->recentHistory[$key]->buyerName);
-                            }
+                    function ($response) use ($base, $ids) {
+                            $contents = $response->getBody();
+                            $data = json_decode($contents);
+                        if (count($ids) < 2) {
+                            $output = new stdClass();
+                            $output->itemIDs = $ids;
+                            $output->items = new stdClass();
+                            $output->items->${ids[0]} = $data;
+                        } else {
+                            $output = $data;
                         }
-                        $path = $this->buildPath("history", $ID);
-                        $this->toCache($path, ['History' => $data->recentHistory]);
+                        foreach ($output->itemIDs as $id) {
+                            $item = $output->items->$id;
+                            $path = $base->buildPath("market", $id);
+                            $base->toCache($path, ['Prices' => $item->listings]);
+
+                            /* Prune history */
+                            $old = strtotime("-1 week");
+                            foreach ($item->recentHistory as $key => $entry) {
+                                if ($entry->timestamp < $old) {
+                                    unset($item->recentHistory[$key]);
+                                } else {
+                                    unset($item->recentHistory[$key]->buyerName);
+                                }
+                            }
+                            $path = $base->buildPath("history", $id);
+                            $base->toCache($path, ['History' => $item->recentHistory]);
+                        }
                     },
                     function (Exception $e) use ($progress) {
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
@@ -199,7 +230,7 @@ SQL;
                 return null;
             }
 
-            $this->promises[$path] = $promise;
+            $this->promises[$basePath] = $promise;
         }
 
         if ($async) {
@@ -208,23 +239,29 @@ SQL;
 
         $this->flushPool($progress);
 
-        $data = $this->fromCache($path);
+        foreach ($ids as $id) {
+            $path = $this->buildPath($method, $id);
+            $data[$id] = $this->fromCache($path);
+        }
         return $data;
 
     }
 
 
-    public function getHistory($ID, $async = false, $progress = null)
+    public function getHistory($ID, $async = false, $progress = null) : ?array
     {
+        if (!is_array($ID)) {
+            $ID = [$ID];
+        }
         $data = $this->getUniversalisData(
             'history',
             $ID,
-            "$this->server/$ID",
+            "$this->server/".implode(',', $ID),
             $async,
             $progress
         );
         if ($async) {
-            return;
+            return null;
         }
         report_progress($progress);
         return $data;
@@ -232,17 +269,20 @@ SQL;
     }
 
 
-    public function getMarket($ID, $async = false, $progress = null)
+    public function getMarket($ID, $async = false, $progress = null): ?array
     {
+        if (!is_array($ID)) {
+            $ID = [$ID];
+        }
         $data = $this->getUniversalisData(
             'market',
             $ID,
-            "$this->server/$ID",
+            "$this->server/".implode(',', $ID),
             $async,
             $progress
         );
         if ($async) {
-            return;
+            return null;
         }
         report_progress($progress);
         return $data;
@@ -256,24 +296,29 @@ SQL;
             return null;
         }
         $winner = null;
-        foreach ($history->History as $entry) {
-            if ($HQ !== null && $HQ != $entry->hq) {
-                continue;
-            }
-            if ($winner === null) {
-                $winner = $entry;
-            } elseif ($entry->timestamp > $winner->timestamp) {
-                $winner = $entry;
+        if ($history->History !== null) {
+            foreach ($history->History as $entry) {
+                if ($HQ !== null && $HQ != $entry->hq) {
+                    continue;
+                }
+                if ($winner === null) {
+                    $winner = $entry;
+                } elseif ($entry->timestamp > $winner->timestamp) {
+                    $winner = $entry;
+                }
             }
         }
         return $winner;
 
     }
 
+
     private function timeCloseEnough($item1, $item2)
     {
         return (abs($item1->lastReviewTime - $item2->lastReviewTime)) < 3600;
+
     }
+
 
     public function currentCheapest($market, $HQ = null)
     {
@@ -337,18 +382,20 @@ SQL;
         $count = 0;
         $min = 0;
         $max = 0;
-        foreach ($history->History as $entry) {
-            if ($HQ !== null && $HQ != $entry->hq) {
-                continue;
-            }
-            if ($entry->timestamp >= $old) {
-                $total[] = $entry->pricePerUnit * $entry->quantity;
-                $count += $entry->quantity;
-                if ($min == 0) {
-                    $min = $max = $entry->pricePerUnit;
+        if ($history->History !== null) {
+            foreach ($history->History as $entry) {
+                if ($HQ !== null && $HQ != $entry->hq) {
+                    continue;
                 }
-                $min = min($min, $entry->pricePerUnit);
-                $max = max($max, $entry->pricePerUnit);
+                if ($entry->timestamp >= $old) {
+                    $total[] = $entry->pricePerUnit * $entry->quantity;
+                    $count += $entry->quantity;
+                    if ($min == 0) {
+                        $min = $max = $entry->pricePerUnit;
+                    }
+                    $min = min($min, $entry->pricePerUnit);
+                    $max = max($max, $entry->pricePerUnit);
+                }
             }
         }
         if ($count > 0) {
@@ -381,9 +428,9 @@ SQL;
             $history = $this->getHistory($itemID);
             $result['ID'] = $itemID;
             $result['HQ'] = $HQ;
-            $result['Cheapest'] = $this->currentCheapest($market, $HQ);
+            $result['Cheapest'] = $this->currentCheapest($market[$itemID], $HQ);
             if ($result['Cheapest'] !== null) {
-                $result['Week'] = $this->weekAverage($history, $HQ);
+                $result['Week'] = $this->weekAverage($history[$itemID], $HQ);
                 $result['Profit'] = $result['Week']['Average'] - $result['Cheapest']['Item']->pricePerUnit;
             }
         }
