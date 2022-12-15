@@ -30,7 +30,7 @@ $dataset = new FfxivDataSet();
 $fullHistory = true;
 
 
-function _sortByProfit(mixed $a, mixed $b): int
+function _sortByProfit(array $a, array $b): int
 {
     $p = max($a['Profit']['Market_HQ'], $a['Profit']['Market_LQ']);
     $p2 = max($b['Profit']['Market_HQ'], $b['Profit']['Market_LQ']);
