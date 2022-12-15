@@ -17,7 +17,7 @@ if (isset($data['server'])) {
 if (isset($data['crafter'])) {
     $crafter = $data['crafter'];
 } else {
-    $crafter = "";
+    $crafter = "all";
 }
 ?>
 <html>
@@ -107,6 +107,7 @@ foreach ($dataset->world as $entry) {
 </select>
       <div class="input-group-append">
         <select class="custom-select" id="crafter">
+        <option>ALL</option>;
     <?php
     foreach ($dataset->craftType as $entry) {
         if (strcasecmp($entry, $crafter) == 0) {

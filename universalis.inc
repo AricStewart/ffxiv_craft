@@ -41,6 +41,7 @@ class Universalis
 
     private array $localCache;
 
+
     private function checkCacheTable()
     {
         $sql = "SHOW TABLES LIKE 'universalisData';";
@@ -125,8 +126,9 @@ SQL;
     private function fromCache($path)
     {
         if (array_key_exists($path, $this->localCache)) {
-            if ($this->localCache[$path] !== null)
+            if ($this->localCache[$path] !== null) {
                 return json_decode($this->localCache[$path]);
+            }
             return null;
         }
         $qpath = MyPDO::quote($path);
@@ -193,7 +195,7 @@ SQL;
                     return null;
                 }
 
-                $url .= implode(',',$ids);
+                $url .= implode(',', $ids);
                 $promise = $this->client->requestAsync('GET', $url);
 
                 $promise->then(

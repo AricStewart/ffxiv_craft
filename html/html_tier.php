@@ -50,7 +50,7 @@ function get_arguments($method, &$ffxiv_server, &$tier, &$event, &$crafter)
     $tier = $data['tier'];
 
     if (!isset($data['crafter'])) {
-        $crafter = '';
+        $crafter = 'all';
     } else {
         $crafter = htmlspecialchars_decode($data['crafter'], ENT_QUOTES);
     }
@@ -66,7 +66,13 @@ if (!empty($_POST)) {
     $xiv = new Universalis($ffxiv_server);
     $xiv->silent = true;
 
-    $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
+    if (strtolower($crafter) == 'all') {
+        $target_crafter = null;
+    } else {
+        $crafter = null;
+    }
+
+    $set = $dataset->getRecipeSet($target_crafter, (($tier - 1) * 5) + 1, $tier * 5);
     foreach ($set as $i) {
         $output[] = doRecipie($i, $dataset, $xiv, null, $crafter);
     }
@@ -85,7 +91,13 @@ if (!empty($_POST)) {
     $xiv = new Universalis($ffxiv_server);
     $xiv->silent = true;
 
-    $set = $dataset->getRecipeSet($crafter, (($tier - 1) * 5) + 1, $tier * 5);
+    if (strtolower($crafter) == 'all') {
+        $target_crafter = null;
+    } else {
+        $crafter = null;
+    }
+
+    $set = $dataset->getRecipeSet($target_crafter, (($tier - 1) * 5) + 1, $tier * 5);
     $size = count($set) * 2;
     http_progress("start", $size, ["info" => $crafter, "tier" => $tier]);
     foreach ($set as $key => $i) {

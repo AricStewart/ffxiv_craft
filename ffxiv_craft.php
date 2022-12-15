@@ -92,6 +92,9 @@ if (count($argv) > 1) {
     } elseif ($argv[1] == '-t') {
         $crafter = $argv[2];
         $tier = intval($argv[3]);
+        if (strtolower($crafter) == 'all') {
+            $crafter = null;
+        }
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tier * 5);
         foreach ($set as $i => $r) {
             print " ".$r." (".($i + 1)."|".count($set).") ";

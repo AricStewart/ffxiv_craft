@@ -98,6 +98,10 @@ class FfxivDataSet
 
     private $CompanyCraftSupplyItemURL = "CompanyCraftSupplyItem.csv";
 
+    private $recipiesLoaded = false;
+
+    private $itemsLoaded = false;
+
     private $client;
 
     public $baseData;
@@ -174,6 +178,7 @@ class FfxivDataSet
             $result = DB::run($sql);
             $value = $result->fetch();
             if ($value !== false && $value['total'] > 0) {
+                $this->itemsLoaded = true;
                 return;
             }
         }
@@ -317,6 +322,7 @@ class FfxivDataSet
             DB::run($sql);
             print(".\n");
             fclose($handle);
+            $this->itemsLoaded = true;
         }
 
     }
@@ -324,6 +330,9 @@ class FfxivDataSet
 
     private function checkItemTable()
     {
+        if ($this->itemsLoaded) {
+            return;
+        }
         $force = false;
         $sql = "SHOW TABLES LIKE 'items';";
         $result = DB::run($sql);
@@ -356,6 +365,7 @@ SQL;
             $result = DB::run($sql);
             $value = $result->fetch();
             if ($value !== false && $value['total'] > 0) {
+                $this->recipiesLoaded = true;
                 return;
             }
         }
@@ -465,6 +475,7 @@ SQL;
             DB::run($sql);
             print(".\n");
             fclose($handle);
+            $this->recipiesLoaded = true;
         }
 
     }
@@ -472,6 +483,9 @@ SQL;
 
     private function checkRecipeTable()
     {
+        if ($this->recipiesLoaded) {
+            return;
+        }
         $force = false;
         $sql = "SHOW TABLES LIKE 'recipes';";
         $result = DB::run($sql);
@@ -927,24 +941,40 @@ SQL;
     }
 
 
-    public function getRecipeSet($crafter, $levelLow = 0, $levelHigh = 0)
+    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0)
     {
         $this->loadRecipeLevelTable();
         $this->checkRecipeTable();
-        if (!is_numeric($crafter)) {
+        if (!is_null($crafter) && !is_numeric($crafter)) {
             $crafter = array_search($crafter, $this->craftType);
             if ($crafter === false) {
                 return null;
             }
         }
-        $sql = "SELECT `Item` FROM `recipes` WHERE `CraftType` = $crafter";
+        $sql = "SELECT `Item` FROM `recipes` WHERE ";
+        $and = false;
+        if (!is_null($crafter)) {
+            $sql .= " `CraftType` = $crafter";
+            $and = true;
+        }
         if ($levelLow > 0) {
-            $sql .= " AND `RecipeLevel` >= $levelLow";
+            if ($and) {
+                $sql .= " AND ";
+            }
+            $sql .= " `RecipeLevel` >= $levelLow";
+            $and = true;
         }
         if ($levelHigh > 0) {
-            $sql .= " AND `RecipeLevel` <= $levelHigh";
+            if ($and) {
+                $sql .= " AND ";
+            }
+            $sql .= " `RecipeLevel` <= $levelHigh";
+            $and = true;
         }
-        $sql .= " AND `Book` IS NULL";
+        if ($and) {
+            $sql .= " AND ";
+        }
+        $sql .= " `Book` IS NULL";
         $result = DB::run($sql);
         $value = $result->fetch();
         $output = null;
@@ -1254,7 +1284,9 @@ SQL;
         $sql = "DROP TABLE IF EXISTS `items`;";
         DB::run($sql);
 
+        $this->itemsLoaded = false;
         $this->checkItemTable();
+        $this->recipiesLoaded = false;
         $this->checkRecipeTable();
 
     }
