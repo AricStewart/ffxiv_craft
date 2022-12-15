@@ -83,7 +83,7 @@ SQL;
     }
 
 
-    public function flushPool(string $progress, int $cnt = -1)
+    public function flushPool(?string $progress, int $cnt = -1)
     {
         $i = 0;
         foreach ($this->promises as $key => $promise) {
@@ -157,7 +157,7 @@ SQL;
         array $IDs,
         string $url,
         bool $async,
-        string $progress
+        ?string $progress
     ): ?array {
         if ($this->client === null) {
             return null;
