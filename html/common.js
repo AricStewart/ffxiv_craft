@@ -592,9 +592,9 @@ function fillOutputFrame(dataset)
       var z = function(data) {
         var profitPer = 0;
         if (data.Profit !== undefined) {
-          profitPer = data.Profit['LQ%'];
-          if (data.Profit['HQ%'] > data.Profit['LQ%']) {
-            profitPer = data.Profit['HQ%'];
+          profitPer = data.Profit['Market_LQ'];
+          if (data.Profit['Market_HQ'] > data.Profit['Market_LQ']) {
+            profitPer = data.Profit['Market_HQ'];
           }
         }
         return profitPer;

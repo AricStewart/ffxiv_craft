@@ -45,8 +45,8 @@ function http_progress($type = "", $data = "", $info = null)
 
 function sortByProfit($a, $b)
 {
-    $p = max($a['Profit']['HQ%'], $a['Profit']['LQ%']);
-    $p2 = max($b['Profit']['HQ%'], $b['Profit']['LQ%']);
-    return $p2 - $p;
+    $p = max(floatval($a['Profit']['Market_HQ']), floatval($a['Profit']['Market_LQ']));
+    $p2 = max(floatval($b['Profit']['Market_HQ']), floatval($b['Profit']['Market_LQ']));
+    return floor((1000 * $p) - (1000 * $p2));
 
 }
