@@ -79,8 +79,10 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
 
         $cheap = null;
         $listcheap = null;
+        $found = false;
         if ($priceList && array_key_exists($bit['id'], $priceList)) {
             $listcheap = $priceList[$bit['id']];
+            $found = true;
         } else {
             $cheap = $xiv->currentCheapest($market[$bit['id']]);
         }
@@ -88,15 +90,22 @@ function priceRecipe(&$input, $xiv, $dataset, $progress, $recipe, $priceList)
             $bit['marketCost'] = $cheap['Item']->pricePerUnit * $bit['count'];
             $bit['marketHQ'] = $cheap['Item']->hq;
             $bit['lastUpdate'] = time() - $cheap['Item']->lastReviewTime;
+            $found = true;
         }
         if ($listcheap !== null) {
             $bit['listCost'] = $listcheap * $bit['count'];
+            $found = true;
         }
 
         if (count($dataset->findItemInShop($bit['id'])) > 0) {
             $bit['shopCost'] *= $bit['count'];
+            $found = true;
         } else {
             $bit['shopCost'] = 0;
+        }
+
+        if (!$found) {
+            $bit['marketCost'] = 999999999;
         }
 
         $bitOptimal = -1;
@@ -572,6 +581,92 @@ function printRecipe($recipe)
     line($recipe['Recipe'], 0);
     print "====================================\n";
 
+}
+
+function printRecipeSummaryTitle()
+{
+    print "Name,ItemID,Cost Optimal,Cost Market,Recent Sale HQ,Recent Sale LQ,Weekly Average LQ,Weekly Average HQ,Sales this Week,Cheapest LQ,Cheapest HQ,Profit LQ,Profit LQ%,Profit HQ,Profit HQ%,Max Profit,Max Profit%,Weighted Profit\n";
+}
+
+function printRecipeSummary($recipe)
+{
+    if (array_key_exists('Error', $recipe)) {
+        print $recipe['Error'];
+        return;
+    }
+
+    print $recipe['Name'].",".$recipe['ID'].",";
+    if ($recipe['Cost']['Optimal'] > 0) {
+        print $recipe['Cost']['Optimal'];
+    } else {
+        print "";
+    }
+    print ",";
+    if ($recipe['Cost']['Market'] > 0) {
+        print $recipe['Cost']['Market'];
+    } else {
+        print "";
+    }
+    print ",";
+    if ($recipe['Recent']['HQ']) {
+        print $recipe['Recent']['HQ']->pricePerUnit;
+    } else {
+        print "";
+    }
+    print ",";
+    if ($recipe['Recent']['LQ']) {
+        print $recipe['Recent']['LQ']->pricePerUnit;
+    } else {
+        print "";
+    }
+    print ",";
+    if ($recipe['Week']['HQ']) {
+        print $recipe['Week']['HQ']['Average'];
+    } else {
+        print "";
+    }
+    print ",";
+    if ($recipe['Week']['LQ']['Average']) {
+        print $recipe['Week']['LQ']['Average'];
+    } else {
+        print "";
+    }
+
+    print ",";
+    $weekCount = $recipe['Week']['HQ']['Count'] + $recipe['Week']['LQ']['Count'];
+    print $weekCount;
+
+    print ",";
+    if ($recipe['Cheap']['LQ'] !== null) {
+        print $recipe['Cheap']['LQ']['Item']->pricePerUnit;
+    } else {
+        print '';
+    }
+    print ",";
+    if ($recipe['Cheap']['HQ'] !== null) {
+        print $recipe['Cheap']['HQ']['Item']->pricePerUnit;
+    } else {
+        print '';
+    }
+
+    print ",";
+    print $recipe['Profit']['Market_LQ'];
+    print ",";
+    print $recipe['Profit']['Market_LQ%'];
+
+    print ",";
+    print $recipe['Profit']['Market_HQ'];
+    print ",";
+    print $recipe['Profit']['Market_HQ%'];
+
+    print ",";
+    print max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']);
+    print ",";
+    print max($recipe['Profit']['Market_HQ%'], $recipe['Profit']['Market_LQ%']);
+
+    print ",";
+    print max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']) * $weekCount;
+    print "\n";
 }
 
 

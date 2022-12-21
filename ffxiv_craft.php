@@ -33,8 +33,10 @@ $fullHistory = true;
 function _sortByProfit(array $a, array $b): int
 {
     $p = max($a['Profit']['Market_HQ'], $a['Profit']['Market_LQ']);
+    $wc1 = $a['Week']['HQ']['Count'] + $a['Week']['LQ']['Count'];
     $p2 = max($b['Profit']['Market_HQ'], $b['Profit']['Market_LQ']);
-    return floor((1000 * $p) - (1000 * $p2));
+    $wc2 = $b['Week']['HQ']['Count'] + $b['Week']['LQ']['Count'];
+    return floor((1000 * $p * $wc1) - (1000 * $p2 * $wc2));
 
 }
 
@@ -50,11 +52,11 @@ function tick($stage, $data = null)
     }
     $i++;
     if ($i % 10 == 0) {
-        print '|';
+        fwrite(STDERR, '|');
     } elseif ($i % 5 == 0) {
-        print '-';
+        fwrite(STDERR, '-');
     } else {
-        print '.';
+        fwrite(STDERR, '.');
     }
 
 }
@@ -76,11 +78,11 @@ if (count($argv) > 1) {
         $i = 3;
     } elseif ($argv[1] == '-m') {
         $a = $dataset->getMastercraft($argv[2]);
-        print count($a)."\n";
+        fwrite(STDERR,count($a).PHP_EOL);
         if (count($a) > 0) {
             $output = [];
             foreach ($a as $key => $i) {
-                print " $i (".($key + 1)."|".count($a).") ";
+                fwrite(STDERR, " $i (".($key + 1)."|".count($a).") ");
                 $output[] = doRecipie($i, $dataset, $xiv, 'tick', $priceList);
             }
             usort($output, '_sortByProfit');
@@ -92,17 +94,23 @@ if (count($argv) > 1) {
     } elseif ($argv[1] == '-t') {
         $crafter = $argv[2];
         $tier = intval($argv[3]);
+        if ($argc == 5) {
+            $tiertop = intval($argv[4]);
+        } else {
+            $tiertop = intval($argv[3]);
+        }
         if (strtolower($crafter) == 'all') {
             $crafter = null;
         }
-        $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tier * 5);
+        $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tiertop * 5);
         foreach ($set as $i => $r) {
-            print " ".$r." (".($i + 1)."|".count($set).") ";
+            fwrite(STDERR, " ".$r." (".($i + 1)."|".count($set).") ");
             $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter, $priceList);
         }
         usort($output, '_sortByProfit');
+        printRecipeSummaryTitle();
         foreach ($output as $recipe) {
-            printRecipe($recipe, true);
+            printRecipeSummary($recipe);
         }
         exit();
     } elseif ($argv[1] == '-x') {
@@ -127,7 +135,7 @@ if (count($argv) > $i) {
 if (!is_numeric($itemID)) {
     $result = $dataset->getItem($itemID);
     if ($result === null) {
-        print 'Could not find item \''.$itemID."'\n";
+        fwrite(STDERR, 'Could not find item \''.$itemID.PHP_EOL);
         exit();
     }
     $itemID = $result->Index;
