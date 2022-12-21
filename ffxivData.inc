@@ -980,7 +980,7 @@ SQL;
         $output = null;
         while ($value !== false) {
             $item = $this->getItem($value['Item']);
-            if ($item->IsUntradable || $item->IsIndisposable) {
+            if (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
                 $value = $result->fetch();
                 continue;
             }
