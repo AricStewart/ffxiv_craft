@@ -445,6 +445,42 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 
 }
 
+function add_ingred($result, $dataset, $item, $d, $max_depth): array {
+    if (array_key_exists($item['id'], $result))
+        return $result;
+    if (($max_depth < 0 || $d < $max_depth) && !empty($item['bits'])) {
+            foreach($item['bits'] as $bit) {
+                $result = add_ingred($result, $dataset, $bit, $d+1, $max_depth);
+            }
+    } else {
+        $data = $dataset->getItem($item['id']);
+        $result[$item['id']] = $data->Name;
+    }
+    return $result;
+}
+
+function getIngredientList($items, $dataset, $max_depth = -1)
+{
+    $result = [];
+    $cache = [];
+    foreach($items as $itemID) {
+        $cache = $dataset->getNeeded($itemID);
+        if ($cache !== null) {
+            $result = array_merge($result, $cache);
+            continue;
+        }
+        $data = null;
+        $itemNeeds = [];
+        $recipe = $dataset->getFullRecipe($itemID, 1, $data, false, 'Armorcraft');
+        foreach ($recipe['Recipe'] as $bit) {
+            $itemNeeds = add_ingred($itemNeeds, $dataset, $bit, 0, $max_depth);
+        }
+        $dataset->setNeeded($itemID, $itemNeeds);
+        $result = array_merge($result, $itemNeeds);
+    }
+    return $result;
+
+}
 
 function secondsToTime($seconds)
 {

@@ -76,9 +76,18 @@ if (count($argv) > 1) {
         array_map('unlink', glob("data/*.json"));
         $itemID = $argv[2];
         $i = 3;
+        $xiv = new Universalis($_ENV['server']);
     } elseif ($argv[1] == '-m') {
         $a = $dataset->getMastercraft($argv[2]);
+        /* 1 day timeout */
+        $xiv = new Universalis($_ENV['server'], 86400);
         fwrite(STDERR,count($a).PHP_EOL);
+
+        $ing = getIngredientList($a, $dataset);
+        /* pre-cache all the items being retrieved */
+        $xiv->getMarket(array_merge($a, array_keys($ing)), true, null);
+        $xiv->flushPool(null);
+
         if (count($a) > 0) {
             $output = [];
             foreach ($a as $key => $i) {
@@ -103,6 +112,16 @@ if (count($argv) > 1) {
             $crafter = null;
         }
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tiertop * 5);
+        fwrite(STDERR,"recipies: ".count($set).PHP_EOL);
+        /* 1 day timeout */
+        $ing = getIngredientList($set, $dataset);
+        fwrite(STDERR,"Ingredients: ".count($ing).PHP_EOL);
+
+        $xiv = new Universalis($_ENV['server'], 86400);
+        /* pre-cache all the items being retrieved */
+        $xiv->getMarket(array_merge($set, array_keys($ing)), true, null);
+        $xiv->flushPool(null);
+
         foreach ($set as $i => $r) {
             fwrite(STDERR, " ".$r." (".($i + 1)."|".count($set).") ");
             $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter, $priceList);
@@ -114,18 +133,22 @@ if (count($argv) > 1) {
         }
         exit();
     } elseif ($argv[1] == '-x') {
+        $xiv = new Universalis($_ENV['server']);
         $company = $dataset->loadCompanyCrafting();
         $recipe = getCompanyRecipe($argv[2], $dataset, 'tick');
         $output = doCompanyRecipe($recipe, $dataset, $xiv, 'tick');
         printCompanyRecipe($output);
         exit();
     } else {
+        $xiv = new Universalis($_ENV['server']);
         $itemID = $argv[1];
         $i = 2;
     }
 } else {
+    $xiv = new Universalis($_ENV['server']);
     $itemID = 23815;
 }
+
 
 $crafter = 'Armorcraft';
 if (count($argv) > $i) {

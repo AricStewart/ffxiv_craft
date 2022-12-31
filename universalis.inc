@@ -69,10 +69,10 @@ SQL;
     }
 
 
-    public function __construct(string $server)
+    public function __construct(string $server, int $timeout = 3600)
     {
         $this->server = $server;
-        $this->timeout = 3600; /*  1 hour */
+        $this->timeout = $timeout;
 
         $this->poolSize = 5;
         $this->promises = [];
@@ -129,7 +129,7 @@ SQL;
             if ($this->localCache[$path] !== null) {
                 return json_decode($this->localCache[$path]);
             }
-            return null;
+            return 0;
         }
         $qpath = MyPDO::quote($path);
         $sql = "SELECT `Data` FROM `universalisData` WHERE `Path` = $qpath AND "."Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
@@ -156,7 +156,7 @@ SQL;
 
     private function getUniversalisData(
         string $method,
-        array $IDs,
+        array $inIDs,
         string $url,
         bool $async,
         ?string $progress
@@ -167,11 +167,15 @@ SQL;
 
         $data = [];
         $ids = [];
-        foreach ($IDs as $id) {
+        foreach ($inIDs as $id) {
             $path = $this->buildPath($method, $id);
             $d = $this->fromCache($path);
             if ($d !== null) {
-                $data[$id] = $d;
+                if ($d === 0) {
+                    $data[$id] = null;
+                } else {
+                    $data[$id] = $d;
+                }
             } else {
                 $ids[] = $id;
             }
@@ -258,7 +262,12 @@ SQL;
 
         foreach ($ids as $id) {
             $path = $this->buildPath($method, $id);
-            $data[$id] = $this->fromCache($path);
+            $d = $this->fromCache($path);
+            if ($d === 0) {
+                $data[$id] = null;
+            } else {
+                $data[$id] = $this->fromCache($path);
+            }
         }
         return $data;
 

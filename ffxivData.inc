@@ -527,6 +527,22 @@ SQL;
 
     }
 
+    private function checkNeededTable()
+    {
+        $sql = "SHOW TABLES LIKE 'needed';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE needed (
+                    ItemId INT UNSIGNED NOT NULL PRIMARY KEY,
+                    Data TEXT NOT NULL
+                );
+SQL;
+            DB::run($sql);
+        }
+    }
+
 
     public function __construct($baseData = '.')
     {
@@ -1274,6 +1290,25 @@ SQL;
 
     }
 
+    public function getNeeded($item)
+    {
+        $this->checkNeededTable();
+        $sql = "SELECT * FROM `needed` WHERE ItemId = $item;";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value !== false) {
+            return(json_decode($value['Data'], true));
+        }
+        return null;
+    }
+
+    public function setNeeded($item, $ingred)
+    {
+        $this->checkNeededTable();
+        $data = MyPDO::quote(json_encode($ingred));
+        $sql = "INSERT INTO `needed` (ItemId, Data) VALUES ($item, $data); ";
+        $result = DB::run($sql);
+    }
 
     public function resetAndReload()
     {
@@ -1282,6 +1317,8 @@ SQL;
         $sql = "DROP TABLE IF EXISTS `ingredients`;";
         DB::run($sql);
         $sql = "DROP TABLE IF EXISTS `items`;";
+        DB::run($sql);
+        $sql = "DROP TABLE IF EXISTS `needed`;";
         DB::run($sql);
 
         $this->itemsLoaded = false;
