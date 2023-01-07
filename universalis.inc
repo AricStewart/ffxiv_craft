@@ -155,6 +155,7 @@ SQL;
         $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
         $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
         DB::run($sql);
+
     }
 
 
@@ -191,7 +192,7 @@ SQL;
         if (count($ids) > $this->chunkSize) {
             @fwrite(STDERR, "Request for ".count($ids)." entries too large");
             $split = @array_chunk($ids, $this->chunkSize);
-            foreach($split as $i => $piece) {
+            foreach ($split as $i => $piece) {
                 @fwrite(STDERR, "Request chunk $i of ".count($split)."\n");
                 $result = $this->getUniversalisData($method, $piece, $url, $async, $progress);
                 if ($result !== null) {

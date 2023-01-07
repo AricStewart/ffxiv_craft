@@ -445,13 +445,16 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 
 }
 
-function add_ingred(&$result, $dataset, $bit, $d, $max_depth, $ids): array {
-    if (array_key_exists($bit['id'], $result))
+
+function add_ingred(&$result, $dataset, $bit, $d, $max_depth, $ids): array
+{
+    if (array_key_exists($bit['id'], $result)) {
         return $result;
+    }
     if (($max_depth < 0 || $d < $max_depth) && !empty($bit['bits'])) {
-            foreach($bit['bits'] as $b) {
-                $result = add_ingred($result, $dataset, $b, $d+1, $max_depth, $ids);
-            }
+        foreach ($bit['bits'] as $b) {
+            $result = add_ingred($result, $dataset, $b, $d + 1, $max_depth, $ids);
+        }
     } else {
         if ($ids) {
             $result[] = $bit['id'];
@@ -461,13 +464,15 @@ function add_ingred(&$result, $dataset, $bit, $d, $max_depth, $ids): array {
         }
     }
     return $result;
+
 }
+
 
 function getIngredientList($items, $dataset, $max_depth = -1, $ids = true)
 {
     $result = [];
     $cache = [];
-    foreach($items as $itemID) {
+    foreach ($items as $itemID) {
         $cache = $dataset->getNeeded($itemID);
         if ($cache !== null) {
             $result = array_unique(array_merge($result, $cache));
@@ -485,6 +490,7 @@ function getIngredientList($items, $dataset, $max_depth = -1, $ids = true)
     return $result;
 
 }
+
 
 function secondsToTime($seconds)
 {
@@ -623,10 +629,13 @@ function printRecipe($recipe)
 
 }
 
+
 function printRecipeSummaryTitle()
 {
     print "Name,ItemID,Cost Optimal,Cost Market,Recent Sale HQ,Recent Sale LQ,Weekly Average LQ,Weekly Average HQ,Sales this Week,Cheapest LQ,Cheapest HQ,Profit LQ,Profit LQ%,Profit HQ,Profit HQ%,Max Profit,Max Profit%,Weighted Profit\n";
+
 }
+
 
 function printRecipeSummary($recipe)
 {
@@ -707,6 +716,7 @@ function printRecipeSummary($recipe)
     print ",";
     print max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']) * $weekCount;
     print "\n";
+
 }
 
 

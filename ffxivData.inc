@@ -527,6 +527,7 @@ SQL;
 
     }
 
+
     private function checkNeededTable()
     {
         $sql = "SHOW TABLES LIKE 'needed';";
@@ -541,6 +542,7 @@ SQL;
 SQL;
             DB::run($sql);
         }
+
     }
 
 
@@ -1290,6 +1292,7 @@ SQL;
 
     }
 
+
     public function getNeeded($item)
     {
         $this->checkNeededTable();
@@ -1300,7 +1303,9 @@ SQL;
             return(json_decode($value['Data'], true));
         }
         return null;
+
     }
+
 
     public function setNeeded($item, $ingred)
     {
@@ -1308,7 +1313,9 @@ SQL;
         $data = MyPDO::quote(json_encode($ingred));
         $sql = "INSERT INTO `needed` (ItemId, Data) VALUES ($item, $data); ";
         $result = DB::run($sql);
+
     }
+
 
     public function resetAndReload()
     {
@@ -1328,10 +1335,12 @@ SQL;
 
     }
 
+
     public function resetNeeded()
     {
         $sql = "DROP TABLE IF EXISTS `needed`;";
         DB::run($sql);
+
     }
 
 

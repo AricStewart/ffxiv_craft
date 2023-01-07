@@ -81,7 +81,7 @@ if (count($argv) > 1) {
         $a = $dataset->getMastercraft($argv[2]);
         /* 1 day timeout */
         $xiv = new Universalis($_ENV['server'], 86400);
-        fwrite(STDERR,count($a).PHP_EOL);
+        fwrite(STDERR, count($a).PHP_EOL);
 
         $ing = getIngredientList($a, $dataset);
         /* pre-cache all the items being retrieved */
@@ -112,10 +112,10 @@ if (count($argv) > 1) {
             $crafter = null;
         }
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tiertop * 5);
-        fwrite(STDERR,"recipies: ".count($set).PHP_EOL);
+        fwrite(STDERR, "recipies: ".count($set).PHP_EOL);
         /* 1 day timeout */
         $ing = getIngredientList($set, $dataset);
-        fwrite(STDERR,"Ingredients: ".count($ing).PHP_EOL);
+        fwrite(STDERR, "Ingredients: ".count($ing).PHP_EOL);
 
         $xiv = new Universalis($_ENV['server'], 86400);
         $cache = array_unique(array_merge($set, $ing));
