@@ -1328,6 +1328,12 @@ SQL;
 
     }
 
+    public function resetNeeded()
+    {
+        $sql = "DROP TABLE IF EXISTS `needed`;";
+        DB::run($sql);
+    }
+
 
     /* End */
 }

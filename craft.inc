@@ -445,38 +445,42 @@ function doCompanyRecipe($target, $dataset, $xiv, $progress = null, $priceList =
 
 }
 
-function add_ingred($result, $dataset, $item, $d, $max_depth): array {
-    if (array_key_exists($item['id'], $result))
+function add_ingred(&$result, $dataset, $bit, $d, $max_depth, $ids): array {
+    if (array_key_exists($bit['id'], $result))
         return $result;
-    if (($max_depth < 0 || $d < $max_depth) && !empty($item['bits'])) {
-            foreach($item['bits'] as $bit) {
-                $result = add_ingred($result, $dataset, $bit, $d+1, $max_depth);
+    if (($max_depth < 0 || $d < $max_depth) && !empty($bit['bits'])) {
+            foreach($bit['bits'] as $b) {
+                $result = add_ingred($result, $dataset, $b, $d+1, $max_depth, $ids);
             }
     } else {
-        $data = $dataset->getItem($item['id']);
-        $result[$item['id']] = $data->Name;
+        if ($ids) {
+            $result[] = $bit['id'];
+        } else {
+            $data = $dataset->getItem($bit['id']);
+            $result[$bit['id']] = $data->Name;
+        }
     }
     return $result;
 }
 
-function getIngredientList($items, $dataset, $max_depth = -1)
+function getIngredientList($items, $dataset, $max_depth = -1, $ids = true)
 {
     $result = [];
     $cache = [];
     foreach($items as $itemID) {
         $cache = $dataset->getNeeded($itemID);
         if ($cache !== null) {
-            $result = array_merge($result, $cache);
+            $result = array_unique(array_merge($result, $cache));
             continue;
         }
         $data = null;
         $itemNeeds = [];
-        $recipe = $dataset->getFullRecipe($itemID, 1, $data, false, 'Armorcraft');
+        $recipe = getRecipe($itemID, $dataset, 'Armorcraft', null);
         foreach ($recipe['Recipe'] as $bit) {
-            $itemNeeds = add_ingred($itemNeeds, $dataset, $bit, 0, $max_depth);
+            $itemNeeds = add_ingred($itemNeeds, $dataset, $bit, 0, $max_depth, $ids);
         }
         $dataset->setNeeded($itemID, $itemNeeds);
-        $result = array_merge($result, $itemNeeds);
+        $result = array_unique(array_merge($result, $itemNeeds));
     }
     return $result;
 

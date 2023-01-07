@@ -85,7 +85,7 @@ if (count($argv) > 1) {
 
         $ing = getIngredientList($a, $dataset);
         /* pre-cache all the items being retrieved */
-        $xiv->getMarket(array_merge($a, array_keys($ing)), true, null);
+        $xiv->getMarket(array_merge($a, $ing), true, null);
         $xiv->flushPool(null);
 
         if (count($a) > 0) {
@@ -118,8 +118,9 @@ if (count($argv) > 1) {
         fwrite(STDERR,"Ingredients: ".count($ing).PHP_EOL);
 
         $xiv = new Universalis($_ENV['server'], 86400);
+        $cache = array_unique(array_merge($set, $ing));
         /* pre-cache all the items being retrieved */
-        $xiv->getMarket(array_merge($set, array_keys($ing)), true, null);
+        $xiv->getMarket($cache, true, null);
         $xiv->flushPool(null);
 
         foreach ($set as $i => $r) {

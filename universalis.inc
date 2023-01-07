@@ -37,6 +37,8 @@ class Universalis
 
     private int $poolSize = 5;
 
+    private int $chunkSize = 100;
+
     public int $timeout = 3600;
 
     private array $localCache;
@@ -75,6 +77,7 @@ SQL;
         $this->timeout = $timeout;
 
         $this->poolSize = 5;
+        $this->chunkSize = 100;
         $this->promises = [];
         $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
@@ -103,7 +106,9 @@ SQL;
                 unset($this->promises[$key]);
                 $code = $e->getResponse()->getStatusCode();
                 if ($code == 500) {
-                    $this->client = null;
+                    if ($this->client) {
+                        $this->client = null;
+                    }
                     $msg = "universalis server error: ".$code.": Shutting down";
                     report_progress($progress, 'error', $msg);
                 } else {
@@ -150,7 +155,6 @@ SQL;
         $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
         $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
         DB::run($sql);
-
     }
 
 
@@ -184,6 +188,21 @@ SQL;
             return $data;
         }
 
+        if (count($ids) > $this->chunkSize) {
+            @fwrite(STDERR, "Request for ".count($ids)." entries too large");
+            $split = @array_chunk($ids, $this->chunkSize);
+            foreach($split as $i => $piece) {
+                @fwrite(STDERR, "Request chunk $i of ".count($split)."\n");
+                $result = $this->getUniversalisData($method, $piece, $url, $async, $progress);
+                if ($result !== null) {
+                    $data = array_merge($data, $result);
+                } else {
+                    $data = null;
+                }
+            }
+            return $data;
+        }
+
         $basePath = $this->buildPath($method, implode(',', $ids));
         if (!array_key_exists($basePath, $this->promises)) {
             report_progress($progress, 'info', "From $url...");
@@ -191,7 +210,7 @@ SQL;
             if ($this->poolSize == 1
                 || count($this->promises) > $this->poolSize
             ) {
-                $this->flushPool($progress, $this->poolSize / 2);
+                $this->flushPool($progress, ceil($this->poolSize / 2));
             }
 
             try {
@@ -203,10 +222,11 @@ SQL;
                 $promise = $this->client->requestAsync('GET', $url);
 
                 $promise->then(
-                    function ($response) use ($ids) {
+                    function ($response) use ($ids, $method, $url, $async, $progress) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
-                        if (count($ids) < 2) {
+                        $start = count($ids);
+                        if ($start < 2) {
                             $output = new stdClass();
                             $output->itemIDs = $ids;
                             $output->items = new stdClass();
@@ -220,8 +240,11 @@ SQL;
                                 $this->localCache[$path] = null;
                                 $path = $this->buildPath("history", $id);
                                 $this->localCache[$path] = null;
+                                @fwrite(STDERR, "item $id not found\n");
                                 continue;
                             }
+                            $key = array_search($id, $ids);
+                            unset($ids[$key]);
                             $item = $output->items->$id;
                             $path = $this->buildPath("market", $id);
                             $this->toCache($path, ['Prices' => $item->listings]);
@@ -241,12 +264,14 @@ SQL;
                     },
                     function (Exception $e) use ($progress) {
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
+                        @fwrite(STDERR, $msg);
                         report_progress($progress, 'error', $msg);
                         return null;
                     }
                 );
             } catch (Exception $e) {
                 $msg = "universalis Promise Exception: ".$e->getResponse()->getStatusCode();
+                @fwrite(STDERR, $msg);
                 report_progress($progress, 'error', $msg);
                 return null;
             }
