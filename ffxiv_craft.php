@@ -33,9 +33,18 @@ $fullHistory = true;
 function _sortByProfit(array $a, array $b): int
 {
     $p = max($a['Profit']['Market_HQ'], $a['Profit']['Market_LQ']);
-    $wc1 = $a['Week']['HQ']['Count'] + $a['Week']['LQ']['Count'];
+    if ($a['Profit']['Market_HQ'] > $a['Profit']['Market_LQ']) {
+        $wc1 = $a['Week']['HQ']['Count'];
+    } else {
+        $wc1 = $a['Week']['LQ']['Count'];
+    }
     $p2 = max($b['Profit']['Market_HQ'], $b['Profit']['Market_LQ']);
     $wc2 = $b['Week']['HQ']['Count'] + $b['Week']['LQ']['Count'];
+    if ($b['Profit']['Market_HQ'] > $b['Profit']['Market_LQ']) {
+        $wc2 = $b['Week']['HQ']['Count'];
+    } else {
+        $wc2 = $b['Week']['LQ']['Count'];
+    }
     return floor((1000 * $p * $wc1) - (1000 * $p2 * $wc2));
 
 }
@@ -80,7 +89,7 @@ if (count($argv) > 1) {
     } elseif ($argv[1] == '-m') {
         $a = $dataset->getMastercraft($argv[2]);
         /* 1 day timeout */
-        $xiv = new Universalis($_ENV['server'], 86400);
+        $xiv = new Universalis($_ENV['server'], 43200);
         fwrite(STDERR, count($a).PHP_EOL);
 
         $ing = getIngredientList($a, $dataset);
@@ -117,7 +126,7 @@ if (count($argv) > 1) {
         $ing = getIngredientList($set, $dataset);
         fwrite(STDERR, "Ingredients: ".count($ing).PHP_EOL);
 
-        $xiv = new Universalis($_ENV['server'], 86400);
+        $xiv = new Universalis($_ENV['server'], 43200);
         $cache = array_unique(array_merge($set, $ing));
         /* pre-cache all the items being retrieved */
         $xiv->getMarket($cache, true, null);

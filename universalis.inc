@@ -107,7 +107,7 @@ SQL;
                 $code = $e->getResponse()->getStatusCode();
                 if ($code == 500) {
                     if ($this->client) {
-                        $this->client = null;
+                        $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
                     }
                     $msg = "universalis server error: ".$code.": Shutting down";
                     report_progress($progress, 'error', $msg);
@@ -148,13 +148,15 @@ SQL;
     }
 
 
-    private function toCache($path, $entry)
+    private function toCache($path, $entry, $writeToDB)
     {
         $this->localCache[$path] = json_encode($entry);
-        $name = MyPDO::quote($path);
-        $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
-        $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
-        DB::run($sql);
+        if ($writeToDB) {
+            $name = MyPDO::quote($path);
+            $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
+            $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
+            DB::run($sql);
+        }
 
     }
 
@@ -226,6 +228,10 @@ SQL;
                     function ($response) use ($ids, $method, $url, $async, $progress) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
+                        if (!$data) {
+                            @fwrite(STDERR, "Response not in JSOn format: $contents\n");
+                            return null;
+                        }
                         $start = count($ids);
                         if ($start < 2) {
                             $output = new stdClass();
@@ -237,19 +243,18 @@ SQL;
                         }
                         foreach ($output->itemIDs as $id) {
                             if (!property_exists($output->items, $id)) {
+                                @fwrite(STDERR, "item $id not found\n");
                                 $path = $this->buildPath("market", $id);
                                 $this->localCache[$path] = null;
                                 $path = $this->buildPath("history", $id);
                                 $this->localCache[$path] = null;
-                                @fwrite(STDERR, "item $id not found\n");
                                 continue;
                             }
                             $key = array_search($id, $ids);
                             unset($ids[$key]);
                             $item = $output->items->$id;
                             $path = $this->buildPath("market", $id);
-                            $this->toCache($path, ['Prices' => $item->listings]);
-
+                            $this->toCache($path, ['Prices' => $item->listings], !empty($item->listings));
                             /* Prune history */
                             $old = strtotime("-1 week");
                             foreach ($item->recentHistory as $key => $entry) {
@@ -260,7 +265,7 @@ SQL;
                                 }
                             }
                             $path = $this->buildPath("history", $id);
-                            $this->toCache($path, ['History' => $item->recentHistory]);
+                            $this->toCache($path, ['History' => $item->recentHistory], !empty($item->recentHistory));
                         }
                     },
                     function (Exception $e) use ($progress) {
