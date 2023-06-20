@@ -10,16 +10,23 @@ $inputFile = null;
 $depth = 0;
 $acnt = 2;
 $output = [];
+$max = 9999;
 
 if (count($argv) > 1) {
     if ($argv[1] == '-f') {
         $inputFile = $argv[2];
         $acnt++;
+        if (count($argv) > 2) {
+            $max  = intval($argv[3]);
+            $acnt++;
+        }
     } else {
         $itemID = $argv[1];
+        $max = 1;
     }
 } else {
     $itemID = 23815;
+    $max = 1;
 }
 
 if (count($argv) > $acnt) {
@@ -45,8 +52,10 @@ function add_bits($result, $item, $d, $max_depth): array
         }
     } else {
         $data = $dataset->getItem($item['id']);
-        if (!in_array($data->Name, $result)) {
-            $result[] = $data->Name;
+        if (!array_key_exists($data->Name, $result)) {
+            $result[$data->Name] = $item['count'];
+        } else {
+            $result[$data->Name] += $item['count'];
         }
     }
     return $result;
@@ -67,6 +76,7 @@ function doit($itemID, $result, $max_depth = -1)
 
 
 $result = array();
+$cnt = 0;
 
 if (!is_null($itemID)) {
     $result = doit($itemID, $result, $depth);
@@ -77,7 +87,12 @@ if (!is_null($itemID)) {
             continue;
         }
         $result = doit($data[1], $result, $depth);
+        $cnt ++;
+        if ($cnt >= $max) break;
     }
 }
 
-print_R($result);
+ksort($result);
+foreach ($result as $key => $out) {
+    print($key.':'.$out.PHP_EOL);
+}

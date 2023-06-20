@@ -8,6 +8,8 @@ services:
       - backend
     volumes:
       - .:/var/www/html/
+    working_dir:
+      /var/www/html/
     environment:
         DBHOST: 'mysql:${DBPORT:-3306}'
         DBNAME: ${DBNAME}

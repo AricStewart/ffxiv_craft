@@ -120,7 +120,12 @@ if (count($argv) > 1) {
         if (strtolower($crafter) == 'all') {
             $crafter = null;
         }
+        fwrite(STDERR, "Doing tier: ".$tier." - ".$tiertop.PHP_EOL);
         $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tiertop * 5);
+        if (empty($set)) {
+            fwrite(STDERR, "NO RECIPIES".PHP_EOL);
+            exit();
+        }
         fwrite(STDERR, "recipies: ".count($set).PHP_EOL);
         /* 1 day timeout */
         $ing = getIngredientList($set, $dataset);
