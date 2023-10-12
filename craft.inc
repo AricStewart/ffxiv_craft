@@ -636,6 +636,12 @@ function printRecipeSummaryTitle()
 
 }
 
+function printRecipeCostSummaryTitle()
+{
+    print "Name,Cost Optimal,Cost Market,Level,Tokens,Per Token\n";
+
+}
+
 
 function printRecipeSummary($recipe)
 {
@@ -715,6 +721,35 @@ function printRecipeSummary($recipe)
 
     print ",";
     print max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']) * $weekCount;
+    print "\n";
+
+}
+
+function printRecipeCostSummary($dataset, $recipe)
+{
+    if (array_key_exists('Error', $recipe)) {
+        print $recipe['Error'];
+        return;
+    }
+
+    print $recipe['Name'].",";
+    if ($recipe['Cost']['Optimal'] > 0) {
+        print $recipe['Cost']['Optimal'];
+    } else {
+        print "--";
+    }
+    print ",";
+    if ($recipe['Cost']['Market'] > 0) {
+        print $recipe['Cost']['Market'];
+    } else {
+        print "--";
+    }
+    print ",";
+    $lvl = $recipe['Info']->RecipeLevel->ClassJobLevel;
+    print $lvl.",";
+    $tkn = (($lvl - 80) * 9) + 114;
+    print $tkn.",";
+    print $recipe['Cost']['Market'] / $tkn;
     print "\n";
 
 }

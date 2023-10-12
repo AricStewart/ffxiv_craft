@@ -49,6 +49,21 @@ function _sortByProfit(array $a, array $b): int
 
 }
 
+function _sortByCost(array $a, array $b): int
+{
+
+    $lvl = $a['Info']->RecipeLevel->ClassJobLevel;
+    $tkn = (($lvl - 80) * 9) + 114;
+    $p = $a['Cost']['Market'] / $tkn;
+
+    $lvl = $b['Info']->RecipeLevel->ClassJobLevel;
+    $tkn = (($lvl - 80) * 9) + 114;
+    $p2 = $b['Cost']['Market'] / $tkn;
+
+    return floor((1000 * $p) - (1000 * $p2));
+
+}
+
 
 $i = 0;
 
@@ -153,6 +168,44 @@ if (count($argv) > 1) {
         $recipe = getCompanyRecipe($argv[2], $dataset, 'tick');
         $output = doCompanyRecipe($recipe, $dataset, $xiv, 'tick');
         printCompanyRecipe($output);
+        exit();
+    } elseif ($argv[1] == '-r') {
+        $crafter = $argv[2];
+        $tier = intval($argv[3]);
+        if ($argc == 5) {
+            $tiertop = intval($argv[4]);
+        } else {
+            $tiertop = intval($argv[3]);
+        }
+        if (strtolower($crafter) == 'all') {
+            $crafter = null;
+        }
+        fwrite(STDERR, "Doing tier: ".$tier." - ".$tiertop.PHP_EOL);
+        $set = $dataset->getRecipeSet($crafter, ($tier - 1) * 5, $tiertop * 5, true);
+        if (empty($set)) {
+            fwrite(STDERR, "NO RECIPIES".PHP_EOL);
+            exit();
+        }
+        fwrite(STDERR, "recipies: ".count($set).PHP_EOL);
+        /* 1 day timeout */
+        $ing = getIngredientList($set, $dataset);
+        fwrite(STDERR, "Ingredients: ".count($ing).PHP_EOL);
+
+        $xiv = new Universalis($_ENV['server'], 43200);
+        $cache = array_unique(array_merge($set, $ing));
+        /* pre-cache all the items being retrieved */
+        $xiv->getMarket($cache, true, null);
+        $xiv->flushPool(null);
+
+        foreach ($set as $i => $r) {
+            fwrite(STDERR, " ".$r." (".($i + 1)."|".count($set).") ");
+            $output[] = doRecipie($r, $dataset, $xiv, 'tick', $crafter, $priceList);
+        }
+        usort($output, '_sortByCost');
+        printRecipeCostSummaryTitle();
+        foreach ($output as $recipe) {
+            printRecipeCostSummary($dataset, $recipe);
+        }
         exit();
     } else {
         $xiv = new Universalis($_ENV['server']);

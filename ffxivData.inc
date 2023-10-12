@@ -959,7 +959,7 @@ SQL;
     }
 
 
-    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0)
+    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0, $roweena=false)
     {
         $this->loadRecipeLevelTable();
         $this->checkRecipeTable();
@@ -998,7 +998,12 @@ SQL;
         $output = null;
         while ($value !== false) {
             $item = $this->getItem($value['Item']);
-            if (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
+            if ($roweena) {
+                if (is_null($item) || !strstr($item->Name, 'Rarefied')) {
+                    $value = $result->fetch();
+                    continue;
+                }
+            } elseif (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
                 $value = $result->fetch();
                 continue;
             }
