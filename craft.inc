@@ -475,7 +475,7 @@ function getIngredientList($items, $dataset, $max_depth = -1, $ids = true)
     foreach ($items as $itemID) {
         $cache = $dataset->getNeeded($itemID);
         if ($cache !== null) {
-            $result = array_unique(array_merge($result, $cache));
+            $result = array_merge($result, $cache);
             continue;
         }
         $data = null;
@@ -484,9 +484,11 @@ function getIngredientList($items, $dataset, $max_depth = -1, $ids = true)
         foreach ($recipe['Recipe'] as $bit) {
             $itemNeeds = add_ingred($itemNeeds, $dataset, $bit, 0, $max_depth, $ids);
         }
+        $itemNeeds = array_unique($itemNeeds);
         $dataset->setNeeded($itemID, $itemNeeds);
-        $result = array_unique(array_merge($result, $itemNeeds));
+        $result = array_merge($result, $itemNeeds);
     }
+    $result = array_unique($result);
     return $result;
 
 }

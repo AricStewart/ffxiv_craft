@@ -501,6 +501,8 @@ SQL;
                     Data TEXT NOT NULL,
                     Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
+                ALTER TABLE `recipes` ADD INDEX(`Item`);
+                ALTER TABLE `recipes` ADD INDEX(`Book`);
 SQL;
             DB::run($sql);
             $force = true;
@@ -519,6 +521,8 @@ SQL;
                     Level INT UNSIGNED NOT NULL,
                     Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
+                ALTER TABLE `ingredients` ADD INDEX(`Item`);
+                ALTER TABLE `ingredients` ADD INDEX(`Recipe`);
 SQL;
             DB::run($sql);
             $force = true;
@@ -680,7 +684,7 @@ SQL;
                 'Index' => $data[0],
                 'Item' => intval($data[1]),
                 ];
-                $this->gilShop[] = $entry;
+                $this->gilShop[intval($data[1])] = $entry;
             }
             fclose($handle);
         }
@@ -692,10 +696,8 @@ SQL;
     {
         $this->loadGilShop();
         $result = [];
-        foreach ($this->gilShop as $val) {
-            if ($val['Item'] === $itemID) {
-                $result[] = $val;
-            }
+        if (array_key_exists($itemID, $this->gilShop)) {
+            $result[] = $this->gilShop[$itemID];
         }
         return $result;
 

@@ -5,7 +5,7 @@ BOTTOM=$((TOP-2))
 
 CMD=""
 if [ "$1" = "docker" ]; then
-    CMD="docker-compose -f docker-compose.yml up && sleep 10 &&"
+    CMD="docker-compose -f docker-compose.yml up & sleep 10 &&"
 fi
 
 CMD="$CMD php ./ffxiv_craft.php -r all $BOTTOM $TOP > roweena.csv"

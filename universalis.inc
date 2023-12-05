@@ -37,7 +37,7 @@ class Universalis
 
     private int $poolSize = 5;
 
-    private int $chunkSize = 100;
+    private int $chunkSize = 50;
 
     public int $timeout = 3600;
 
@@ -77,7 +77,7 @@ SQL;
         $this->timeout = $timeout;
 
         $this->poolSize = 5;
-        $this->chunkSize = 100;
+        $this->chunkSize = 50;
         $this->promises = [];
         $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
