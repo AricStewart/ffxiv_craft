@@ -722,7 +722,15 @@ function printRecipeSummary($recipe)
     print max($recipe['Profit']['Market_HQ%'], $recipe['Profit']['Market_LQ%']);
 
     print ",";
-    print max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']) * $weekCount;
+
+    $p = max($recipe['Profit']['Market_HQ'], $recipe['Profit']['Market_LQ']);
+    if ($recipe['Profit']['Market_HQ'] > $recipe['Profit']['Market_LQ']) {
+        $wc1 = $recipe['Week']['HQ']['Count'];
+    } else {
+        $wc1 = $recipe['Week']['LQ']['Count'];
+    }
+
+    print $p * $wc1;
     print "\n";
 
 }
