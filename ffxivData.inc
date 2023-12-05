@@ -422,21 +422,21 @@ SQL;
                 'DifficultyFactor' => $data[29],
                 'QualityFactor' => $data[30],
                 'DurabilityFactor' => $data[31],
-                'RequiredQuality' => $data[33],
-                'RequiredCraftsmanship' => $data[34],
-                'RequiredControl' => $data[35],
-                'QuickSynthCraftsmanship' => $data[36],
-                'QuickSynthControl' => $data[37],
-                'SecretRecipeBook' => $data[38],
-                'Quest' => $data[39],
-                'CanQuickSynth' => $this->isTrue($data[40]),
-                'CanHq' => $this->isTrue($data[41]),
-                'ExpRewarded' => $this->isTrue($data[42]),
-                'Status{Required}' => $data[43],
-                'Item{Required}' => $data[44],
-                'IsSpecializationRequired' => $this->isTrue($data[45]),
-                'IsExpert' => $this->isTrue($data[46]),
-                'PatchNumber' => $data[49]
+                'RequiredQuality' => $data[32],
+                'RequiredCraftsmanship' => $data[33],
+                'RequiredControl' => $data[34],
+                'QuickSynthCraftsmanship' => $data[35],
+                'QuickSynthControl' => $data[36],
+                'SecretRecipeBook' => $data[37],
+                'Quest' => $data[38],
+                'CanQuickSynth' => $this->isTrue($data[39]),
+                'CanHq' => $this->isTrue($data[40]),
+                'ExpRewarded' => $this->isTrue($data[41]),
+                'Status{Required}' => $data[42],
+                'Item{Required}' => $data[43],
+                'IsSpecializationRequired' => $this->isTrue($data[44]),
+                'IsExpert' => $this->isTrue($data[45]),
+                'PatchNumber' => $data[48]
                     ];
                 $entry['Ingredients'] = array_filter(
                     $entry['Ingredients'],
@@ -524,6 +524,24 @@ SQL;
             $force = true;
         }
         $this->loadRecipes($force);
+
+    }
+
+
+    private function checkNeededTable()
+    {
+        $sql = "SHOW TABLES LIKE 'needed';";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value === false) {
+            $sql = <<<SQL
+                CREATE TABLE needed (
+                    ItemId INT UNSIGNED NOT NULL PRIMARY KEY,
+                    Data TEXT NOT NULL
+                );
+SQL;
+            DB::run($sql);
+        }
 
     }
 
@@ -941,7 +959,7 @@ SQL;
     }
 
 
-    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0)
+    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0, $roweena=false)
     {
         $this->loadRecipeLevelTable();
         $this->checkRecipeTable();
@@ -980,7 +998,12 @@ SQL;
         $output = null;
         while ($value !== false) {
             $item = $this->getItem($value['Item']);
-            if (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
+            if ($roweena) {
+                if (is_null($item) || !strstr($item->Name, 'Rarefied')) {
+                    $value = $result->fetch();
+                    continue;
+                }
+            } elseif (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
                 $value = $result->fetch();
                 continue;
             }
@@ -1275,6 +1298,30 @@ SQL;
     }
 
 
+    public function getNeeded($item)
+    {
+        $this->checkNeededTable();
+        $sql = "SELECT * FROM `needed` WHERE ItemId = $item;";
+        $result = DB::run($sql);
+        $value = $result->fetch();
+        if ($value !== false) {
+            return(json_decode($value['Data'], true));
+        }
+        return null;
+
+    }
+
+
+    public function setNeeded($item, $ingred)
+    {
+        $this->checkNeededTable();
+        $data = MyPDO::quote(json_encode($ingred));
+        $sql = "INSERT INTO `needed` (ItemId, Data) VALUES ($item, $data); ";
+        $result = DB::run($sql);
+
+    }
+
+
     public function resetAndReload()
     {
         $sql = "DROP TABLE IF EXISTS `recipes`;";
@@ -1283,11 +1330,21 @@ SQL;
         DB::run($sql);
         $sql = "DROP TABLE IF EXISTS `items`;";
         DB::run($sql);
+        $sql = "DROP TABLE IF EXISTS `needed`;";
+        DB::run($sql);
 
         $this->itemsLoaded = false;
         $this->checkItemTable();
         $this->recipiesLoaded = false;
         $this->checkRecipeTable();
+
+    }
+
+
+    public function resetNeeded()
+    {
+        $sql = "DROP TABLE IF EXISTS `needed`;";
+        DB::run($sql);
 
     }
 

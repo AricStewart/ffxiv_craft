@@ -37,6 +37,8 @@ class Universalis
 
     private int $poolSize = 5;
 
+    private int $chunkSize = 100;
+
     public int $timeout = 3600;
 
     private array $localCache;
@@ -69,12 +71,13 @@ SQL;
     }
 
 
-    public function __construct(string $server)
+    public function __construct(string $server, int $timeout = 3600)
     {
         $this->server = $server;
-        $this->timeout = 3600; /*  1 hour */
+        $this->timeout = $timeout;
 
         $this->poolSize = 5;
+        $this->chunkSize = 100;
         $this->promises = [];
         $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
@@ -103,7 +106,9 @@ SQL;
                 unset($this->promises[$key]);
                 $code = $e->getResponse()->getStatusCode();
                 if ($code == 500) {
-                    $this->client = null;
+                    if ($this->client) {
+                        $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
+                    }
                     $msg = "universalis server error: ".$code.": Shutting down";
                     report_progress($progress, 'error', $msg);
                 } else {
@@ -129,7 +134,7 @@ SQL;
             if ($this->localCache[$path] !== null) {
                 return json_decode($this->localCache[$path]);
             }
-            return null;
+            return 0;
         }
         $qpath = MyPDO::quote($path);
         $sql = "SELECT `Data` FROM `universalisData` WHERE `Path` = $qpath AND "."Date > (NOW() - INTERVAL ".$this->timeout." SECOND)";
@@ -143,20 +148,22 @@ SQL;
     }
 
 
-    private function toCache($path, $entry)
+    private function toCache($path, $entry, $writeToDB)
     {
         $this->localCache[$path] = json_encode($entry);
-        $name = MyPDO::quote($path);
-        $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
-        $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
-        DB::run($sql);
+        if ($writeToDB) {
+            $name = MyPDO::quote($path);
+            $data = MyPDO::quote(base64_encode(gzcompress(json_encode($entry))));
+            $sql = "INSERT INTO `universalisData` (Path,Data,Date) "." VALUES ($name, $data, NOW()) "." ON DUPLICATE KEY UPDATE "." Data = $data, Date = NOW();";
+            DB::run($sql);
+        }
 
     }
 
 
     private function getUniversalisData(
         string $method,
-        array $IDs,
+        array $inIDs,
         string $url,
         bool $async,
         ?string $progress
@@ -167,16 +174,35 @@ SQL;
 
         $data = [];
         $ids = [];
-        foreach ($IDs as $id) {
+        foreach ($inIDs as $id) {
             $path = $this->buildPath($method, $id);
             $d = $this->fromCache($path);
             if ($d !== null) {
-                $data[$id] = $d;
+                if ($d === 0) {
+                    $data[$id] = null;
+                } else {
+                    $data[$id] = $d;
+                }
             } else {
                 $ids[] = $id;
             }
         }
         if (empty($ids)) {
+            return $data;
+        }
+
+        if (count($ids) > $this->chunkSize) {
+            @fwrite(STDERR, "Request for ".count($ids)." entries too large");
+            $split = @array_chunk($ids, $this->chunkSize);
+            foreach ($split as $i => $piece) {
+                @fwrite(STDERR, "Request chunk $i of ".count($split)."\n");
+                $result = $this->getUniversalisData($method, $piece, $url, $async, $progress);
+                if ($result !== null) {
+                    $data = array_merge($data, $result);
+                } else {
+                    $data = null;
+                }
+            }
             return $data;
         }
 
@@ -187,7 +213,7 @@ SQL;
             if ($this->poolSize == 1
                 || count($this->promises) > $this->poolSize
             ) {
-                $this->flushPool($progress, $this->poolSize / 2);
+                $this->flushPool($progress, ceil($this->poolSize / 2));
             }
 
             try {
@@ -199,10 +225,15 @@ SQL;
                 $promise = $this->client->requestAsync('GET', $url);
 
                 $promise->then(
-                    function ($response) use ($ids) {
+                    function ($response) use ($ids, $method, $url, $async, $progress) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
-                        if (count($ids) < 2) {
+                        if (!$data) {
+                            @fwrite(STDERR, "Response not in JSOn format: $contents\n");
+                            return null;
+                        }
+                        $start = count($ids);
+                        if ($start < 2) {
                             $output = new stdClass();
                             $output->itemIDs = $ids;
                             $output->items = new stdClass();
@@ -212,16 +243,18 @@ SQL;
                         }
                         foreach ($output->itemIDs as $id) {
                             if (!property_exists($output->items, $id)) {
+                                @fwrite(STDERR, "item $id not found\n");
                                 $path = $this->buildPath("market", $id);
                                 $this->localCache[$path] = null;
                                 $path = $this->buildPath("history", $id);
                                 $this->localCache[$path] = null;
                                 continue;
                             }
+                            $key = array_search($id, $ids);
+                            unset($ids[$key]);
                             $item = $output->items->$id;
                             $path = $this->buildPath("market", $id);
-                            $this->toCache($path, ['Prices' => $item->listings]);
-
+                            $this->toCache($path, ['Prices' => $item->listings], !empty($item->listings));
                             /* Prune history */
                             $old = strtotime("-1 week");
                             foreach ($item->recentHistory as $key => $entry) {
@@ -232,17 +265,19 @@ SQL;
                                 }
                             }
                             $path = $this->buildPath("history", $id);
-                            $this->toCache($path, ['History' => $item->recentHistory]);
+                            $this->toCache($path, ['History' => $item->recentHistory], !empty($item->recentHistory));
                         }
                     },
                     function (Exception $e) use ($progress) {
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
+                        @fwrite(STDERR, $msg);
                         report_progress($progress, 'error', $msg);
                         return null;
                     }
                 );
             } catch (Exception $e) {
                 $msg = "universalis Promise Exception: ".$e->getResponse()->getStatusCode();
+                @fwrite(STDERR, $msg);
                 report_progress($progress, 'error', $msg);
                 return null;
             }
@@ -258,7 +293,12 @@ SQL;
 
         foreach ($ids as $id) {
             $path = $this->buildPath($method, $id);
-            $data[$id] = $this->fromCache($path);
+            $d = $this->fromCache($path);
+            if ($d === 0) {
+                $data[$id] = null;
+            } else {
+                $data[$id] = $this->fromCache($path);
+            }
         }
         return $data;
 
