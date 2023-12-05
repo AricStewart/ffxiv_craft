@@ -3,8 +3,15 @@
 TOP=$(expr 90 / 5)
 BOTTOM=$((TOP-2))
 
-docker-compose -f docker-compose.yml up &
+CMD=""
+if [ "$1" = "docker" ]; then
+    CMD="docker-compose -f docker-compose.yml up && sleep 10 &&"
+fi
 
-sleep 10 && \
-php ./ffxiv_craft.php -r all $BOTTOM $TOP > out.csv && \
-docker-compose -f docker-compose.yml down
+CMD="$CMD php ./ffxiv_craft.php -r all $BOTTOM $TOP > roweena.csv"
+
+if [ "$1" = "docker" ]; then
+    CMD="$CMD && docker-compose -f docker-compose.yml down"
+fi
+
+eval $CMD
