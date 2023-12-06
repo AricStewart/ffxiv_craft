@@ -3,12 +3,14 @@
 TOP=$(expr 90 / 5)
 BOTTOM=$((TOP-2))
 
-CMD=""
+PWD="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+CMD="cd $PWD"
+
 if [ "$1" = "docker" ]; then
-    CMD="docker-compose -f docker-compose.yml up & sleep 10 &&"
+    CMD="$CMD && docker-compose -f docker-compose.yml up & sleep 10"
 fi
 
-CMD="$CMD php ./ffxiv_craft.php -r all $BOTTOM $TOP > roweena.csv"
+CMD="$CMD && cd $PWD && php ./ffxiv_craft.php -r all $BOTTOM $TOP > roweena.csv"
 
 if [ "$1" = "docker" ]; then
     CMD="$CMD && docker-compose -f docker-compose.yml down"
