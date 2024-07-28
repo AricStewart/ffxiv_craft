@@ -268,7 +268,7 @@ SQL;
                             $this->toCache($path, ['History' => $item->recentHistory], !empty($item->recentHistory));
                         }
                     },
-                    function (Exception $e) use ($progress) {
+                    function (Exception $e) use ($method, $inIDs, $url, $async, $progress) {
                         if ($e->getResponse()->getStatusCode() == 504) {
                             @fwrite(STDERR, "504: retry\n");
                             return $this->getUniversalisData($method, $inIDs, $url, $async, $progress);
