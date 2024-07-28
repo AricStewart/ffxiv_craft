@@ -436,7 +436,7 @@ SQL;
                 'Item{Required}' => $data[43],
                 'IsSpecializationRequired' => $this->isTrue($data[44]),
                 'IsExpert' => $this->isTrue($data[45]),
-                'PatchNumber' => $data[48]
+                //'PatchNumber' => $data[48]
                     ];
                 $entry['Ingredients'] = array_filter(
                     $entry['Ingredients'],

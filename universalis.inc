@@ -37,7 +37,7 @@ class Universalis
 
     private int $poolSize = 5;
 
-    private int $chunkSize = 50;
+    private int $chunkSize = 25;
 
     public int $timeout = 3600;
 
@@ -77,7 +77,7 @@ SQL;
         $this->timeout = $timeout;
 
         $this->poolSize = 5;
-        $this->chunkSize = 50;
+        $this->chunkSize = 25;
         $this->promises = [];
         $this->client = new Client(['base_uri' => "https://universalis.app/api/v2/"]);
 
@@ -192,7 +192,7 @@ SQL;
         }
 
         if (count($ids) > $this->chunkSize) {
-            @fwrite(STDERR, "Request for ".count($ids)." entries too large");
+            @fwrite(STDERR, "Request for ".count($ids)." entries too large\n");
             $split = @array_chunk($ids, $this->chunkSize);
             foreach ($split as $i => $piece) {
                 @fwrite(STDERR, "Request chunk $i of ".count($split)."\n");
@@ -269,15 +269,19 @@ SQL;
                         }
                     },
                     function (Exception $e) use ($progress) {
+                        if ($e->getResponse()->getStatusCode() == 504) {
+                            @fwrite(STDERR, "504: retry\n");
+                            return $this->getUniversalisData($method, $inIDs, $url, $async, $progress);
+                        }
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
-                        @fwrite(STDERR, $msg);
+                        @fwrite(STDERR, $msg."\n");
                         report_progress($progress, 'error', $msg);
                         return null;
                     }
                 );
             } catch (Exception $e) {
                 $msg = "universalis Promise Exception: ".$e->getResponse()->getStatusCode();
-                @fwrite(STDERR, $msg);
+                @fwrite(STDERR, $msg."\n");
                 report_progress($progress, 'error', $msg);
                 return null;
             }
