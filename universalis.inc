@@ -41,6 +41,8 @@ class Universalis
 
     public int $timeout = 3600;
 
+    public int $maxRetry = 5;
+
     private array $localCache;
 
 
@@ -166,7 +168,8 @@ SQL;
         array $inIDs,
         string $url,
         bool $async,
-        ?string $progress
+        ?string $progress,
+        int $tries = 0
     ): ?array {
         if ($this->client === null) {
             return null;
@@ -268,10 +271,10 @@ SQL;
                             $this->toCache($path, ['History' => $item->recentHistory], !empty($item->recentHistory));
                         }
                     },
-                    function (Exception $e) use ($method, $inIDs, $url, $async, $progress) {
-                        if ($e->getResponse()->getStatusCode() == 504) {
-                            @fwrite(STDERR, "504: retry\n");
-                            return $this->getUniversalisData($method, $inIDs, $url, $async, $progress);
+                    function (Exception $e) use ($method, $inIDs, $url, $async, $progress, $tries) {
+                        if ($e->getResponse()->getStatusCode() == 504 && $tries < $this->maxRetry) {
+                            @fwrite(STDERR, "504: retry ($tries)\n");
+                            return $this->getUniversalisData($method, $inIDs, $url, $async, $progress, $tries + 1);
                         }
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
                         @fwrite(STDERR, $msg."\n");
