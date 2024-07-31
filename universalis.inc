@@ -166,7 +166,7 @@ SQL;
     private function getUniversalisData(
         string $method,
         array $inIDs,
-        string $url,
+        string $inUrl,
         bool $async,
         ?string $progress,
         int $tries = 0
@@ -199,7 +199,7 @@ SQL;
             $split = @array_chunk($ids, $this->chunkSize);
             foreach ($split as $i => $piece) {
                 @fwrite(STDERR, "Request chunk $i of ".count($split)."\n");
-                $result = $this->getUniversalisData($method, $piece, $url, $async, $progress);
+                $result = $this->getUniversalisData($method, $piece, $inUrl, $async, $progress);
                 if ($result !== null) {
                     $data = array_merge($data, $result);
                 } else {
@@ -211,7 +211,7 @@ SQL;
 
         $basePath = $this->buildPath($method, implode(',', $ids));
         if (!array_key_exists($basePath, $this->promises)) {
-            report_progress($progress, 'info', "From $url...");
+            report_progress($progress, 'info', "From $inUrl...");
 
             if ($this->poolSize == 1
                 || count($this->promises) > $this->poolSize
@@ -224,11 +224,12 @@ SQL;
                     return null;
                 }
 
+                $url = $inUrl;
                 $url .= implode(',', $ids);
                 $promise = $this->client->requestAsync('GET', $url);
 
                 $promise->then(
-                    function ($response) use ($ids, $method, $url, $async, $progress) {
+                    function ($response) use ($ids, $method, $inUrl, $async, $progress, $tries) {
                         $contents = $response->getBody();
                         $data = json_decode($contents);
                         if (!$data) {
@@ -271,10 +272,11 @@ SQL;
                             $this->toCache($path, ['History' => $item->recentHistory], !empty($item->recentHistory));
                         }
                     },
-                    function (Exception $e) use ($method, $inIDs, $url, $async, $progress, $tries) {
-                        if ($e->getResponse()->getStatusCode() == 504 && $tries < $this->maxRetry) {
-                            @fwrite(STDERR, "504: retry ($tries)\n");
-                            return $this->getUniversalisData($method, $inIDs, $url, $async, $progress, $tries + 1);
+                    function (Exception $e) use ($basePath, $method, $ids, $inUrl, $async, $progress, $tries) {
+                        if ($tries < $this->maxRetry) {
+                            @fwrite(STDERR, $e->getResponse()->getStatusCode().": retry ($tries)\n");
+                            unset($this->promises[$basePath]);
+                            return $this->getUniversalisData($method, $ids, $inUrl, $async, $progress, $tries + 1);
                         }
                         $msg = "universalis Promise Client Exception: ".$e->getResponse()->getStatusCode();
                         @fwrite(STDERR, $msg."\n");
