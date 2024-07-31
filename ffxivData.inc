@@ -390,6 +390,7 @@ SQL;
                     continue;
                 }
                 $entry = ['Index' => intval($data[0]),
+                'Number' => intval($data[1]),
                 'CraftType' => intval($data[2]),
                 'RecipeLevelTable' => intval($data[3]),
                 'Result' => [
@@ -411,32 +412,29 @@ SQL;
                 ['Item' => intval($data[18]),
                 'Amount' => intval($data[19])],
                 ['Item' => intval($data[20]),
-                'Amount' => intval($data[21])],
-                ['Item' => intval($data[22]),
-                'Amount' => intval($data[23])],
-                ['Item' => intval($data[24]),
-                'Amount' => intval($data[25]),]],
-                'RecipeNotebookList' => $data[26],
-                'IsSecondary' => $this->isTrue($data[27]),
-                'MaterialQualityFactor' => $data[28],
-                'DifficultyFactor' => $data[29],
-                'QualityFactor' => $data[30],
-                'DurabilityFactor' => $data[31],
-                'RequiredQuality' => $data[32],
-                'RequiredCraftsmanship' => $data[33],
-                'RequiredControl' => $data[34],
-                'QuickSynthCraftsmanship' => $data[35],
-                'QuickSynthControl' => $data[36],
-                'SecretRecipeBook' => $data[37],
-                'Quest' => $data[38],
-                'CanQuickSynth' => $this->isTrue($data[39]),
-                'CanHq' => $this->isTrue($data[40]),
-                'ExpRewarded' => $this->isTrue($data[41]),
-                'Status{Required}' => $data[42],
-                'Item{Required}' => $data[43],
-                'IsSpecializationRequired' => $this->isTrue($data[44]),
-                'IsExpert' => $this->isTrue($data[45]),
-                //'PatchNumber' => $data[48]
+                'Amount' => intval($data[21]),]],
+                'RecipeNotebookList' => $data[22],
+                'DisplayPriority' => $data[23],
+                'IsSecondary' => $this->isTrue($data[24]),
+                'MaterialQualityFactor' => $data[25],
+                'DifficultyFactor' => $data[26],
+                'QualityFactor' => $data[27],
+                'DurabilityFactor' => $data[28],
+                'RequiredQuality' => $data[29],
+                'RequiredCraftsmanship' => $data[30],
+                'RequiredControl' => $data[31],
+                'QuickSynthCraftsmanship' => $data[32],
+                'QuickSynthControl' => $data[33],
+                'SecretRecipeBook' => $data[34],
+                'Quest' => $data[35],
+                'CanQuickSynth' => $this->isTrue($data[36]),
+                'CanHq' => $this->isTrue($data[37]),
+                'ExpRewarded' => $this->isTrue($data[38]),
+                'Status{Required}' => $data[39],
+                'Item{Required}' => $data[40],
+                'IsSpecializationRequired' => $this->isTrue($data[41]),
+                'IsExpert' => $this->isTrue($data[42]),
+                'PatchNumber' => $data[45]
                     ];
                 $entry['Ingredients'] = array_filter(
                     $entry['Ingredients'],
@@ -961,20 +959,29 @@ SQL;
     }
 
 
-    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0, $roweena=false)
+    public function getRecipeSet($crafter = null, $levelLow = 0, $levelHigh = 0, $roweena=false, $includeExpert=false)
     {
         $this->loadRecipeLevelTable();
         $this->checkRecipeTable();
+        $excludeCraft = false;
         if (!is_null($crafter) && !is_numeric($crafter)) {
             $crafter = array_search($crafter, $this->craftType);
             if ($crafter === false) {
                 return null;
             }
+        } elseif (is_null($crafter)) {
+            /* no cooking in big lists */
+            $crafter = 7;
+            $excludeCraft = true;
         }
-        $sql = "SELECT `Item` FROM `recipes` WHERE ";
+        $sql = "SELECT `Item`, `Data` FROM `recipes` WHERE ";
         $and = false;
         if (!is_null($crafter)) {
-            $sql .= " `CraftType` = $crafter";
+            if ($excludeCraft) {
+                $sql .= " NOT `CraftType` = '$crafter'";
+            } else {
+                $sql .= " `CraftType` = '$crafter'";
+            }
             $and = true;
         }
         if ($levelLow > 0) {
@@ -1008,6 +1015,13 @@ SQL;
             } elseif (is_null($item) || $item->IsUntradable || $item->IsIndisposable) {
                 $value = $result->fetch();
                 continue;
+            }
+            if (!$includeExpert) {
+                $data = json_decode($value['Data']);
+                if ($data->IsExpert) {
+                    $value = $result->fetch();
+                    continue;
+                }
             }
             if ($output === null) {
                 $output = [];
