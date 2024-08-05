@@ -20,6 +20,11 @@
     "require": {
         "php": ">=5.6",
         "guzzlehttp/guzzle": "~5.3.1|~6.0",
-        "vlucas/phpdotenv": "^3.6"
+        "vlucas/phpdotenv": "^3.6",
+        "amphp/amp": "^3.0",
+        "amphp/parallel": "^2.2"
+    },
+    "autoload": {
+         "psr-4": {"App\\": "src/"}
     }
 }

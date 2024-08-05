@@ -22,7 +22,18 @@
 
 require_once __DIR__.'/db.inc';
 require __DIR__.'/vendor/autoload.php';
+
 use GuzzleHttp\Client;
+
+use Amp\Future;
+use function Amp\async;
+use Amp\Parallel\Worker;
+use Amp\Parallel\Worker\Task;
+use Amp\Sync\Channel;
+use Amp\Cancellation;
+
+use App\ffxivCore\recipieTask;
+use App\ffxivCore\itemTask;
 
 ini_set('memory_limit', '5000M');
 
@@ -32,7 +43,6 @@ function _nameSort($a, $b)
     return strnatcmp($a->Name, $b->Name);
 
 }
-
 
 class FfxivDataSet
 {
@@ -48,7 +58,7 @@ class FfxivDataSet
     /* Company Data */
     private $companySequence = array();
 
-    private $RecipeLevelTable = array();
+    public $RecipeLevelTable = array();
 
     private $recipeData = "/data/Recipe.csv";
 
@@ -104,6 +114,8 @@ class FfxivDataSet
 
     private $client;
 
+    private array $pool = [];
+
     public $baseData;
 
     public $craftType = [
@@ -115,7 +127,9 @@ class FfxivDataSet
     "Clothcraft",
     "Alchemy",
     "Cooking",
-        ];
+    ];
+
+    private $cores = 20;
 
 
     private static function isTrue($val)
@@ -173,6 +187,7 @@ class FfxivDataSet
             $this->getData($this->baseData.$this->itemData, $this->itemURL);
             $force = true;
         }
+
         if (!$force) {
             $sql = "SELECT COUNT(`Id`) AS total FROM `items` WHERE 1;";
             $result = DB::run($sql);
@@ -188,6 +203,8 @@ class FfxivDataSet
         $handle = fopen($this->baseData.$this->itemData, "r");
         $skip = 3;
         $max_batch = 1000;
+        $idx = 0;
+        print("Loading Items.");
         if (empty($handle) === false) {
             $batch = $max_batch;
             $sql = '';
@@ -199,127 +216,29 @@ class FfxivDataSet
                 if ($data[1] === "") {
                     continue;
                 }
-                $entry = [
-                'Index' => intval($data[0]),
-                'Singular' => $data[1],
-                'Adjective' => intval($data[2]),
-                'Plural' => $data[3],
-                'PossessivePronoun' => intval($data[4]),
-                'StartsWithVowel' => intval($data[5]),
-                /* data[6] */
-                'Pronoun' => intval($data[7]),
-                'Article' => intval($data[8]),
-                'Description' => $data[9],
-                'Name' => $data[10],
-                'Icon' => intval($data[11]),
-                'Level{Item}' => intval($data[12]),
-                'Rarity' => intval($data[13]),
-                'FilterGroup' => intval($data[14]),
-                'AdditionalData' => intval($data[15]),
-                'ItemUICategory' => intval($data[16]),
-                'ItemSearchCategory' => intval($data[17]),
-                'EquipSlotCategory' => intval($data[18]),
-                'ItemSortCategory' => intval($data[19]),
-                /* $data[20] */
-                'StackSize' => intval($data[21]),
-                'IsUnique' => $this->isTrue($data[22]),
-                'IsUntradable' => $this->isTrue($data[23]),
-                'IsIndisposable' => $this->isTrue($data[24]),
-                'Lot' => $this->isTrue($data[25]),
-                'PriceMid' => intval($data[26]),
-                'PriceLow' => intval($data[27]),
-                'CanBeHq' => $this->isTrue($data[28]),
-                'IsDyeable' => $this->isTrue($data[29]),
-                'IsCrestWorthy' => $this->isTrue($data[30]),
-                'ItemAction' => intval($data[31]),
-                'CastTime<s>' => $data[32],
-                'Cooldown<s>' => intval($data[33]),
-                'ClassJob{Repair}' => intval($data[34]),
-                'Item{Repair}' => intval($data[35]),
-                'Item{Glamour}' => intval($data[36]),
-                'Salvage' => intval($data[37]),
-                'IsCollectable' => $this->isTrue($data[38]),
-                'AlwaysCollectable' => $this->isTrue($data[39]),
-                'AetherialReduce' => intval($data[40]),
-                'Level{Equip}' => intval($data[41]),
-                /* $data[42] */
-                'EquipRestriction' => intval($data[43]),
-                'ClassJobCategory' => intval($data[44]),
-                'GrandCompany' => intval($data[45]),
-                'ItemSeries' => intval($data[46]),
-                'BaseParamModifier' => intval($data[47]),
-                'Model{Main}' => $data[48],
-                'Model{Sub}' => $data[49],
-                'ClassJob{Use}' => intval($data[50]),
-                /* data[51] */
-                'Damage{Phys}' => intval($data[52]),
-                'Damage{Mag}' => intval($data[53]),
-                'Delay<ms>' => intval($data[54]),
-                /* data[55] */
-                'BlockRate' => intval($data[56]),
-                'Block' => intval($data[57]),
-                'Defense{Phys}' => intval($data[58]),
-                'Defense{Mag}' => intval($data[59]),
-                'BaseParam' => [
-                ['Param' => intval($data[60]),
-                'Value' => intval($data[61])],
-                ['Param' => intval($data[62]),
-                'Value' => intval($data[63])],
-                ['Param' => intval($data[64]),
-                'Value' => intval($data[65])],
-                ['Param' => intval($data[66]),
-                'Value' => intval($data[67])],
-                ['Param' => intval($data[68]),
-                'Value' => intval($data[69])],
-                ['Param' => intval($data[70]),
-                'Value' => intval($data[71])]],
-                'ItemSpecialBonus' => intval($data[72]),
-                'ItemSpecialBonus{Param}' => intval($data[73]),
-                'BaseParam{Special}' => [
-                ['Param' => intval($data[74]),
-                'Value' => intval($data[75])],
-                ['Param' => intval($data[76]),
-                'Value' => intval($data[77])],
-                ['Param' => intval($data[78]),
-                'Value' => intval($data[79])],
-                ['Param' => intval($data[80]),
-                'Value' => intval($data[81])],
-                ['Param' => intval($data[82]),
-                'Value' => intval($data[83])],
-                ['Param' => intval($data[84]),
-                'Value' => intval($data[85])]],
-                'MaterializeType' => intval($data[86]),
-                'MateriaSlotCount' => intval($data[87]),
-                'IsAdvancedMeldingPermitted' => $this->isTrue($data[88]),
-                'IsPvP' => $this->isTrue($data[89]),
-                'SubStatCategory' => intval($data[90]),
-                'IsGlamourous' => $this->isTrue($data[91])
-                ];
-                $entry['BaseParam'] = array_filter(
-                    $entry['BaseParam'],
-                    'FfxivDataSet::filterBaseparam'
-                );
-                $entry['BaseParam{Special}'] = array_filter(
-                    $entry['BaseParam{Special}'],
-                    'FfxivDataSet::filterBaseparam'
-                );
 
-                $id = $entry['Index'];
-                $name = strip_tags($entry['Name']);
-                $name = preg_replace('/[^A-Za-z0-9 \'\-]/', '', $name);
-                $name = MyPDO::quote($name);
-                $data = MyPDO::quote(json_encode($entry));
-
-                $sql .= "INSERT INTO `items` (Id, Name, Data) "."VALUES ($id, $name, $data); ";
-                $batch -= 1;
-                if ($batch <= 0) {
-                    DB::run($sql);
-                    $batch = $max_batch;
-                    $sql = '';
-                    print('.');
+                if (count($this->pool) >= $this->cores) {
+                    $responses = Future\await(array_map(
+                        fn (Worker\Execution $e) => $e->getFuture(),
+                        $this->pool,
+                    ));
+                    if ($idx % 1000 == 0) {
+                        print($idx / 1000);
+                    } else {
+                        print(".");
+                    }
+                    $this->pool = [];
                 }
+                $idx++;
+                $obj = $this;
+                $this->pool[] = Worker\submit(new itemTask($data, $this, $idx, count($obj->pool), $_ENV));
             }
-            DB::run($sql);
+
+            $responses = Future\await(array_map(
+                fn (Worker\Execution $e) => $e->getFuture(),
+                $this->pool,
+            ));
+
             print(".\n");
             fclose($handle);
             $this->itemsLoaded = true;
@@ -353,13 +272,14 @@ SQL;
 
     }
 
-
     private function loadRecipes($force = false)
     {
+        global $_ENV;
         if ($force || !file_exists($this->baseData.$this->recipeData)) {
             $this->getData($this->baseData.$this->recipeData, $this->recipeURL);
             $force = true;
         }
+
         if (!$force) {
             $sql = "SELECT COUNT(`Id`) AS total FROM `recipes` WHERE 1;";
             $result = DB::run($sql);
@@ -378,9 +298,11 @@ SQL;
         $handle = fopen($this->baseData.$this->recipeData, "r");
         $skip = 3;
         $max_batch = 500;
+        print("Loading Recipes.");
         if (empty($handle) === false) {
             $batch = $max_batch;
             $sql = '';
+            $idx = 0;
             while (($data = fgetcsv($handle, 1000, ",")) !== false) {
                 if ($skip) {
                     $skip--;
@@ -389,89 +311,30 @@ SQL;
                 if ($data[0] === '0' || $data[1] === '0') {
                     continue;
                 }
-                $entry = ['Index' => intval($data[0]),
-                'Number' => intval($data[1]),
-                'CraftType' => intval($data[2]),
-                'RecipeLevelTable' => intval($data[3]),
-                'Result' => [
-                'Item' => intval($data[4]),
-                'Amount' => intval($data[5])],
-                'Ingredients' => [
-                ['Item' => intval($data[6]),
-                'Amount' => intval($data[7])],
-                ['Item' => intval($data[8]),
-                'Amount' => intval($data[9])],
-                ['Item' => intval($data[10]),
-                'Amount' => intval($data[11])],
-                ['Item' => intval($data[12]),
-                'Amount' => intval($data[13])],
-                ['Item' => intval($data[14]),
-                'Amount' => intval($data[15])],
-                ['Item' => intval($data[16]),
-                'Amount' => intval($data[17])],
-                ['Item' => intval($data[18]),
-                'Amount' => intval($data[19])],
-                ['Item' => intval($data[20]),
-                'Amount' => intval($data[21]),]],
-                'RecipeNotebookList' => $data[22],
-                'DisplayPriority' => $data[23],
-                'IsSecondary' => $this->isTrue($data[24]),
-                'MaterialQualityFactor' => $data[25],
-                'DifficultyFactor' => $data[26],
-                'QualityFactor' => $data[27],
-                'DurabilityFactor' => $data[28],
-                'RequiredQuality' => $data[29],
-                'RequiredCraftsmanship' => $data[30],
-                'RequiredControl' => $data[31],
-                'QuickSynthCraftsmanship' => $data[32],
-                'QuickSynthControl' => $data[33],
-                'SecretRecipeBook' => $data[34],
-                'Quest' => $data[35],
-                'CanQuickSynth' => $this->isTrue($data[36]),
-                'CanHq' => $this->isTrue($data[37]),
-                'ExpRewarded' => $this->isTrue($data[38]),
-                'Status{Required}' => $data[39],
-                'Item{Required}' => $data[40],
-                'IsSpecializationRequired' => $this->isTrue($data[41]),
-                'IsExpert' => $this->isTrue($data[42]),
-                'PatchNumber' => $data[45]
-                    ];
-                $entry['Ingredients'] = array_filter(
-                    $entry['Ingredients'],
-                    'FfxivDataSet::filterIngredient'
-                );
 
-                $id = $entry['Index'];
-                $item = $entry['Result']['Item'];
-                $type = $entry['CraftType'];
-                if ($entry['SecretRecipeBook'] > 0) {
-                    $book = $entry['SecretRecipeBook'];
-                } else {
-                    $book = 'NULL';
-                }
-                $data = MyPDO::quote(json_encode($entry));
-                $level = $this->RecipeLevelTable[$entry['RecipeLevelTable']]->ClassJobLevel;
-
-                $sql .= "INSERT INTO `recipes` (Id, Item, CraftType,"."RecipeLevel, Book, Data) "."VALUES ($id, $item, $type, $level, $book, $data); ";
-
-                foreach ($entry['Ingredients'] as $ingred) {
-                    if ($ingred['Item'] > 0) {
-                        $i = strval($ingred['Item']);
-                        $a = strval($ingred['Amount']);
-                        $sql .= "INSERT INTO `ingredients` (Id, Recipe, Item, Amount, Level) VALUES ($id, $item, $i, $a, $level); ";
+                if (count($this->pool) >= $this->cores) {
+                    $responses = Future\await(array_map(
+                        fn (Worker\Execution $e) => $e->getFuture(),
+                        $this->pool,
+                    ));
+                    if ($idx % 1000 == 0) {
+                        print($idx / 1000);
+                    } else {
+                        print(".");
                     }
+                    $this->pool = [];
                 }
-
-                $batch -= 1;
-                if ($batch <= 0) {
-                    DB::run($sql);
-                    $batch = $max_batch;
-                    $sql = '';
-                    print(".");
-                }
+                $idx++;
+                $obj = $this;
+                $this->pool[] = Worker\submit(new recipieTask($data, $this, $idx, count($obj->pool), $_ENV));
             }
-            DB::run($sql);
-            print(".\n");
+
+            $responses = Future\await(array_map(
+                fn (Worker\Execution $e) => $e->getFuture(),
+                $this->pool,
+            ));
+            print("\n");
+
             fclose($handle);
             $this->recipiesLoaded = true;
         }
@@ -1348,11 +1211,12 @@ SQL;
         DB::run($sql);
         $sql = "DROP TABLE IF EXISTS `needed`;";
         DB::run($sql);
-
+/*
         $this->itemsLoaded = false;
         $this->checkItemTable();
         $this->recipiesLoaded = false;
         $this->checkRecipeTable();
+ */
 
     }
 
