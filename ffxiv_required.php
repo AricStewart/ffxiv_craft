@@ -2,7 +2,13 @@
 <?php
 
 require_once __DIR__."/ffxivData.inc";
+require_once __DIR__."/universalis.inc";
+require __DIR__.'/vendor/autoload.php';
 
+$dotenv = Dotenv\Dotenv::create(__DIR__);
+$dotenv->load();
+
+$xiv = new Universalis($_ENV['server']);
 $dataset = new FfxivDataSet();
 
 $itemID = null;
@@ -45,7 +51,7 @@ if (!is_null($itemID) && !is_numeric($itemID)) {
 
 function add_bits($result, $item, $d, $max_depth): array
 {
-    global $dataset;
+    global $dataset, $xiv;
     if (($max_depth < 0 || $d < $max_depth) && !empty($item['bits'])) {
         foreach ($item['bits'] as $bit) {
             $result = add_bits($result, $bit, $d + 1, $max_depth);
@@ -53,9 +59,14 @@ function add_bits($result, $item, $d, $max_depth): array
     } else {
         $data = $dataset->getItem($item['id']);
         if (!array_key_exists($data->Name, $result)) {
-            $result[$data->Name] = $item['count'];
+            $market = $xiv->getMarket($item['id'], false, null);
+            $history = $xiv->getHistory($item['id']);
+            $cheap = $xiv->currentCheapest($market[$item['id']]);
+            $average = $xiv->weekAverage($history[$item['id']], false);
+            $deal = $average['Average'] - $cheap['Item']->pricePerUnit;
+            $result[$data->Name] = array('count' => $item['count'], 'cheap' => $cheap['Item']->pricePerUnit, 'average' => $average['Average'], 'deal' => $deal);
         } else {
-            $result[$data->Name] += $item['count'];
+            $result[$data->Name]['count'] += $item['count'];
         }
     }
     return $result;
@@ -92,7 +103,16 @@ if (!is_null($itemID)) {
     }
 }
 
-ksort($result);
+function cmp($a, $b)
+{
+    if ($a['deal'] == $b['deal']) {
+        return 0;
+    }
+    return ($a['deal'] < $b['deal']) ? -1 : 1;
+}
+
+uasort($result, 'cmp');
+print('item,'.implode(',',array_keys($result[array_key_first($result)])).PHP_EOL);
 foreach ($result as $key => $out) {
-    print($key.':'.$out.PHP_EOL);
+    print($key.','.implode(',',$out).PHP_EOL);
 }
